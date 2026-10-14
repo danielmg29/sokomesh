@@ -1,0 +1,55 @@
+{
+  "$description": "Light theme: warm stone. Grounds are warm neutrals at very low chroma (OKLCH hue about 90), so forest and trade yellow carry the colour and photography carries the warmth. Ratios are WCAG 2.2 and checked in web/tests/unit/contrast.test.ts.",
+
+  "background": { "$type": "color", "$value": "#F3F2EE", "$description": "Warm stone canvas behind every page (OKLCH 96 / 0.005 / 95): neutral, not cream." },
+  "surface": { "$type": "color", "$value": "#FFFFFF", "$description": "Grid cells, ledgers and fields sitting on the canvas." },
+  "sunken": { "$type": "color", "$value": "#EAE8E2", "$description": "Table heads, inset regions, hover rows." },
+  "well": { "$type": "color", "$value": "#EEECE7", "$description": "Product photo ground: cut-out photography sits on it, so a product reads on light stone here and on graphite in the dark theme from one image file." },
+  "foreground": { "$type": "color", "$value": "{brand.color.ink}" },
+  "muted": { "$type": "color", "$value": "#585A53", "$description": "Secondary text; 7.0:1 on surface, 5.7:1 on sunken." },
+  "border": { "$type": "color", "$value": "#DDDAD2", "$description": "Grid rules between cells and regions." },
+  "border-strong": { "$type": "color", "$value": "#7A786F", "$description": "Control boundaries; at least 3.6:1 on every ground (WCAG 1.4.11)." },
+  "overlay": { "$type": "color", "$value": "#13251D99", "$description": "Scrim behind dialogs and sheets." },
+
+  "primary": { "$type": "color", "$value": "{brand.color.primary}" },
+  "primary-hover": { "$type": "color", "$value": "#0E4733" },
+  "primary-soft": { "$type": "color", "$value": "#E2EEE7", "$description": "Selected rows and active navigation." },
+  "primary-foreground": { "$type": "color", "$value": "#FFFFFF", "$description": "White on primary (7.95:1), as in the favicon mark." },
+
+  "brand": { "$type": "color", "$value": "{brand.color.primary}", "$description": "Brand regions and illustration: CTA ground, ribbon, mesh nodes, masthead band. Constant across themes; not an interactive colour." },
+  "brand-foreground": { "$type": "color", "$value": "#FFFFFF", "$description": "White on the brand forest (7.95:1)." },
+
+  "signal": { "$type": "color", "$value": "{brand.color.accent}", "$description": "Trade signal: reserved, featured, active filter, the held quantity. Never the warning semantic." },
+  "signal-hover": { "$type": "color", "$value": "#E9A82A", "$description": "Pressed and hovered signal fill; ink stays 7.7:1." },
+  "signal-soft": { "$type": "color", "$value": "#FDF0D3" },
+  "signal-stamp": { "$type": "color", "$value": "{brand.color.accent}", "$description": "Signal stamp fill: solid amber reads as a stamp on the pale grounds." },
+  "signal-stamp-foreground": { "$type": "color", "$value": "{brand.color.ink}" },
+  "signal-foreground": { "$type": "color", "$value": "{brand.color.ink}", "$description": "Ink on signal (8.88:1). Signal is never text on the canvas (1.6:1)." },
+  "signal-border": { "$type": "color", "$value": "{brand.color.ink}", "$description": "Edge of signal-marked regions: ink here, amber on the dark ground." },
+
+  "inverse": { "$type": "color", "$value": "{brand.color.ink}", "$description": "Opposite of the ground: on-state chips, tooltips, the bulk-action bar. Light in the dark theme." },
+  "inverse-foreground": { "$type": "color", "$value": "#FFFFFF" },
+  "inverse-muted": { "$type": "color", "$value": "#B8C4BC", "$description": "Secondary text on inverse (8.9:1)." },
+
+  "chrome": { "$type": "color", "$value": "{brand.color.ink}", "$description": "Mastheads: ink in both themes, the darkest layer in the dark theme." },
+  "chrome-foreground": { "$type": "color", "$value": "#FFFFFF" },
+  "chrome-muted": { "$type": "color", "$value": "#B8C4BC", "$description": "Secondary text on chrome (8.9:1)." },
+
+  "ring": { "$type": "color", "$value": "{brand.color.focus}" },
+  "ring-contrast": { "$type": "color", "$value": "{brand.color.ink}", "$description": "Outer focus outline; the amber ring alone is 1.6:1." },
+
+  "shadow": { "$type": "color", "$value": "{brand.color.ink}", "$description": "Base for overlay shadows only (menus, dialogs, toasts)." },
+  "display-weight": { "$type": "number", "$value": 680, "$description": "Weight of display headings and money figures (the font-extrabold utility): semi-expanded Archivo needs less weight than a regular width to hold a line." },
+  "shadow-weight": { "$type": "number", "$value": 1, "$description": "Multiplier on shadow mix percentages." },
+
+  "tone-neutral": { "$type": "color", "$value": "#585A53" },
+  "tone-neutral-bg": { "$type": "color", "$value": "#ECEAE4" },
+  "tone-info": { "$type": "color", "$value": "#2A557F" },
+  "tone-info-bg": { "$type": "color", "$value": "#E3ECF6" },
+  "tone-success": { "$type": "color", "$value": "{brand.color.primary}", "$description": "Authoritative completed states stamp in the brand green." },
+  "tone-success-bg": { "$type": "color", "$value": "#E2EEE7" },
+  "tone-warning": { "$type": "color", "$value": "#9A4A12", "$description": "Burnt orange, deliberately not yellow: yellow is the trade signal." },
+  "tone-warning-bg": { "$type": "color", "$value": "#FBEADB" },
+  "tone-danger": { "$type": "color", "$value": "#A92A20" },
+  "tone-danger-bg": { "$type": "color", "$value": "#FBE3DF" }
+}

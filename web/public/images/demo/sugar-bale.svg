@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" width="400" height="300" role="img" aria-label="Demo illustration: bale of twenty-four 1 kg sugar packets">
+  <ellipse cx="200" cy="262" rx="150" ry="14" fill="#13251D" opacity=".08"/>
+  <path d="M70 118h256v142H70z" fill="#F4F6F8"/>
+  <path d="M326 118l28-24v142l-28 24z" fill="#DCE1E6"/>
+  <path d="M70 118l28-24h256l-28 24z" fill="#FBFCFD"/>
+  <g fill="#2A557F"><path d="M84 136h48v110H84zM142 136h48v110h-48zM200 136h48v110h-48zM258 136h56v110h-56z"/></g>
+  <g fill="#FFFFFF"><path d="M92 170h32v26H92zM150 170h32v26h-32zM208 170h32v26h-32zM266 170h40v26h-40z"/></g>
+  <g fill="#B3261E"><path d="M92 208h32v8H92zM150 208h32v8h-32zM208 208h32v8h-32zM266 208h40v8h-40z"/></g>
+  <path d="M70 128h256" stroke="#A9B3A3" stroke-width="4"/>
+</svg>

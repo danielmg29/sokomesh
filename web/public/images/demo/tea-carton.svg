@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" width="400" height="300" role="img" aria-label="Demo illustration: carton of twenty 500 g loose tea packets">
+  <ellipse cx="200" cy="262" rx="150" ry="14" fill="#13251D" opacity=".08"/>
+  <path d="M78 110h232v150H78z" fill="#C79A63"/>
+  <path d="M310 110l40-30v150l-40 30z" fill="#A87F4D"/>
+  <path d="M78 110l40-30h232l-40 30z" fill="#D9B07D"/>
+  <path d="M176 110h36v150h-36z" fill="#E4C597" opacity=".7"/>
+  <path d="M190 80l40-30" stroke="#E4C597" stroke-width="30" opacity=".7"/>
+  <path d="M100 150h66v64h-66z" fill="#145C43"/>
+  <path d="M108 160h50v8h-50zM108 174h38v6h-38z" fill="#F6F8F2"/>
+  <path d="M224 150h70v64h-70z" fill="#FFFFFF"/>
+  <path d="M234 162h50v6h-50zM234 174h40v6h-40zM234 186h46v6h-46z" fill="#7D897C"/>
+</svg>

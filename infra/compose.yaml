@@ -1,0 +1,50 @@
+# Local development stack. Start with `just up` (or `just bootstrap` for services only).
+# Host ports avoid common local installs: Postgres is published on 5433.
+name: sokomesh
+
+x-api: &api
+  build: { context: .., dockerfile: infra/docker/api.Dockerfile }
+  env_file: ../.env
+  environment:
+    DJANGO_SETTINGS_MODULE: config.settings.dev
+    DATABASE_URL: postgres://sokomesh:sokomesh@db:5432/sokomesh
+    REDIS_URL: redis://redis:6379/0
+    EMAIL_HOST: mailpit
+  depends_on:
+    db: { condition: service_healthy }
+    redis: { condition: service_started }
+  volumes: ["../backend:/app", "../contract:/contract"]
+
+services:
+  db:
+    image: postgres:17
+    environment: { POSTGRES_DB: sokomesh, POSTGRES_USER: sokomesh, POSTGRES_PASSWORD: sokomesh }
+    healthcheck: { test: ["CMD-SHELL", "pg_isready -U sokomesh"], interval: 3s, retries: 20 }
+    ports: ["5433:5432"]
+    volumes: [pgdata:/var/lib/postgresql/data]
+
+  redis:
+    image: redis:7-alpine
+    ports: ["6379:6379"]
+
+  mailpit:
+    image: axllent/mailpit
+    ports: ["8025:8025", "1025:1025"]
+
+  api:
+    <<: *api
+    command: sh -c "python manage.py migrate --noinput && uvicorn config.asgi:application --host 0.0.0.0 --port 8000 --reload"
+    ports: ["8000:8000"]
+
+  web:
+    image: node:24
+    working_dir: /repo/web
+    environment: { COREPACK_ENABLE_DOWNLOAD_PROMPT: "0", NEXT_TELEMETRY_DISABLED: "1" }
+    command: sh -c "corepack enable && pnpm install --frozen-lockfile && pnpm dev --hostname 0.0.0.0"
+    # Anonymous volumes keep Linux node_modules and .next separate from the host's.
+    volumes: ["..:/repo", "/repo/web/node_modules", "/repo/web/.next"]
+    env_file: ../.env
+    ports: ["3000:3000"]
+
+volumes:
+  pgdata:

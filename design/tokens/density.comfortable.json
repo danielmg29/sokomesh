@@ -1,0 +1,8 @@
+{
+  "control-height": { "$type": "dimension", "$value": "40px", "$description": "Default density for every surface." },
+  "row-padding-y": { "$type": "dimension", "$value": "10px" },
+  "cell-padding-x": { "$type": "dimension", "$value": "14px" },
+  "gap": { "$type": "dimension", "$value": "12px" },
+  "text": { "$type": "dimension", "$value": "14px" },
+  "icon": { "$type": "dimension", "$value": "18px" }
+}

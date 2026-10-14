@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Build Order — SokoMesh Design System</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--canvas:#F6F8F2;--paper:#fff;--line:#D6DCCF;--line2:#A9B3A3;--inset:#ECEFE6;--ink:#13251D;--muted:#56635B;--pri:#145C43;--sig:#F5B63C;--warn:#A8501A;--dang:#B3261E}
+*{box-sizing:border-box;margin:0}body{width:1440px;height:900px;overflow:hidden;background:var(--canvas);color:var(--ink);font:14px/1.5 Inter,sans-serif;font-variant-numeric:tabular-nums}
+.mast{height:56px;background:var(--ink);color:#fff;display:flex;align-items:center;gap:16px;padding:0 28px}
+.mast b{font:700 17px 'Plus Jakarta Sans'}.mast span{opacity:.75;font-size:13px}.mast .k{margin-left:auto;border:1px solid #ffffff55;border-radius:4px;padding:6px 12px;font-size:13px}
+.rail{background:var(--pri);color:#fff;padding:18px 28px 16px;position:relative}
+.rail ol{list-style:none;padding:0;display:grid;grid-template-columns:repeat(9,1fr);position:relative}
+.rail ol:before{content:"";position:absolute;left:14px;right:14px;top:13px;height:2px;background:#ffffff55}
+.rail li{position:relative;padding-top:34px;font-size:12px;line-height:1.3;padding-right:10px}
+.rail li:before{content:attr(data-n);position:absolute;top:0;left:0;width:28px;height:28px;border:2px solid #fff;background:var(--pri);border-radius:2px;display:grid;place-items:center;font:700 12px Inter}
+.rail li.done:before{background:#fff;color:var(--pri)}.rail li.on:before{background:var(--sig);border-color:var(--sig);color:var(--ink)}
+.rail li.on{font-weight:600}.rail li i{display:block;font-style:normal;opacity:.7;font-weight:400}
+.body{display:grid;grid-template-columns:240px 1fr 260px;gap:0;height:722px}
+.toc{border-right:1px solid var(--line);background:var(--paper);padding:22px 18px}
+.toc h4,.aside h4{font:600 11px Inter;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
+.toc a{display:block;padding:5px 8px;border-radius:3px}.toc a.on{background:var(--inset);box-shadow:inset 3px 0 0 var(--pri);font-weight:600}
+main{padding:28px 44px;overflow:hidden}
+.ph{font:600 12px Inter;letter-spacing:.12em;text-transform:uppercase;color:var(--pri)}
+h1{font:800 38px/1.1 'Plus Jakarta Sans';margin:6px 0 10px}
+.exit{border-left:3px solid var(--sig);padding:8px 14px;background:var(--paper);max-width:680px;font-size:14px;margin-bottom:24px}
+h2{font:700 24px 'Plus Jakarta Sans';margin-bottom:6px}
+p{max-width:660px;font-size:15px;color:var(--ink)}
+.spec{margin-top:18px;border:1px solid var(--line);background:var(--paper)}
+.line{display:grid;grid-template-columns:1fr auto;align-items:center;padding:16px 18px;border-bottom:1px solid var(--line)}
+.line b{font-weight:600}.line small{display:block;color:var(--muted);font-size:13px}
+.acts{display:flex;gap:8px}.btn{height:36px;padding:0 14px;border-radius:4px;border:1px solid var(--line2);display:inline-flex;align-items:center;font-weight:600;font-size:13px;background:var(--paper)}
+.btn.p{background:var(--pri);color:#fff;border-color:var(--pri)}.btn.w{color:var(--warn);border-color:var(--warn)}.btn.d{color:var(--dang);border-color:var(--dang)}
+.states{display:flex;gap:0;font-size:12px}.states span{flex:1;padding:10px 12px;border-right:1px solid var(--line);color:var(--muted)}.states b{display:block;color:var(--ink);font-weight:600}
+.aside{border-left:1px solid var(--line);padding:22px 20px;background:#FBFCF9}
+.dep{border:1px solid var(--line);background:var(--paper);padding:10px 12px;margin-bottom:8px;font-size:13px}.dep i{font-style:normal;color:var(--muted);display:block;font-size:12px}
+</style></head><body>
+<div class="mast"><b>SokoMesh Design System</b><span>Contract 0.1.0 · demo data</span><span class="k">Jump to component ⌘K</span></div>
+<div class="rail"><ol>
+<li class="done" data-n="01">Tokens<i>9 roles</i></li><li class="done" data-n="02">Primitives<i>13 families</i></li><li class="done" data-n="03">Field renderers<i>26 widgets</i></li><li class="done" data-n="04">Recipes &amp; Projection<i>4 axes</i></li><li class="on" data-n="05">Actions, nav, feedback<i>12 components</i></li><li data-n="06">Forms &amp; blocks<i>11 blocks</i></li><li data-n="07">Templates<i>14 pages</i></li><li data-n="08">SokoMesh blocks<i>30 extensions</i></li><li data-n="09">Marketing<i>10 divergent</i></li>
+</ol></div>
+<div class="body">
+<div class="toc"><h4>Phase 05</h4><a class="on">ActionBar</a><a>ActionMenu</a><a>BulkActions</a><a>ConfirmAction</a><a>StatusBadge</a><a>AppNav</a><a>Breadcrumbs</a><a>CommandPalette</a><a>EmptyState</a><a>ErrorState</a><a>LoadingState</a><a>ToastFeedback</a></div>
+<main>
+<div class="ph">Phase 05 · Actions, navigation and feedback</div>
+<h1>Actions decide; feedback explains.</h1>
+<div class="exit"><b>Exit criterion</b> — every action, menu, status, empty, error and toast resolves from contract metadata; no page decides visibility on its own.</div>
+<h2>ActionBar</h2>
+<p>Buttons for a record's permitted commands. Tone comes from the action descriptor, visibility from <code>_can</code> and <code>when</code>. A hidden action is also refused by the API.</p>
+<div class="spec">
+<div class="line"><div><b>Mavuno Maize Flour 2 kg · bale of 12</b><small>Order SM-ORD-004215 · line 3 · 120 bales ordered · 96 on hand</small></div>
+<div class="acts"><span class="btn p">Confirm 96 bales</span><span class="btn w">Short-ship 24</span><span class="btn d">Reject line</span></div></div>
+<div class="states"><span><b>Pending</b>Confirming…</span><span><b>Disabled</b>Reservation expired</span><span><b>Restricted</b>Seller manager only</span><span><b>Compact</b>Icon + label</span></div>
+</div>
+</main>
+<div class="aside"><h4>Built on</h4>
+<div class="dep">Button<i>Phase 02 · primitive</i></div><div class="dep">DropdownMenu<i>Phase 02 · overflow actions</i></div><div class="dep">ConfirmAction<i>Phase 05 · destructive tone</i></div>
+<h4 style="margin-top:18px">Used in</h4><div class="dep">FulfillmentPickPackBlock<i>Phase 08 · FLOW</i></div><div class="dep">QuoteDecisionPanel<i>Phase 08 · LEDGER</i></div>
+</div>
+</div></body></html>

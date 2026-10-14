@@ -1,0 +1,55 @@
+{
+  "$description": "Dark theme: warm graphite. Same role names as color.light.json; grounds are warm near-blacks at very low chroma (OKLCH hue about 105), never pure black, so the forest and the amber stay the only saturated colours. Ratios are WCAG 2.2 and checked in web/tests/unit/contrast.test.ts.",
+
+  "background": { "$type": "color", "$value": "#131311", "$description": "Graphite canvas behind every page." },
+  "surface": { "$type": "color", "$value": "#1B1B18", "$description": "Grid cells lift one step above the canvas." },
+  "sunken": { "$type": "color", "$value": "#252521", "$description": "Table heads, inset regions, hover rows: one step lighter than the cell, so hover lifts as it does in the light theme." },
+  "well": { "$type": "color", "$value": "#21211D", "$description": "Product photo ground: the same cut-out photograph sits on graphite here." },
+  "foreground": { "$type": "color", "$value": "#E8E7E1", "$description": "Warm white; 13.9:1 on surface." },
+  "muted": { "$type": "color", "$value": "#A8A79E", "$description": "Secondary text; 7.1:1 on surface." },
+  "border": { "$type": "color", "$value": "#30302B", "$description": "Grid rules between cells and regions." },
+  "border-strong": { "$type": "color", "$value": "#7A796F", "$description": "Control boundaries; at least 3.5:1 on every ground including sunken." },
+  "overlay": { "$type": "color", "$value": "#050504B8", "$description": "Scrim behind dialogs and sheets." },
+
+  "primary": { "$type": "color", "$value": "#44A77B", "$description": "Forest lifted for a dark ground: 5.8:1 as text on surface." },
+  "primary-hover": { "$type": "color", "$value": "#58BB8E" },
+  "primary-soft": { "$type": "color", "$value": "#133223", "$description": "Selected rows and active navigation; primary text on it is 4.7:1." },
+  "primary-foreground": { "$type": "color", "$value": "#0A1208", "$description": "Ink on primary (6.4:1). White fails on the lifted green." },
+
+  "brand": { "$type": "color", "$value": "{brand.color.primary}", "$description": "The true brand forest stays deep on the dark ground for regions and illustration; interactive green lifts separately as primary." },
+  "brand-foreground": { "$type": "color", "$value": "#FFFFFF" },
+
+  "signal": { "$type": "color", "$value": "{brand.color.accent}", "$description": "The brand amber is unchanged; it reads stronger on the dark ground." },
+  "signal-hover": { "$type": "color", "$value": "#F8C55E", "$description": "Lighter amber on hover; ink stays above 10:1." },
+  "signal-soft": { "$type": "color", "$value": "#3A2D10" },
+  "signal-stamp": { "$type": "color", "$value": "#3A2D10", "$description": "On the dark ground a solid amber stamp is the loudest mark on the page; the stamp keeps an amber edge and text on the soft ground instead." },
+  "signal-stamp-foreground": { "$type": "color", "$value": "{brand.color.accent}" },
+  "signal-foreground": { "$type": "color", "$value": "{brand.color.ink}", "$description": "Ink on signal (8.88:1)." },
+  "signal-border": { "$type": "color", "$value": "{brand.color.accent}", "$description": "Amber edge on signal-marked regions." },
+
+  "inverse": { "$type": "color", "$value": "#E8E7E1", "$description": "Opposite of the ground: light chips, tooltips and the bulk-action bar." },
+  "inverse-foreground": { "$type": "color", "$value": "#131311" },
+  "inverse-muted": { "$type": "color", "$value": "#4E4D46", "$description": "Secondary text on inverse." },
+
+  "chrome": { "$type": "color", "$value": "#0C0D0B", "$description": "Mastheads sit below the canvas, the darkest layer." },
+  "chrome-foreground": { "$type": "color", "$value": "#F2F1EC" },
+  "chrome-muted": { "$type": "color", "$value": "#A8A79E", "$description": "Secondary text on chrome." },
+
+  "ring": { "$type": "color", "$value": "{brand.color.focus}" },
+  "ring-contrast": { "$type": "color", "$value": "#E8E7E1", "$description": "Outer focus outline in the foreground colour." },
+
+  "shadow": { "$type": "color", "$value": "#030303", "$description": "Base for overlay shadows; deeper than the canvas so lift still reads." },
+  "display-weight": { "$type": "number", "$value": 640, "$description": "Light text on a dark ground blooms; display weight steps down so headings keep their shape." },
+  "shadow-weight": { "$type": "number", "$value": 3, "$description": "Dark grounds swallow shadow; the mix is three times as strong." },
+
+  "tone-neutral": { "$type": "color", "$value": "#A8A79E" },
+  "tone-neutral-bg": { "$type": "color", "$value": "#2A2A25" },
+  "tone-info": { "$type": "color", "$value": "#8EB8E6" },
+  "tone-info-bg": { "$type": "color", "$value": "#172E48" },
+  "tone-success": { "$type": "color", "$value": "#6CC69A", "$description": "Brand green family, lifted." },
+  "tone-success-bg": { "$type": "color", "$value": "#113424" },
+  "tone-warning": { "$type": "color", "$value": "#EDA06A", "$description": "Burnt orange, lifted; still distinct from the amber signal." },
+  "tone-warning-bg": { "$type": "color", "$value": "#412614" },
+  "tone-danger": { "$type": "color", "$value": "#F28B7D" },
+  "tone-danger-bg": { "$type": "color", "$value": "#4E1E18" }
+}

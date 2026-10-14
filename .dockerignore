@@ -1,0 +1,15 @@
+# Build context is the repo root (infra/compose.yaml). Keep host artefacts out of images.
+.git
+.claude
+**/node_modules
+**/.next
+**/.venv
+**/__pycache__
+**/.pytest_cache
+**/.ruff_cache
+backend/staticfiles
+web/test-results
+web/playwright-report
+.env
+.env.*
+!.env.example

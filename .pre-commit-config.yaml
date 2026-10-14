@@ -1,0 +1,30 @@
+# Installed by `just bootstrap` (uvx pre-commit install). Keep revs in step with uv.lock.
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.17.0
+    hooks:
+      - id: ruff
+        args: [--fix]
+        files: ^backend/
+      - id: ruff-format
+        files: ^backend/
+  - repo: local
+    hooks:
+      - id: contract-check
+        name: contract is up to date
+        entry: bash -c 'cd backend && uv run python manage.py contract check'
+        language: system
+        pass_filenames: false
+        files: ^(backend/(apps|core|config)/|contract/)
+      - id: web-generated
+        name: generated web files match contract and tokens
+        entry: bash -c 'cd web && pnpm -s gen && git diff --exit-code -- lib/contract/generated.ts lib/design/tokens.generated.ts app/tokens.generated.css'
+        language: system
+        pass_filenames: false
+        files: ^(contract/|design/tokens/|web/tools/)
+      - id: web-lint
+        name: web lint and typecheck
+        entry: bash -c 'cd web && pnpm -s lint && pnpm -s typecheck'
+        language: system
+        pass_filenames: false
+        files: ^web/

@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" width="400" height="300" role="img" aria-label="Demo illustration: carton of six 3 litre cooking oil jerrycans">
+  <ellipse cx="200" cy="264" rx="140" ry="13" fill="#13251D" opacity=".08"/>
+  <path d="M96 86h150a14 14 0 0 1 14 14v158H96z" fill="#F2B705"/>
+  <path d="M260 100l40-20v158l-40 20z" fill="#D49D00"/>
+  <path d="M96 86l40-20h150l-26 20z" fill="#F7C93A"/>
+  <path d="M206 66h44v-20h-44z" fill="#B3261E"/>
+  <path d="M122 70c0-26 60-26 60 0" fill="none" stroke="#D49D00" stroke-width="14"/>
+  <path d="M110 150h136v66H110z" fill="#FFFFFF"/>
+  <path d="M120 162h80v12h-80z" fill="#145C43"/>
+  <path d="M120 184h116v6H120zM120 198h96v6h-96z" fill="#A9B3A3"/>
+</svg>

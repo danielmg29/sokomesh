@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Three Modes — SokoMesh Design System</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--canvas:#F6F8F2;--paper:#fff;--line:#D6DCCF;--line2:#8C978A;--inset:#ECEFE6;--ink:#13251D;--muted:#4F5C54;--pri:#145C43;--sig:#F5B63C;--warn:#9A4A12;--dang:#A92A20}
+*{box-sizing:border-box;margin:0}body{width:1440px;height:900px;overflow:hidden;background:var(--canvas);color:var(--ink);font:14px/1.45 Inter,sans-serif;font-variant-numeric:tabular-nums}
+.mast{height:60px;background:var(--pri);color:#fff;display:flex;align-items:center;gap:18px;padding:0 24px}
+.mast b{font:700 18px 'Plus Jakarta Sans'}.mast span{opacity:.8;font-size:13px}.mast .s{margin-left:auto;width:340px;height:36px;border:1px solid #ffffff66;border-radius:4px;padding:8px 12px;font-size:13px;color:#ffffffcc}
+.wrap{display:grid;grid-template-columns:232px 1fr;height:840px}
+nav{background:var(--paper);border-right:1px solid var(--line);padding:18px 14px}
+nav h4{font:600 11px Inter;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:14px 0 4px}
+nav a{display:block;padding:5px 8px;border-radius:3px}nav a.on{background:var(--inset);font-weight:600}
+main{padding:24px 32px;overflow:hidden}
+.crumb{color:var(--muted);font-size:13px}
+h1{font:800 36px/1.1 'Plus Jakarta Sans';margin:4px 0 6px}
+.lead{max-width:720px;font-size:15px;margin-bottom:16px}
+.cols{display:grid;grid-template-columns:1.25fr 1fr 1fr;gap:16px}
+.col{border:1px solid var(--line);background:var(--paper)}
+.ch{display:flex;justify-content:space-between;align-items:baseline;padding:10px 14px;border-bottom:1px solid var(--line);background:var(--inset)}
+.ch b{font:700 15px 'Plus Jakarta Sans';letter-spacing:.04em}.ch code{font:12px ui-monospace,Consolas,monospace;color:var(--muted)}
+.bd{padding:14px}
+.cards{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.card{border:1px solid var(--line)}.ph{height:120px;background:#E7EBE1;display:grid;place-items:center;color:var(--muted);font-size:12px}
+.card .t{padding:10px}.card b{display:block;font-weight:600}.price{font:700 18px 'Plus Jakarta Sans';margin-top:4px}.price small{font:500 12px Inter;color:var(--muted)}
+.stamp{display:inline-block;border:1.5px solid currentColor;border-radius:2px;padding:1px 6px;font:600 11px Inter;letter-spacing:.05em;text-transform:uppercase;margin-top:6px}
+.ok{color:var(--pri);background:#E2EEE7}.wa{color:var(--warn);background:#FBEADB}.da{color:var(--dang);background:#FBE3DF}.sg{background:var(--sig);color:var(--ink)}
+table{width:100%;border-collapse:collapse;font-size:13px}td,th{border-bottom:1px solid var(--line);padding:7px 6px;text-align:left}th{font:600 11px Inter;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}td.n{text-align:right}
+.pick{border:1px solid var(--line);margin-bottom:10px;display:grid;grid-template-columns:1fr auto;align-items:center}
+.pick .l{padding:10px 12px}.pick b{display:block}.pick small{color:var(--muted)}
+.pick .go{height:100%;min-height:56px;padding:0 16px;background:var(--pri);color:#fff;display:grid;place-items:center;font-weight:600}
+.pick.short .go{background:var(--paper);color:var(--warn);border-left:1px solid var(--line)}
+.cap{font:12px ui-monospace,Consolas,monospace;color:var(--muted);padding:8px 14px;border-top:1px solid var(--line)}
+.strip{margin-top:14px;display:flex;border:1px solid var(--line);background:var(--paper);font-size:12px}.strip span{flex:1;padding:9px 12px;border-right:1px solid var(--line)}.strip b{display:block;font-size:13px}
+</style></head><body>
+<header class="mast"><b>SokoMesh Design System</b><span>Contract 0.1.0 · demo data</span><div class="s">Search components and states… Ctrl K</div></header>
+<div class="wrap">
+<nav><h4>Foundations</h4><a>Colour &amp; tone</a><a>Type &amp; numerals</a><a>Motion grammar</a><h4>Primitives</h4><a>Controls</a><a>Overlays</a><h4>Kernel</h4><a>Field renderers</a><a>Projection &amp; recipes</a><a>Actions &amp; feedback</a><h4>Page blocks</h4><a>HeaderBlock</a><a>FiltersBlock</a><a class="on">ListBlock</a><a>DetailBlock</a><a>StatsBlock</a><a>ActivityBlock</a><h4>SokoMesh blocks</h4><a>Market</a><a>Ledger</a><a>Flow</a><h4>Marketing</h4><a>Divergent</a></nav>
+<main>
+<div class="crumb">Kernel / Page blocks / ListBlock</div>
+<h1>ListBlock</h1>
+<p class="lead">One block for every collection. The same three records render as buyer cards, seller rows or picking lines because the recipe changes, not the component.</p>
+<div class="cols">
+<div class="col"><div class="ch"><b>MARKET</b><code>intent=media · density=comfortable</code></div><div class="bd"><div class="cards">
+<div class="card"><div class="ph">Product photo</div><div class="t"><b>Mavuno Maize Flour 2 kg</b><small>Bale of 12 · Mwangaza Wholesalers</small><div class="price">KES 1,740.00 <small>/ bale</small></div><span class="stamp ok">In stock · 96 bales</span></div></div>
+<div class="card"><div class="ph">Product photo</div><div class="t"><b>Sukari Bora Sugar 1 kg</b><small>Bale of 24 · Rift Valley Traders</small><div class="price">KES 3,960.00 <small>/ bale</small></div><span class="stamp wa">Low · 14 bales</span></div></div>
+</div></div><div class="cap">narrow=collapse · slots media,title,meta,badge</div></div>
+<div class="col"><div class="ch"><b>LEDGER</b><code>intent=row · density=compact</code></div><div class="bd"><table>
+<tr><th>SKU</th><th>Product</th><th>On hand</th><th>Price</th></tr>
+<tr><td>MVN-2K-12</td><td>Maize Flour 2 kg ×12</td><td class="n">96</td><td class="n">1,740.00</td></tr>
+<tr><td>SKB-1K-24</td><td>Sugar 1 kg ×24</td><td class="n">14</td><td class="n">3,960.00</td></tr>
+<tr><td>JUA-3L-06</td><td>Cooking Oil 3 L ×6</td><td class="n">0</td><td class="n">5,220.00</td></tr>
+</table></div><div class="cap">narrow=priority · 4 of 9 columns</div></div>
+<div class="col"><div class="ch"><b>FLOW</b><code>intent=row · density=compact</code></div><div class="bd">
+<div class="pick"><div class="l"><b>Pick 24 × Maize Flour 2 kg</b><small>Bay C-04 · order SM-ORD-004215</small></div><div class="go">Picked</div></div>
+<div class="pick short"><div class="l"><b>Pick 12 × Sugar 1 kg</b><small>Bay C-11 · 9 on shelf</small></div><div class="go">Short 3</div></div>
+<div class="pick"><div class="l"><b>Pick 6 × Cooking Oil 3 L</b><small>Bay D-02</small></div><div class="go">Picked</div></div>
+</div><div class="cap">narrow=scroll · primary action 56px</div></div>
+</div>
+<div class="strip"><span><b>Loading</b>Skeleton rows</span><span><b>Empty</b>No products match</span><span><b>Error</b>Retry available</span><span><b>Stale</b>Updated 9 min ago</span><span><b>Live</b>2 rows changed</span><span><b>Selected</b>3 of 24</span></div>
+</main></div></body></html>

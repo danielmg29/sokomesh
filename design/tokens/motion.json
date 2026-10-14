@@ -1,0 +1,18 @@
+{
+  "motion-reveal-duration": { "$type": "duration", "$value": "200ms", "$description": "REVEAL: expose additional information." },
+  "motion-reveal-ease": { "$type": "cubicBezier", "$value": [0.16, 1, 0.3, 1] },
+  "motion-bind-duration": { "$type": "duration", "$value": "140ms", "$description": "BIND: reserve, select, approve or commit." },
+  "motion-bind-ease": { "$type": "cubicBezier", "$value": [0.2, 0, 0, 1] },
+  "motion-transfer-duration": { "$type": "duration", "$value": "280ms", "$description": "TRANSFER: move through a commercial workflow." },
+  "motion-transfer-ease": { "$type": "cubicBezier", "$value": [0.65, 0, 0.35, 1] },
+  "motion-reflow-duration": { "$type": "duration", "$value": "240ms", "$description": "REFLOW: respond to filter, sort or grouping." },
+  "motion-reflow-ease": { "$type": "cubicBezier", "$value": [0.16, 1, 0.3, 1] },
+  "motion-stamp-duration": { "$type": "duration", "$value": "180ms", "$description": "STAMP: confirm authoritative state." },
+  "motion-stamp-ease": { "$type": "cubicBezier", "$value": [0.2, 0, 0, 1] },
+  "motion-thread-duration": { "$type": "duration", "$value": "340ms", "$description": "THREAD: communicate process progression." },
+  "motion-thread-ease": { "$type": "cubicBezier", "$value": [0.4, 0, 0.2, 1] },
+  "motion-exit-duration": { "$type": "duration", "$value": "120ms", "$description": "Exits are faster than entrances." },
+  "motion-exit-ease": { "$type": "cubicBezier", "$value": [0.7, 0, 0.84, 0] },
+  "motion-distance-sm": { "$type": "dimension", "$value": "4px", "$description": "Largest translation in product UI is distance-md; no large travel." },
+  "motion-distance-md": { "$type": "dimension", "$value": "8px" }
+}

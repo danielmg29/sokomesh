@@ -1,0 +1,5 @@
+{
+  "source": "Adaptive Convergence Portfolio Project Kit — assets/web/02_sokomesh/tokens/brand-tokens.json",
+  "figmaLibraryVersion": null,
+  "notes": "brand-tokens.json holds brand primitives; color.*.json, shape.json and density.*.json are the semantic layer and reference primitives by alias."
+}

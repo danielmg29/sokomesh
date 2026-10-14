@@ -1,0 +1,7 @@
+# Generated and shared artefacts get the reviewer who owns their source (manual 8.2).
+# Single-maintainer portfolio repo: add team handles if the repo gains collaborators.
+/contract/                           @danielmg29
+/backend/core/                       @danielmg29
+/design/tokens/                      @danielmg29
+/web/components/kernel/              @danielmg29
+/web/lib/contract/                   @danielmg29

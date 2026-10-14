@@ -1,0 +1,13 @@
+{
+  "radius-stamp": { "$type": "dimension", "$value": "2px", "$description": "Status stamps: rectangles, never pills (constitution)." },
+  "radius-control": { "$type": "dimension", "$value": "2px", "$description": "Buttons, inputs, chips, checkboxes. One rule: what you press or what labels a state has a 2px corner." },
+  "radius-panel": { "$type": "dimension", "$value": "0px", "$description": "Panels, grid cells, dialogs, sheets: containers are square, so cells join into one modular grid." },
+  "radius-media": { "$type": "dimension", "$value": "0px", "$description": "Photo wells and marketing imagery: square crops, like the containers they sit in." },
+  "border-stamp": { "$type": "dimension", "$value": "1.5px" },
+  "touch-target": { "$type": "dimension", "$value": "44px", "$description": "Minimum control size on coarse pointers (manual 6.12)." },
+  "space-unit": {
+    "$type": "dimension",
+    "$value": "{brand.spacing.1}",
+    "$description": "Tailwind's --spacing multiplier. The brand spacing scale is n x 4px, so p-4 = brand spacing 4."
+  }
+}

@@ -1,0 +1,126 @@
+{
+  "title": "Choose the /design-system page structure",
+  "question": "Re-roll 1: a fresh hand of three structures (none shown before). The world stays fixed by the Design Constitution; keep the lead, take another, steer, or re-roll again.",
+  "options": [
+    {
+      "id": "three-modes",
+      "label": "Three Modes",
+      "kicker": "THE ROLL",
+      "lineage": "parallel-text editions that set one passage in three languages side by side",
+      "thesis": "Every component is shown once in MARKET, LEDGER and FLOW side by side, so the recipe, not a new component, carries the difference.",
+      "palette": ["#145C43", "#F5B63C", "#13251D", "#F6F8F2", "#FFFFFF"],
+      "materials": ["three-column parallel specimens", "recipe values under each column", "state strip below"],
+      "viewport": "Layer index on the left; ListBlock entry with the same three products as MARKET cards, LEDGER rows and FLOW pick lines, recipe values captioned under each.",
+      "risk": "Three columns crowd tablet widths; below 1100px the modes become tabs over one specimen.",
+      "raised": [
+        { "from": "operate-b-normalled-jackfield", "raise": "Thread states are drawn by stroke pattern (solid confirmed, dashed awaiting, gapped stale), never by hue alone." },
+        { "from": "crouwel-grid-specimen", "raise": "A 4px cell grid can be toggled over any specimen as a real state, so spacing is checkable against the tokens." }
+      ],
+      "html": ".impeccable/mocks/decision/three-modes.html"
+    },
+    {
+      "id": "inventory-ledger",
+      "label": "Inventory Ledger",
+      "lineage": "stock sheets and parts inventories",
+      "thesis": "The page opens on the whole component inventory as one filterable ledger; each row expands in place to its live specimen.",
+      "palette": ["#145C43", "#F5B63C", "#13251D", "#F6F8F2", "#FFFFFF"],
+      "materials": ["dense bordered ledger", "item codes", "in-place row expansion"],
+      "viewport": "Filter chips for class and mode over a 118-row ledger; the StockAvailabilityIndicator row is expanded to show its five states.",
+      "risk": "Scanning rows suits lookup more than learning; first-time readers need a short orientation above the ledger.",
+      "html": ".impeccable/mocks/decision/inventory-ledger.html"
+    },
+    {
+      "id": "field-guide",
+      "label": "Field Guide",
+      "lineage": "naturalist field guides with plates and look-alikes",
+      "thesis": "Each component is an entry you identify by its job, with where it is found, its look-alikes and plates of every variant.",
+      "palette": ["#145C43", "#F5B63C", "#13251D", "#F6F8F2", "#FFFFFF"],
+      "materials": ["A-Z thumb index", "variant plates", "look-alike notes"],
+      "viewport": "A-Z thumb index down the left edge; ActionMenu entry with 'Identify by', 'Found in' and its look-alikes ActionBar and BulkActions, then variant plates.",
+      "risk": "Alphabetical order hides the build layers; the layer of each entry must stay visible on its title.",
+      "html": ".impeccable/mocks/decision/field-guide.html"
+    },
+    {
+      "id": "challenger-jackfield",
+      "label": "Normalled Jackfield",
+      "verdict": "declined",
+      "lineage": "studio patch-bay normalling schedules",
+      "thesis": "Numbered lanes on black glass, each tied to its default by a link line.",
+      "palette": ["#0B0B0C", "#F2A93B"],
+      "materials": ["black glass", "amber link lines"],
+      "viewport": "A drifting lane grid under a fixed legend strip.",
+      "risk": "Black glass contradicts warm neutral surfaces; drifting lanes are decorative motion.",
+      "case": "Loses on audience: a design reference is not a patch bay.",
+      "kept": "State drawn by stroke pattern, not colour.",
+      "hero": "https://impeccable.style/worlds/cards/operate-b-normalled-jackfield-hero.webp"
+    },
+    {
+      "id": "challenger-crouwel",
+      "label": "Crouwel Grid Specimen",
+      "verdict": "declined",
+      "lineage": "gridded type specimens",
+      "thesis": "Letterforms built cell by cell on a visible construction grid.",
+      "palette": ["#FFFFFF", "#1A1A1A", "#2F6BFF"],
+      "materials": ["construction grid"],
+      "viewport": "Monumental grid letterforms over a small grotesk.",
+      "risk": "Monumental display type competes with specimens.",
+      "case": "Loses on clarity: components, not letters, are the subject.",
+      "kept": "Grid visibility as a real, togglable state.",
+      "hero": "https://impeccable.style/worlds/cards/crouwel-grid-specimen-hero.webp"
+    },
+    {
+      "id": "challenger-provenance",
+      "label": "Provenance Ribbon",
+      "verdict": "declined",
+      "lineage": "museum provenance records",
+      "thesis": "One custody line folds through an object's life, gaps and claims shown.",
+      "palette": ["#E8DFCC", "#B3261E", "#8A8A8A"],
+      "materials": ["silk custody line", "fading stamps"],
+      "viewport": "A ribbon-led single column of dated folds.",
+      "risk": "A single object's life cannot index 118 components.",
+      "case": "Holds audience for timelines only; loses on page clarity.",
+      "kept": "Known, awaiting and stale passages drawn differently on every timeline."
+    },
+    {
+      "id": "challenger-depot-blind",
+      "label": "Depot Destination Blind",
+      "verdict": "declined",
+      "lineage": "bus destination blinds",
+      "thesis": "Cloth courses step under one fixed window; faults stop mid-step.",
+      "palette": ["#1F4D35", "#F2C230", "#EFE8D6"],
+      "materials": ["dyed duck cloth"],
+      "viewport": "A roll of courses under a fixed window.",
+      "risk": "Its overshoot motion breaks the constitution's no-bounce rule.",
+      "case": "Loses on clarity.",
+      "kept": "A stalled state is visibly stopped, never animated as if moving."
+    },
+    {
+      "id": "challenger-civic-prospectus",
+      "label": "Civic Bureau Prospectus",
+      "verdict": "declined",
+      "lineage": "late-modern corporate prospectuses",
+      "thesis": "Bone-white plates with one rendered silk ribbon.",
+      "palette": ["#F7F7FA", "#1B1547", "#6B5CE7"],
+      "materials": ["WebGL ribbon"],
+      "viewport": "Ribbon owns the right bleed beside a large hero.",
+      "risk": "Gradient ribbon and violet are banned or foreign to the brand.",
+      "case": "Loses both axes.",
+      "kept": "Two weights of one face carry the argument."
+    },
+    {
+      "id": "challenger-alphabet-storm",
+      "label": "Alphabet Storm",
+      "verdict": "declined",
+      "lineage": "surreal typographic landscapes",
+      "thesis": "Letters condense into words and break into weather.",
+      "palette": ["#FFFFFF", "#111111", "#C0C4C8"],
+      "materials": ["particle type"],
+      "viewport": "One word-weather event per viewport.",
+      "risk": "Decorative continuous motion is banned.",
+      "case": "Loses both axes.",
+      "kept": "Readable text survives every transformation."
+    }
+  ],
+  "reroll": true,
+  "steer": true
+}

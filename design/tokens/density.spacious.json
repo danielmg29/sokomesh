@@ -1,0 +1,8 @@
+{
+  "control-height": { "$type": "dimension", "$value": "48px", "$description": "MARKET discovery on phones; meets 44px touch targets." },
+  "row-padding-y": { "$type": "dimension", "$value": "14px" },
+  "cell-padding-x": { "$type": "dimension", "$value": "18px" },
+  "gap": { "$type": "dimension", "$value": "16px" },
+  "text": { "$type": "dimension", "$value": "15px" },
+  "icon": { "$type": "dimension", "$value": "20px" }
+}

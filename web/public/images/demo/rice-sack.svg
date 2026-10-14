@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" width="400" height="300" role="img" aria-label="Demo illustration: 25 kg woven sack of long-grain rice">
+  <ellipse cx="200" cy="268" rx="120" ry="12" fill="#13251D" opacity=".08"/>
+  <path d="M120 74c30 10 130 10 160 0l22 182c-60 16-144 16-204 0z" fill="#ECE7DA"/>
+  <path d="M120 74c30 10 130 10 160 0" fill="none" stroke="#C9C0A8" stroke-width="6"/>
+  <path d="M168 60c10 14 54 14 64 0l-8 22c-14 6-34 6-48 0z" fill="#C9C0A8"/>
+  <g stroke="#DCD5C2" stroke-width="2"><path d="M110 120h180M108 150h186M106 180h190M104 210h194M102 240h198"/></g>
+  <path d="M144 136h112v84H144z" fill="#145C43"/>
+  <path d="M156 150h88v12h-88z" fill="#F5B63C"/>
+  <path d="M156 172h70v6h-70zM156 186h80v6h-80z" fill="#F6F8F2"/>
+</svg>

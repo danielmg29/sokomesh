@@ -1,0 +1,126 @@
+{
+  "title": "Choose the /design-system page structure",
+  "question": "The Design Constitution fixes the world (WOVEN TRADE, brand green and signal amber, borders over shadows). This choice is how the page is organised. The roll dealt three structures; keep the lead, take another, or re-roll.",
+  "options": [
+    {
+      "id": "state-sheet",
+      "label": "State Sheet",
+      "kicker": "THE ROLL",
+      "lineage": "type-specimen sheets that show every weight at true size",
+      "thesis": "Every component is documented as a matrix of its required and commerce states, rendered live at true size.",
+      "palette": ["#145C43", "#F5B63C", "#13251D", "#F6F8F2", "#FFFFFF"],
+      "materials": ["bordered specimen grid", "stamp marks for states", "tabular numerals"],
+      "viewport": "Green masthead with mode switch; layer index rail on the left; StatusBadge entry with its state sheet of ten required and ten commerce states.",
+      "risk": "Large blocks make wide sheets; each entry shows only the states the spec names for it.",
+      "raised": [
+        { "from": "operate-a-cutting-bench-select-rail", "raise": "Every state carries a mark as well as a tone, so the sheet reads in greyscale and to screen readers." },
+        { "from": "graphic-worlds-publishing-sampler-alphabet-proof", "raise": "Specimens keep true size; narrow screens drop state columns into rows, never shrink the component." }
+      ],
+      "html": ".impeccable/mocks/decision/state-sheet.html"
+    },
+    {
+      "id": "build-order",
+      "label": "Build Order",
+      "lineage": "technical manuals ordered by assembly sequence",
+      "thesis": "The page follows the spec's nine build phases, tokens to marketing, on a thread rail that shows where you are.",
+      "palette": ["#145C43", "#F5B63C", "#13251D", "#F6F8F2", "#FFFFFF"],
+      "materials": ["numbered phase bands", "thread rail with phase stamps", "dependency margin notes"],
+      "viewport": "Thread rail of nine phases across the top with phase 05 active; contents list on the left; ActionBar entry with live order-line actions and its dependencies in the margin.",
+      "risk": "Finding one component means knowing its phase; the command palette has to carry lookup.",
+      "html": ".impeccable/mocks/decision/build-order.html"
+    },
+    {
+      "id": "trade-units",
+      "label": "Trade Units",
+      "lineage": "trade reference books organised by the goods they cover",
+      "thesis": "Chapters follow the commercial units (product, stock, order, payment, shipment) and open with each unit's state thread.",
+      "palette": ["#145C43", "#F5B63C", "#13251D", "#F6F8F2", "#FFFFFF"],
+      "materials": ["unit chapter openers", "state thread diagrams", "kernel appendix"],
+      "viewport": "Unit index on the left; Payment chapter opening with its SellaPay STK state thread; PaymentStatusPanel specimen awaiting M-Pesa confirmation.",
+      "risk": "Generic fields and blocks belong to no unit and sink into an appendix; the index must not imply per-model components.",
+      "html": ".impeccable/mocks/decision/trade-units.html"
+    },
+    {
+      "id": "challenger-cutting-bench",
+      "label": "Cutting Bench Select Rail",
+      "verdict": "declined",
+      "lineage": "film editing benches",
+      "thesis": "Sections strung as frames on a perforated rail, set-asides hanging below.",
+      "palette": ["#E8561E", "#0B0B0B", "#FFFFFF"],
+      "materials": ["film grain", "punched windows"],
+      "viewport": "A scrubbing frame strip across the sheet.",
+      "risk": "Scrubbing a strip is a control readers must learn; docs need standard navigation.",
+      "case": "Loses on clarity: component lookup is not a linear edit.",
+      "kept": "State is a mark, not only a hue.",
+      "hero": "https://impeccable.style/worlds/cards/operate-a-cutting-bench-select-rail-hero.webp"
+    },
+    {
+      "id": "challenger-sampler",
+      "label": "Sampler Alphabet Proof",
+      "verdict": "declined",
+      "lineage": "stitched practice samplers",
+      "thesis": "Bands in order of difficulty, alphabets first, scene last.",
+      "palette": ["#9C2F2A", "#2E3F73", "#4C6B3C", "#E9E2D2"],
+      "materials": ["silk on linen"],
+      "viewport": "Stacked bands descending through technique.",
+      "risk": "Literal textile would breach the constitution's no-skeuomorphism rule.",
+      "case": "Its topology fuses into Build Order, which already holds it; adds nothing beyond.",
+      "kept": "True-scale specimens; reflow by whole rows.",
+      "hero": "https://impeccable.style/worlds/cards/graphic-worlds-publishing-sampler-alphabet-proof-hero.webp"
+    },
+    {
+      "id": "challenger-zine",
+      "label": "Hand-drawn Zine",
+      "verdict": "declined",
+      "lineage": "napkin-sketch explainers",
+      "thesis": "Marker panels and mascots teach the system.",
+      "palette": ["#F3EBDD", "#111111", "#F5E04A", "#2BB3A3"],
+      "materials": ["marker ink", "highlighter"],
+      "viewport": "Comic panels with doodled arrows.",
+      "risk": "Cream paper and marker is a model default and wrong for B2B trust.",
+      "case": "Loses both axes: sellers and admins do not read their tools as comics.",
+      "kept": "One highlighted line per example: the specimen's key value is marked."
+    },
+    {
+      "id": "challenger-raygun",
+      "label": "Raygun Layout Desk",
+      "verdict": "declined",
+      "lineage": "1990s surf-culture magazine layouts",
+      "thesis": "Colliding columns; reading order earned, not given.",
+      "palette": ["#EDE6D8", "#111111", "#E5332A"],
+      "materials": ["overprint", "battered grotesk"],
+      "viewport": "Three overlapping headlines over a photograph.",
+      "risk": "Breaks the reading order a reference must keep.",
+      "case": "Loses both axes: operational docs need predictable lookup.",
+      "kept": "Type scale with conviction in section openers."
+    },
+    {
+      "id": "challenger-daylight",
+      "label": "Daylight Section",
+      "verdict": "declined",
+      "lineage": "architectural sections",
+      "thesis": "Rooms read along a moving edge of light.",
+      "palette": ["#F4F1EA", "#2B2B2B", "#E2B23A", "#5B7DA6"],
+      "materials": ["limewash", "section poche"],
+      "viewport": "One long continuous section with time stamps.",
+      "risk": "No relation to wholesale components.",
+      "case": "Loses both axes.",
+      "kept": "Tabular time stamps on every event."
+    },
+    {
+      "id": "challenger-cloud-quarry",
+      "label": "Cloud Quarry",
+      "verdict": "declined",
+      "lineage": "surreal construction worlds",
+      "thesis": "Weather cut into blocks and assembled.",
+      "palette": ["#F2F4F7", "#7FB0E0", "#6B7280", "#C9CED6"],
+      "materials": ["volumetric cloud"],
+      "viewport": "Stacked cloud strata.",
+      "risk": "Decorative 3D the constitution bans.",
+      "case": "Loses both axes.",
+      "kept": "Measurements in a fixed-width face beside every block."
+    }
+  ],
+  "reroll": true,
+  "steer": true
+}

@@ -1,0 +1,1923 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-14T04:53:03.576Z",
+  "title": "Design System: SokoMesh",
+  "extensions": {
+    "colorMeta": {
+      "canvas-stone": {
+        "role": "neutral",
+        "displayName": "Canvas Stone",
+        "canonical": "#F3F2EE",
+        "oklch": "oklch(96.08% 0.0054 95.10)",
+        "token": "--background",
+        "theme": "light",
+        "tonalRamp": [
+          "oklch(15.0% 0.0054 95.1)",
+          "oklch(26.0% 0.0054 95.1)",
+          "oklch(37.0% 0.0054 95.1)",
+          "oklch(48.0% 0.0054 95.1)",
+          "oklch(60.0% 0.0054 95.1)",
+          "oklch(72.0% 0.0054 95.1)",
+          "oklch(84.0% 0.0054 95.1)",
+          "oklch(95.0% 0.0054 95.1)"
+        ],
+        "purpose": "Warm stone canvas behind every page (OKLCH 96 / 0.005 / 95): neutral, not cream."
+      },
+      "surface-white": {
+        "role": "neutral",
+        "displayName": "Surface White",
+        "canonical": "#FFFFFF",
+        "oklch": "oklch(100.00% 0.0000 0.00)",
+        "token": "--surface",
+        "theme": "light",
+        "tonalRamp": [
+          "oklch(15.0% 0.0000 0.0)",
+          "oklch(26.0% 0.0000 0.0)",
+          "oklch(37.0% 0.0000 0.0)",
+          "oklch(48.0% 0.0000 0.0)",
+          "oklch(60.0% 0.0000 0.0)",
+          "oklch(72.0% 0.0000 0.0)",
+          "oklch(84.0% 0.0000 0.0)",
+          "oklch(95.0% 0.0000 0.0)"
+        ],
+        "purpose": "Grid cells, ledgers and fields sitting on the canvas."
+      },
+      "sunken-stone": {
+        "role": "neutral",
+        "displayName": "Sunken Stone",
+        "canonical": "#EAE8E2",
+        "oklch": "oklch(93.09% 0.0083 91.49)",
+        "token": "--sunken",
+        "theme": "light",
+        "tonalRamp": [
+          "oklch(15.0% 0.0083 91.5)",
+          "oklch(26.0% 0.0083 91.5)",
+          "oklch(37.0% 0.0083 91.5)",
+          "oklch(48.0% 0.0083 91.5)",
+          "oklch(60.0% 0.0083 91.5)",
+          "oklch(72.0% 0.0083 91.5)",
+          "oklch(84.0% 0.0083 91.5)",
+          "oklch(95.0% 0.0083 91.5)"
+        ],
+        "purpose": "Table heads, inset regions, hover rows."
+      },
+      "well-stone": {
+        "role": "neutral",
+        "displayName": "Well Stone",
+        "canonical": "#EEECE7",
+        "oklch": "oklch(94.32% 0.0070 88.64)",
+        "token": "--well",
+        "theme": "light",
+        "tonalRamp": [
+          "oklch(15.0% 0.0070 88.6)",
+          "oklch(26.0% 0.0070 88.6)",
+          "oklch(37.0% 0.0070 88.6)",
+          "oklch(48.0% 0.0070 88.6)",
+          "oklch(60.0% 0.0070 88.6)",
+          "oklch(72.0% 0.0070 88.6)",
+          "oklch(84.0% 0.0070 88.6)",
+          "oklch(95.0% 0.0070 88.6)"
+        ],
+        "purpose": "Product photo ground: cut-out photography sits on it, so a product reads on light stone here and on graphite in the dark theme from one image file."
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Ink",
+        "canonical": "#13251D",
+        "oklch": "oklch(24.58% 0.0286 164.29)",
+        "token": "--foreground",
+        "theme": "light",
+        "tonalRamp": [
+          "oklch(15.0% 0.0286 164.3)",
+          "oklch(26.0% 0.0286 164.3)",
+          "oklch(37.0% 0.0286 164.3)",
+          "oklch(48.0% 0.0286 164.3)",
+          "oklch(60.0% 0.0286 164.3)",
+          "oklch(72.0% 0.0286 164.3)",
+          "oklch(84.0% 0.0286 164.3)",
+          "oklch(95.0% 0.0286 164.3)"
+        ],
+        "purpose": ""
+      },
+      "muted-stone": {
+        "role": "neutral",
+        "displayName": "Muted Stone",
+        "canonical": "#585A53",
+        "oklch": "oklch(46.35% 0.0114 119.83)",
+        "token": "--muted",
+        "theme": "light",
+        "tonalRamp": [
+          "oklch(15.0% 0.0114 119.8)",
+          "oklch(26.0% 0.0114 119.8)",
+          "oklch(37.0% 0.0114 119.8)",
+          "oklch(48.0% 0.0114 119.8)",
+          "oklch(60.0% 0.0114 119.8)",
+          "oklch(72.0% 0.0114 119.8)",
+          "oklch(84.0% 0.0114 119.8)",
+          "oklch(95.0% 0.0114 119.8)"
+        ],
+        "purpose": "Secondary text; 7.0:1 on surface, 5.7:1 on sunken."
+      },
+      "rule-stone": {
+        "role": "neutral",
+        "displayName": "Rule Stone",
+        "canonical": "#DDDAD2",
+        "oklch": "oklch(88.85% 0.0113 89.73)",
+        "token": "--border",
+        "theme": "light",
+        "tonalRamp": [
+          "oklch(15.0% 0.0113 89.7)",
+          "oklch(26.0% 0.0113 89.7)",
+          "oklch(37.0% 0.0113 89.7)",
+          "oklch(48.0% 0.0113 89.7)",
+          "oklch(60.0% 0.0113 89.7)",
+          "oklch(72.0% 0.0113 89.7)",
+          "oklch(84.0% 0.0113 89.7)",
+          "oklch(95.0% 0.0113 89.7)"
+        ],
+        "purpose": "Grid rules between cells and regions."
+      },
+      "rule-strong": {
+        "role": "neutral",
+        "displayName": "Rule Strong",
+        "canonical": "#7A786F",
+        "oklch": "oklch(57.17% 0.0137 96.56)",
+        "token": "--border-strong",
+        "theme": "light",
+        "tonalRamp": [
+          "oklch(15.0% 0.0137 96.6)",
+          "oklch(26.0% 0.0137 96.6)",
+          "oklch(37.0% 0.0137 96.6)",
+          "oklch(48.0% 0.0137 96.6)",
+          "oklch(60.0% 0.0137 96.6)",
+          "oklch(72.0% 0.0137 96.6)",
+          "oklch(84.0% 0.0137 96.6)",
+          "oklch(95.0% 0.0137 96.6)"
+        ],
+        "purpose": "Control boundaries; at least 3.6:1 on every ground (WCAG 1.4.11)."
+      },
+      "scrim-ink": {
+        "role": "neutral",
+        "displayName": "Scrim",
+        "canonical": "#13251D99",
+        "oklch": "oklch(24.58% 0.0286 164.29)",
+        "token": "--overlay",
+        "theme": "light",
+        "tonalRamp": [
+          "oklch(15.0% 0.0286 164.3)",
+          "oklch(26.0% 0.0286 164.3)",
+          "oklch(37.0% 0.0286 164.3)",
+          "oklch(48.0% 0.0286 164.3)",
+          "oklch(60.0% 0.0286 164.3)",
+          "oklch(72.0% 0.0286 164.3)",
+          "oklch(84.0% 0.0286 164.3)",
+          "oklch(95.0% 0.0286 164.3)"
+        ],
+        "purpose": "Scrim behind dialogs and sheets."
+      },
+      "forest-primary": {
+        "role": "primary",
+        "displayName": "Forest Primary",
+        "canonical": "#145C43",
+        "oklch": "oklch(42.46% 0.0808 164.87)",
+        "token": "--primary",
+        "theme": "light",
+        "tonalRamp": [
+          "oklch(15.0% 0.0808 164.9)",
+          "oklch(26.0% 0.0808 164.9)",
+          "oklch(37.0% 0.0808 164.9)",
+          "oklch(48.0% 0.0808 164.9)",
+          "oklch(60.0% 0.0808 164.9)",
+          "oklch(72.0% 0.0808 164.9)",
+          "oklch(84.0% 0.0808 164.9)",
+          "oklch(95.0% 0.0808 164.9)"
+        ],
+        "purpose": ""
+      },
+      "forest-deep": {
+        "role": "primary",
+        "displayName": "Forest Deep",
+        "canonical": "#0E4733",
+        "oklch": "oklch(35.61% 0.0674 164.80)",
+        "token": "--primary-hover",
+        "theme": "light",
+        "tonalRamp": [
+          "oklch(15.0% 0.0674 164.8)",
+          "oklch(26.0% 0.0674 164.8)",
+          "oklch(37.0% 0.0674 164.8)",
+          "oklch(48.0% 0.0674 164.8)",
+          "oklch(60.0% 0.0674 164.8)",
+          "oklch(72.0% 0.0674 164.8)",
+          "oklch(84.0% 0.0674 164.8)",
+          "oklch(95.0% 0.0674 164.8)"
+        ],
+        "purpose": ""
+      },
+      "forest-soft": {
+        "role": "primary",
+        "displayName": "Forest Soft",
+        "canonical": "#E2EEE7",
+        "oklch": "oklch(93.82% 0.0158 160.61)",
+        "token": "--primary-soft",
+        "theme": "light",
+        "tonalRamp": [
+          "oklch(15.0% 0.0158 160.6)",
+          "oklch(26.0% 0.0158 160.6)",
+          "oklch(37.0% 0.0158 160.6)",
+          "oklch(48.0% 0.0158 160.6)",
+          "oklch(60.0% 0.0158 160.6)",
+          "oklch(72.0% 0.0158 160.6)",
+          "oklch(84.0% 0.0158 160.6)",
+          "oklch(95.0% 0.0158 160.6)"
+        ],
+        "purpose": "Selected rows and active navigation."
+      },
+      "on-primary": {
+        "role": "primary",
+        "displayName": "On Primary",
+        "canonical": "#FFFFFF",
+        "oklch": "oklch(100.00% 0.0000 0.00)",
+        "token": "--primary-foreground",
+        "theme": "light",
+        "tonalRamp": [
+          "oklch(15.0% 0.0000 0.0)",
+          "oklch(26.0% 0.0000 0.0)",
+          "oklch(37.0% 0.0000 0.0)",
+          "oklch(48.0% 0.0000 0.0)",
+          "oklch(60.0% 0.0000 0.0)",
+          "oklch(72.0% 0.0000 0.0)",
+          "oklch(84.0% 0.0000 0.0)",
+          "oklch(95.0% 0.0000 0.0)"
+        ],
+        "purpose": "White on primary (7.95:1), as in the favicon mark."
+      },
+      "brand-forest": {
+        "role": "primary",
+        "displayName": "Brand Forest",
+        "canonical": "#145C43",
+        "oklch": "oklch(42.46% 0.0808 164.87)",
+        "token": "--brand",
+        "theme": "light",
+        "tonalRamp": [
+          "oklch(15.0% 0.0808 164.9)",
+          "oklch(26.0% 0.0808 164.9)",
+          "oklch(37.0% 0.0808 164.9)",
+          "oklch(48.0% 0.0808 164.9)",
+          "oklch(60.0% 0.0808 164.9)",
+          "oklch(72.0% 0.0808 164.9)",
+          "oklch(84.0% 0.0808 164.9)",
+          "oklch(95.0% 0.0808 164.9)"
+        ],
+        "purpose": "Brand regions and illustration: CTA ground, ribbon, mesh nodes, masthead band. Constant across themes; not an interactive colour."
+      },
+      "on-brand": {
+        "role": "primary",
+        "displayName": "On Brand",
+        "canonical": "#FFFFFF",
+        "oklch": "oklch(100.00% 0.0000 0.00)",
+        "token": "--brand-foreground",
+        "theme": "light",
+        "tonalRamp": [
+          "oklch(15.0% 0.0000 0.0)",
+          "oklch(26.0% 0.0000 0.0)",
+          "oklch(37.0% 0.0000 0.0)",
+          "oklch(48.0% 0.0000 0.0)",
+          "oklch(60.0% 0.0000 0.0)",
+          "oklch(72.0% 0.0000 0.0)",
+          "oklch(84.0% 0.0000 0.0)",
+          "oklch(95.0% 0.0000 0.0)"
+        ],
+        "purpose": "White on the brand forest (7.95:1)."
+      },
+      "signal-amber": {
+        "role": "secondary",
+        "displayName": "Signal Amber",
+        "canonical": "#F5B63C",
+        "oklch": "oklch(81.47% 0.1496 79.68)",
+        "token": "--signal",
+        "theme": "light",
+        "tonalRamp": [
+          "oklch(15.0% 0.1496 79.7)",
+          "oklch(26.0% 0.1496 79.7)",
+          "oklch(37.0% 0.1496 79.7)",
+          "oklch(48.0% 0.1496 79.7)",
+          "oklch(60.0% 0.1496 79.7)",
+          "oklch(72.0% 0.1496 79.7)",
+          "oklch(84.0% 0.1496 79.7)",
+          "oklch(95.0% 0.1496 79.7)"
+        ],
+        "purpose": "Trade signal: reserved, featured, active filter, the held quantity. Never the warning semantic."
+      },
+      "signal-hover": {
+        "role": "secondary",
+        "displayName": "Signal Hover",
+        "canonical": "#E9A82A",
+        "oklch": "oklch(77.42% 0.1500 78.33)",
+        "token": "--signal-hover",
+        "theme": "light",
+        "tonalRamp": [
+          "oklch(15.0% 0.1500 78.3)",
+          "oklch(26.0% 0.1500 78.3)",
+          "oklch(37.0% 0.1500 78.3)",
+          "oklch(48.0% 0.1500 78.3)",
+          "oklch(60.0% 0.1500 78.3)",
+          "oklch(72.0% 0.1500 78.3)",
+          "oklch(84.0% 0.1500 78.3)",
+          "oklch(95.0% 0.1500 78.3)"
+        ],
+        "purpose": "Pressed and hovered signal fill; ink stays 7.7:1."
+      },
+      "signal-soft": {
+        "role": "secondary",
+        "displayName": "Signal Soft",
+        "canonical": "#FDF0D3",
+        "oklch": "oklch(95.79% 0.0404 86.73)",
+        "token": "--signal-soft",
+        "theme": "light",
+        "tonalRamp": [
+          "oklch(15.0% 0.0404 86.7)",
+          "oklch(26.0% 0.0404 86.7)",
+          "oklch(37.0% 0.0404 86.7)",
+          "oklch(48.0% 0.0404 86.7)",
+          "oklch(60.0% 0.0404 86.7)",
+          "oklch(72.0% 0.0404 86.7)",
+          "oklch(84.0% 0.0404 86.7)",
+          "oklch(95.0% 0.0404 86.7)"
+        ],
+        "purpose": ""
+      },
+      "signal-stamp": {
+        "role": "secondary",
+        "displayName": "Signal Stamp",
+        "canonical": "#F5B63C",
+        "oklch": "oklch(81.47% 0.1496 79.68)",
+        "token": "--signal-stamp",
+        "theme": "light",
+        "tonalRamp": [
+          "oklch(15.0% 0.1496 79.7)",
+          "oklch(26.0% 0.1496 79.7)",
+          "oklch(37.0% 0.1496 79.7)",
+          "oklch(48.0% 0.1496 79.7)",
+          "oklch(60.0% 0.1496 79.7)",
+          "oklch(72.0% 0.1496 79.7)",
+          "oklch(84.0% 0.1496 79.7)",
+          "oklch(95.0% 0.1496 79.7)"
+        ],
+        "purpose": "Signal stamp fill: solid amber reads as a stamp on the pale grounds."
+      },
+      "on-signal-stamp": {
+        "role": "secondary",
+        "displayName": "On Signal Stamp",
+        "canonical": "#13251D",
+        "oklch": "oklch(24.58% 0.0286 164.29)",
+        "token": "--signal-stamp-foreground",
+        "theme": "light",
+        "tonalRamp": [
+          "oklch(15.0% 0.0286 164.3)",
+          "oklch(26.0% 0.0286 164.3)",
+          "oklch(37.0% 0.0286 164.3)",
+          "oklch(48.0% 0.0286 164.3)",
+          "oklch(60.0% 0.0286 164.3)",
+          "oklch(72.0% 0.0286 164.3)",
+          "oklch(84.0% 0.0286 164.3)",
+          "oklch(95.0% 0.0286 164.3)"
+        ],
+        "purpose": ""
+      },
+      "on-signal": {
+        "role": "secondary",
+        "displayName": "On Signal",
+        "canonical": "#13251D",
+        "oklch": "oklch(24.58% 0.0286 164.29)",
+        "token": "--signal-foreground",
+        "theme": "light",
+        "tonalRamp": [
+          "oklch(15.0% 0.0286 164.3)",
+          "oklch(26.0% 0.0286 164.3)",
+          "oklch(37.0% 0.0286 164.3)",
+          "oklch(48.0% 0.0286 164.3)",
+          "oklch(60.0% 0.0286 164.3)",
+          "oklch(72.0% 0.0286 164.3)",
+          "oklch(84.0% 0.0286 164.3)",
+          "oklch(95.0% 0.0286 164.3)"
+        ],
+        "purpose": "Ink on signal (8.88:1). Signal is never text on the canvas (1.6:1)."
+      },
+      "signal-border": {
+        "role": "secondary",
+        "displayName": "Signal Border",
+        "canonical": "#13251D",
+        "oklch": "oklch(24.58% 0.0286 164.29)",
+        "token": "--signal-border",
+        "theme": "light",
+        "tonalRamp": [
+          "oklch(15.0% 0.0286 164.3)",
+          "oklch(26.0% 0.0286 164.3)",
+          "oklch(37.0% 0.0286 164.3)",
+          "oklch(48.0% 0.0286 164.3)",
+          "oklch(60.0% 0.0286 164.3)",
+          "oklch(72.0% 0.0286 164.3)",
+          "oklch(84.0% 0.0286 164.3)",
+          "oklch(95.0% 0.0286 164.3)"
+        ],
+        "purpose": "Edge of signal-marked regions: ink here, amber on the dark ground."
+      },
+      "inverse-ink": {
+        "role": "neutral",
+        "displayName": "Inverse",
+        "canonical": "#13251D",
+        "oklch": "oklch(24.58% 0.0286 164.29)",
+        "token": "--inverse",
+        "theme": "light",
+        "tonalRamp": [
+          "oklch(15.0% 0.0286 164.3)",
+          "oklch(26.0% 0.0286 164.3)",
+          "oklch(37.0% 0.0286 164.3)",
+          "oklch(48.0% 0.0286 164.3)",
+          "oklch(60.0% 0.0286 164.3)",
+          "oklch(72.0% 0.0286 164.3)",
+          "oklch(84.0% 0.0286 164.3)",
+          "oklch(95.0% 0.0286 164.3)"
+        ],
+        "purpose": "Opposite of the ground: on-state chips, tooltips, the bulk-action bar. Light in the dark theme."
+      },
+      "on-inverse": {
+        "role": "neutral",
+        "displayName": "On Inverse",
+        "canonical": "#FFFFFF",
+        "oklch": "oklch(100.00% 0.0000 0.00)",
+        "token": "--inverse-foreground",
+        "theme": "light",
+        "tonalRamp": [
+          "oklch(15.0% 0.0000 0.0)",
+          "oklch(26.0% 0.0000 0.0)",
+          "oklch(37.0% 0.0000 0.0)",
+          "oklch(48.0% 0.0000 0.0)",
+          "oklch(60.0% 0.0000 0.0)",
+          "oklch(72.0% 0.0000 0.0)",
+          "oklch(84.0% 0.0000 0.0)",
+          "oklch(95.0% 0.0000 0.0)"
+        ],
+        "purpose": ""
+      },
+      "inverse-muted": {
+        "role": "neutral",
+        "displayName": "Inverse Muted",
+        "canonical": "#B8C4BC",
+        "oklch": "oklch(80.87% 0.0172 156.83)",
+        "token": "--inverse-muted",
+        "theme": "light",
+        "tonalRamp": [
+          "oklch(15.0% 0.0172 156.8)",
+          "oklch(26.0% 0.0172 156.8)",
+          "oklch(37.0% 0.0172 156.8)",
+          "oklch(48.0% 0.0172 156.8)",
+          "oklch(60.0% 0.0172 156.8)",
+          "oklch(72.0% 0.0172 156.8)",
+          "oklch(84.0% 0.0172 156.8)",
+          "oklch(95.0% 0.0172 156.8)"
+        ],
+        "purpose": "Secondary text on inverse (8.9:1)."
+      },
+      "chrome-ink": {
+        "role": "neutral",
+        "displayName": "Chrome",
+        "canonical": "#13251D",
+        "oklch": "oklch(24.58% 0.0286 164.29)",
+        "token": "--chrome",
+        "theme": "light",
+        "tonalRamp": [
+          "oklch(15.0% 0.0286 164.3)",
+          "oklch(26.0% 0.0286 164.3)",
+          "oklch(37.0% 0.0286 164.3)",
+          "oklch(48.0% 0.0286 164.3)",
+          "oklch(60.0% 0.0286 164.3)",
+          "oklch(72.0% 0.0286 164.3)",
+          "oklch(84.0% 0.0286 164.3)",
+          "oklch(95.0% 0.0286 164.3)"
+        ],
+        "purpose": "Mastheads: ink in both themes, the darkest layer in the dark theme."
+      },
+      "on-chrome": {
+        "role": "neutral",
+        "displayName": "On Chrome",
+        "canonical": "#FFFFFF",
+        "oklch": "oklch(100.00% 0.0000 0.00)",
+        "token": "--chrome-foreground",
+        "theme": "light",
+        "tonalRamp": [
+          "oklch(15.0% 0.0000 0.0)",
+          "oklch(26.0% 0.0000 0.0)",
+          "oklch(37.0% 0.0000 0.0)",
+          "oklch(48.0% 0.0000 0.0)",
+          "oklch(60.0% 0.0000 0.0)",
+          "oklch(72.0% 0.0000 0.0)",
+          "oklch(84.0% 0.0000 0.0)",
+          "oklch(95.0% 0.0000 0.0)"
+        ],
+        "purpose": ""
+      },
+      "chrome-muted": {
+        "role": "neutral",
+        "displayName": "Chrome Muted",
+        "canonical": "#B8C4BC",
+        "oklch": "oklch(80.87% 0.0172 156.83)",
+        "token": "--chrome-muted",
+        "theme": "light",
+        "tonalRamp": [
+          "oklch(15.0% 0.0172 156.8)",
+          "oklch(26.0% 0.0172 156.8)",
+          "oklch(37.0% 0.0172 156.8)",
+          "oklch(48.0% 0.0172 156.8)",
+          "oklch(60.0% 0.0172 156.8)",
+          "oklch(72.0% 0.0172 156.8)",
+          "oklch(84.0% 0.0172 156.8)",
+          "oklch(95.0% 0.0172 156.8)"
+        ],
+        "purpose": "Secondary text on chrome (8.9:1)."
+      },
+      "ring-amber": {
+        "role": "secondary",
+        "displayName": "Ring Amber",
+        "canonical": "#F5B63C",
+        "oklch": "oklch(81.47% 0.1496 79.68)",
+        "token": "--ring",
+        "theme": "light",
+        "tonalRamp": [
+          "oklch(15.0% 0.1496 79.7)",
+          "oklch(26.0% 0.1496 79.7)",
+          "oklch(37.0% 0.1496 79.7)",
+          "oklch(48.0% 0.1496 79.7)",
+          "oklch(60.0% 0.1496 79.7)",
+          "oklch(72.0% 0.1496 79.7)",
+          "oklch(84.0% 0.1496 79.7)",
+          "oklch(95.0% 0.1496 79.7)"
+        ],
+        "purpose": ""
+      },
+      "ring-contrast": {
+        "role": "neutral",
+        "displayName": "Ring Contrast",
+        "canonical": "#13251D",
+        "oklch": "oklch(24.58% 0.0286 164.29)",
+        "token": "--ring-contrast",
+        "theme": "light",
+        "tonalRamp": [
+          "oklch(15.0% 0.0286 164.3)",
+          "oklch(26.0% 0.0286 164.3)",
+          "oklch(37.0% 0.0286 164.3)",
+          "oklch(48.0% 0.0286 164.3)",
+          "oklch(60.0% 0.0286 164.3)",
+          "oklch(72.0% 0.0286 164.3)",
+          "oklch(84.0% 0.0286 164.3)",
+          "oklch(95.0% 0.0286 164.3)"
+        ],
+        "purpose": "Outer focus outline; the amber ring alone is 1.6:1."
+      },
+      "shadow-ink": {
+        "role": "neutral",
+        "displayName": "Shadow",
+        "canonical": "#13251D",
+        "oklch": "oklch(24.58% 0.0286 164.29)",
+        "token": "--shadow",
+        "theme": "light",
+        "tonalRamp": [
+          "oklch(15.0% 0.0286 164.3)",
+          "oklch(26.0% 0.0286 164.3)",
+          "oklch(37.0% 0.0286 164.3)",
+          "oklch(48.0% 0.0286 164.3)",
+          "oklch(60.0% 0.0286 164.3)",
+          "oklch(72.0% 0.0286 164.3)",
+          "oklch(84.0% 0.0286 164.3)",
+          "oklch(95.0% 0.0286 164.3)"
+        ],
+        "purpose": "Base for overlay shadows only (menus, dialogs, toasts)."
+      },
+      "tone-neutral": {
+        "role": "tertiary",
+        "displayName": "Tone Neutral",
+        "canonical": "#585A53",
+        "oklch": "oklch(46.35% 0.0114 119.83)",
+        "token": "--tone-neutral",
+        "theme": "light",
+        "tonalRamp": [
+          "oklch(15.0% 0.0114 119.8)",
+          "oklch(26.0% 0.0114 119.8)",
+          "oklch(37.0% 0.0114 119.8)",
+          "oklch(48.0% 0.0114 119.8)",
+          "oklch(60.0% 0.0114 119.8)",
+          "oklch(72.0% 0.0114 119.8)",
+          "oklch(84.0% 0.0114 119.8)",
+          "oklch(95.0% 0.0114 119.8)"
+        ],
+        "purpose": ""
+      },
+      "tone-neutral-bg": {
+        "role": "tertiary",
+        "displayName": "Tone Neutral Ground",
+        "canonical": "#ECEAE4",
+        "oklch": "oklch(93.69% 0.0083 91.49)",
+        "token": "--tone-neutral-bg",
+        "theme": "light",
+        "tonalRamp": [
+          "oklch(15.0% 0.0083 91.5)",
+          "oklch(26.0% 0.0083 91.5)",
+          "oklch(37.0% 0.0083 91.5)",
+          "oklch(48.0% 0.0083 91.5)",
+          "oklch(60.0% 0.0083 91.5)",
+          "oklch(72.0% 0.0083 91.5)",
+          "oklch(84.0% 0.0083 91.5)",
+          "oklch(95.0% 0.0083 91.5)"
+        ],
+        "purpose": ""
+      },
+      "tone-info": {
+        "role": "tertiary",
+        "displayName": "Tone Info",
+        "canonical": "#2A557F",
+        "oklch": "oklch(43.92% 0.0846 249.84)",
+        "token": "--tone-info",
+        "theme": "light",
+        "tonalRamp": [
+          "oklch(15.0% 0.0846 249.8)",
+          "oklch(26.0% 0.0846 249.8)",
+          "oklch(37.0% 0.0846 249.8)",
+          "oklch(48.0% 0.0846 249.8)",
+          "oklch(60.0% 0.0846 249.8)",
+          "oklch(72.0% 0.0846 249.8)",
+          "oklch(84.0% 0.0846 249.8)",
+          "oklch(95.0% 0.0846 249.8)"
+        ],
+        "purpose": ""
+      },
+      "tone-info-bg": {
+        "role": "tertiary",
+        "displayName": "Tone Info Ground",
+        "canonical": "#E3ECF6",
+        "oklch": "oklch(93.92% 0.0166 250.85)",
+        "token": "--tone-info-bg",
+        "theme": "light",
+        "tonalRamp": [
+          "oklch(15.0% 0.0166 250.8)",
+          "oklch(26.0% 0.0166 250.8)",
+          "oklch(37.0% 0.0166 250.8)",
+          "oklch(48.0% 0.0166 250.8)",
+          "oklch(60.0% 0.0166 250.8)",
+          "oklch(72.0% 0.0166 250.8)",
+          "oklch(84.0% 0.0166 250.8)",
+          "oklch(95.0% 0.0166 250.8)"
+        ],
+        "purpose": ""
+      },
+      "tone-success": {
+        "role": "tertiary",
+        "displayName": "Tone Success",
+        "canonical": "#145C43",
+        "oklch": "oklch(42.46% 0.0808 164.87)",
+        "token": "--tone-success",
+        "theme": "light",
+        "tonalRamp": [
+          "oklch(15.0% 0.0808 164.9)",
+          "oklch(26.0% 0.0808 164.9)",
+          "oklch(37.0% 0.0808 164.9)",
+          "oklch(48.0% 0.0808 164.9)",
+          "oklch(60.0% 0.0808 164.9)",
+          "oklch(72.0% 0.0808 164.9)",
+          "oklch(84.0% 0.0808 164.9)",
+          "oklch(95.0% 0.0808 164.9)"
+        ],
+        "purpose": "Authoritative completed states stamp in the brand green."
+      },
+      "tone-success-bg": {
+        "role": "tertiary",
+        "displayName": "Tone Success Ground",
+        "canonical": "#E2EEE7",
+        "oklch": "oklch(93.82% 0.0158 160.61)",
+        "token": "--tone-success-bg",
+        "theme": "light",
+        "tonalRamp": [
+          "oklch(15.0% 0.0158 160.6)",
+          "oklch(26.0% 0.0158 160.6)",
+          "oklch(37.0% 0.0158 160.6)",
+          "oklch(48.0% 0.0158 160.6)",
+          "oklch(60.0% 0.0158 160.6)",
+          "oklch(72.0% 0.0158 160.6)",
+          "oklch(84.0% 0.0158 160.6)",
+          "oklch(95.0% 0.0158 160.6)"
+        ],
+        "purpose": ""
+      },
+      "tone-warning": {
+        "role": "tertiary",
+        "displayName": "Tone Warning",
+        "canonical": "#9A4A12",
+        "oklch": "oklch(50.19% 0.1243 49.62)",
+        "token": "--tone-warning",
+        "theme": "light",
+        "tonalRamp": [
+          "oklch(15.0% 0.1243 49.6)",
+          "oklch(26.0% 0.1243 49.6)",
+          "oklch(37.0% 0.1243 49.6)",
+          "oklch(48.0% 0.1243 49.6)",
+          "oklch(60.0% 0.1243 49.6)",
+          "oklch(72.0% 0.1243 49.6)",
+          "oklch(84.0% 0.1243 49.6)",
+          "oklch(95.0% 0.1243 49.6)"
+        ],
+        "purpose": "Burnt orange, deliberately not yellow: yellow is the trade signal."
+      },
+      "tone-warning-bg": {
+        "role": "tertiary",
+        "displayName": "Tone Warning Ground",
+        "canonical": "#FBEADB",
+        "oklch": "oklch(94.66% 0.0273 63.95)",
+        "token": "--tone-warning-bg",
+        "theme": "light",
+        "tonalRamp": [
+          "oklch(15.0% 0.0273 64.0)",
+          "oklch(26.0% 0.0273 64.0)",
+          "oklch(37.0% 0.0273 64.0)",
+          "oklch(48.0% 0.0273 64.0)",
+          "oklch(60.0% 0.0273 64.0)",
+          "oklch(72.0% 0.0273 64.0)",
+          "oklch(84.0% 0.0273 64.0)",
+          "oklch(95.0% 0.0273 64.0)"
+        ],
+        "purpose": ""
+      },
+      "tone-danger": {
+        "role": "tertiary",
+        "displayName": "Tone Danger",
+        "canonical": "#A92A20",
+        "oklch": "oklch(48.67% 0.1651 29.11)",
+        "token": "--tone-danger",
+        "theme": "light",
+        "tonalRamp": [
+          "oklch(15.0% 0.1651 29.1)",
+          "oklch(26.0% 0.1651 29.1)",
+          "oklch(37.0% 0.1651 29.1)",
+          "oklch(48.0% 0.1651 29.1)",
+          "oklch(60.0% 0.1651 29.1)",
+          "oklch(72.0% 0.1651 29.1)",
+          "oklch(84.0% 0.1651 29.1)",
+          "oklch(95.0% 0.1651 29.1)"
+        ],
+        "purpose": ""
+      },
+      "tone-danger-bg": {
+        "role": "tertiary",
+        "displayName": "Tone Danger Ground",
+        "canonical": "#FBE3DF",
+        "oklch": "oklch(93.42% 0.0270 28.95)",
+        "token": "--tone-danger-bg",
+        "theme": "light",
+        "tonalRamp": [
+          "oklch(15.0% 0.0270 29.0)",
+          "oklch(26.0% 0.0270 29.0)",
+          "oklch(37.0% 0.0270 29.0)",
+          "oklch(48.0% 0.0270 29.0)",
+          "oklch(60.0% 0.0270 29.0)",
+          "oklch(72.0% 0.0270 29.0)",
+          "oklch(84.0% 0.0270 29.0)",
+          "oklch(95.0% 0.0270 29.0)"
+        ],
+        "purpose": ""
+      },
+      "night-canvas": {
+        "role": "neutral",
+        "displayName": "Graphite Canvas Stone",
+        "canonical": "#131311",
+        "oklch": "oklch(18.59% 0.0040 106.78)",
+        "token": "--background",
+        "theme": "dark",
+        "tonalRamp": [
+          "oklch(15.0% 0.0040 106.8)",
+          "oklch(26.0% 0.0040 106.8)",
+          "oklch(37.0% 0.0040 106.8)",
+          "oklch(48.0% 0.0040 106.8)",
+          "oklch(60.0% 0.0040 106.8)",
+          "oklch(72.0% 0.0040 106.8)",
+          "oklch(84.0% 0.0040 106.8)",
+          "oklch(95.0% 0.0040 106.8)"
+        ],
+        "purpose": "Graphite canvas behind every page."
+      },
+      "night-surface": {
+        "role": "neutral",
+        "displayName": "Graphite Surface White",
+        "canonical": "#1B1B18",
+        "oklch": "oklch(22.10% 0.0057 106.86)",
+        "token": "--surface",
+        "theme": "dark",
+        "tonalRamp": [
+          "oklch(15.0% 0.0057 106.9)",
+          "oklch(26.0% 0.0057 106.9)",
+          "oklch(37.0% 0.0057 106.9)",
+          "oklch(48.0% 0.0057 106.9)",
+          "oklch(60.0% 0.0057 106.9)",
+          "oklch(72.0% 0.0057 106.9)",
+          "oklch(84.0% 0.0057 106.9)",
+          "oklch(95.0% 0.0057 106.9)"
+        ],
+        "purpose": "Grid cells lift one step above the canvas."
+      },
+      "night-sunken": {
+        "role": "neutral",
+        "displayName": "Graphite Sunken Stone",
+        "canonical": "#252521",
+        "oklch": "oklch(26.30% 0.0073 106.89)",
+        "token": "--sunken",
+        "theme": "dark",
+        "tonalRamp": [
+          "oklch(15.0% 0.0073 106.9)",
+          "oklch(26.0% 0.0073 106.9)",
+          "oklch(37.0% 0.0073 106.9)",
+          "oklch(48.0% 0.0073 106.9)",
+          "oklch(60.0% 0.0073 106.9)",
+          "oklch(72.0% 0.0073 106.9)",
+          "oklch(84.0% 0.0073 106.9)",
+          "oklch(95.0% 0.0073 106.9)"
+        ],
+        "purpose": "Table heads, inset regions, hover rows: one step lighter than the cell, so hover lifts as it does in the light theme."
+      },
+      "night-well": {
+        "role": "neutral",
+        "displayName": "Graphite Well Stone",
+        "canonical": "#21211D",
+        "oklch": "oklch(24.63% 0.0074 106.93)",
+        "token": "--well",
+        "theme": "dark",
+        "tonalRamp": [
+          "oklch(15.0% 0.0074 106.9)",
+          "oklch(26.0% 0.0074 106.9)",
+          "oklch(37.0% 0.0074 106.9)",
+          "oklch(48.0% 0.0074 106.9)",
+          "oklch(60.0% 0.0074 106.9)",
+          "oklch(72.0% 0.0074 106.9)",
+          "oklch(84.0% 0.0074 106.9)",
+          "oklch(95.0% 0.0074 106.9)"
+        ],
+        "purpose": "Product photo ground: the same cut-out photograph sits on graphite here."
+      },
+      "night-foreground": {
+        "role": "neutral",
+        "displayName": "Graphite Ink",
+        "canonical": "#E8E7E1",
+        "oklch": "oklch(92.71% 0.0081 98.89)",
+        "token": "--foreground",
+        "theme": "dark",
+        "tonalRamp": [
+          "oklch(15.0% 0.0081 98.9)",
+          "oklch(26.0% 0.0081 98.9)",
+          "oklch(37.0% 0.0081 98.9)",
+          "oklch(48.0% 0.0081 98.9)",
+          "oklch(60.0% 0.0081 98.9)",
+          "oklch(72.0% 0.0081 98.9)",
+          "oklch(84.0% 0.0081 98.9)",
+          "oklch(95.0% 0.0081 98.9)"
+        ],
+        "purpose": "Warm white; 13.9:1 on surface."
+      },
+      "night-muted": {
+        "role": "neutral",
+        "displayName": "Graphite Muted Stone",
+        "canonical": "#A8A79E",
+        "oklch": "oklch(72.66% 0.0128 101.56)",
+        "token": "--muted",
+        "theme": "dark",
+        "tonalRamp": [
+          "oklch(15.0% 0.0128 101.6)",
+          "oklch(26.0% 0.0128 101.6)",
+          "oklch(37.0% 0.0128 101.6)",
+          "oklch(48.0% 0.0128 101.6)",
+          "oklch(60.0% 0.0128 101.6)",
+          "oklch(72.0% 0.0128 101.6)",
+          "oklch(84.0% 0.0128 101.6)",
+          "oklch(95.0% 0.0128 101.6)"
+        ],
+        "purpose": "Secondary text; 7.1:1 on surface."
+      },
+      "night-rule": {
+        "role": "neutral",
+        "displayName": "Graphite Rule Stone",
+        "canonical": "#30302B",
+        "oklch": "oklch(30.74% 0.0087 106.90)",
+        "token": "--border",
+        "theme": "dark",
+        "tonalRamp": [
+          "oklch(15.0% 0.0087 106.9)",
+          "oklch(26.0% 0.0087 106.9)",
+          "oklch(37.0% 0.0087 106.9)",
+          "oklch(48.0% 0.0087 106.9)",
+          "oklch(60.0% 0.0087 106.9)",
+          "oklch(72.0% 0.0087 106.9)",
+          "oklch(84.0% 0.0087 106.9)",
+          "oklch(95.0% 0.0087 106.9)"
+        ],
+        "purpose": "Grid rules between cells and regions."
+      },
+      "night-rule-strong": {
+        "role": "neutral",
+        "displayName": "Graphite Rule Strong",
+        "canonical": "#7A796F",
+        "oklch": "oklch(57.39% 0.0150 102.21)",
+        "token": "--border-strong",
+        "theme": "dark",
+        "tonalRamp": [
+          "oklch(15.0% 0.0150 102.2)",
+          "oklch(26.0% 0.0150 102.2)",
+          "oklch(37.0% 0.0150 102.2)",
+          "oklch(48.0% 0.0150 102.2)",
+          "oklch(60.0% 0.0150 102.2)",
+          "oklch(72.0% 0.0150 102.2)",
+          "oklch(84.0% 0.0150 102.2)",
+          "oklch(95.0% 0.0150 102.2)"
+        ],
+        "purpose": "Control boundaries; at least 3.5:1 on every ground including sunken."
+      },
+      "night-scrim": {
+        "role": "neutral",
+        "displayName": "Graphite Scrim",
+        "canonical": "#050504B8",
+        "oklch": "oklch(11.42% 0.0036 106.95)",
+        "token": "--overlay",
+        "theme": "dark",
+        "tonalRamp": [
+          "oklch(15.0% 0.0036 107.0)",
+          "oklch(26.0% 0.0036 107.0)",
+          "oklch(37.0% 0.0036 107.0)",
+          "oklch(48.0% 0.0036 107.0)",
+          "oklch(60.0% 0.0036 107.0)",
+          "oklch(72.0% 0.0036 107.0)",
+          "oklch(84.0% 0.0036 107.0)",
+          "oklch(95.0% 0.0036 107.0)"
+        ],
+        "purpose": "Scrim behind dialogs and sheets."
+      },
+      "night-primary": {
+        "role": "primary",
+        "displayName": "Graphite Forest Primary",
+        "canonical": "#44A77B",
+        "oklch": "oklch(65.77% 0.1146 161.45)",
+        "token": "--primary",
+        "theme": "dark",
+        "tonalRamp": [
+          "oklch(15.0% 0.1146 161.4)",
+          "oklch(26.0% 0.1146 161.4)",
+          "oklch(37.0% 0.1146 161.4)",
+          "oklch(48.0% 0.1146 161.4)",
+          "oklch(60.0% 0.1146 161.4)",
+          "oklch(72.0% 0.1146 161.4)",
+          "oklch(84.0% 0.1146 161.4)",
+          "oklch(95.0% 0.1146 161.4)"
+        ],
+        "purpose": "Forest lifted for a dark ground: 5.8:1 as text on surface."
+      },
+      "night-primary-hover": {
+        "role": "primary",
+        "displayName": "Graphite Forest Deep",
+        "canonical": "#58BB8E",
+        "oklch": "oklch(72.01% 0.1153 161.77)",
+        "token": "--primary-hover",
+        "theme": "dark",
+        "tonalRamp": [
+          "oklch(15.0% 0.1153 161.8)",
+          "oklch(26.0% 0.1153 161.8)",
+          "oklch(37.0% 0.1153 161.8)",
+          "oklch(48.0% 0.1153 161.8)",
+          "oklch(60.0% 0.1153 161.8)",
+          "oklch(72.0% 0.1153 161.8)",
+          "oklch(84.0% 0.1153 161.8)",
+          "oklch(95.0% 0.1153 161.8)"
+        ],
+        "purpose": ""
+      },
+      "night-primary-soft": {
+        "role": "primary",
+        "displayName": "Graphite Forest Soft",
+        "canonical": "#133223",
+        "oklch": "oklch(28.84% 0.0465 160.37)",
+        "token": "--primary-soft",
+        "theme": "dark",
+        "tonalRamp": [
+          "oklch(15.0% 0.0465 160.4)",
+          "oklch(26.0% 0.0465 160.4)",
+          "oklch(37.0% 0.0465 160.4)",
+          "oklch(48.0% 0.0465 160.4)",
+          "oklch(60.0% 0.0465 160.4)",
+          "oklch(72.0% 0.0465 160.4)",
+          "oklch(84.0% 0.0465 160.4)",
+          "oklch(95.0% 0.0465 160.4)"
+        ],
+        "purpose": "Selected rows and active navigation; primary text on it is 4.7:1."
+      },
+      "night-on-primary": {
+        "role": "primary",
+        "displayName": "Graphite On Primary",
+        "canonical": "#0A1208",
+        "oklch": "oklch(17.03% 0.0238 139.17)",
+        "token": "--primary-foreground",
+        "theme": "dark",
+        "tonalRamp": [
+          "oklch(15.0% 0.0238 139.2)",
+          "oklch(26.0% 0.0238 139.2)",
+          "oklch(37.0% 0.0238 139.2)",
+          "oklch(48.0% 0.0238 139.2)",
+          "oklch(60.0% 0.0238 139.2)",
+          "oklch(72.0% 0.0238 139.2)",
+          "oklch(84.0% 0.0238 139.2)",
+          "oklch(95.0% 0.0238 139.2)"
+        ],
+        "purpose": "Ink on primary (6.4:1). White fails on the lifted green."
+      },
+      "night-signal-hover": {
+        "role": "secondary",
+        "displayName": "Graphite Signal Hover",
+        "canonical": "#F8C55E",
+        "oklch": "oklch(84.94% 0.1332 82.74)",
+        "token": "--signal-hover",
+        "theme": "dark",
+        "tonalRamp": [
+          "oklch(15.0% 0.1332 82.7)",
+          "oklch(26.0% 0.1332 82.7)",
+          "oklch(37.0% 0.1332 82.7)",
+          "oklch(48.0% 0.1332 82.7)",
+          "oklch(60.0% 0.1332 82.7)",
+          "oklch(72.0% 0.1332 82.7)",
+          "oklch(84.0% 0.1332 82.7)",
+          "oklch(95.0% 0.1332 82.7)"
+        ],
+        "purpose": "Lighter amber on hover; ink stays above 10:1."
+      },
+      "night-signal-soft": {
+        "role": "secondary",
+        "displayName": "Graphite Signal Soft",
+        "canonical": "#3A2D10",
+        "oklch": "oklch(30.49% 0.0476 85.02)",
+        "token": "--signal-soft",
+        "theme": "dark",
+        "tonalRamp": [
+          "oklch(15.0% 0.0476 85.0)",
+          "oklch(26.0% 0.0476 85.0)",
+          "oklch(37.0% 0.0476 85.0)",
+          "oklch(48.0% 0.0476 85.0)",
+          "oklch(60.0% 0.0476 85.0)",
+          "oklch(72.0% 0.0476 85.0)",
+          "oklch(84.0% 0.0476 85.0)",
+          "oklch(95.0% 0.0476 85.0)"
+        ],
+        "purpose": ""
+      },
+      "night-signal-stamp": {
+        "role": "secondary",
+        "displayName": "Graphite Signal Stamp",
+        "canonical": "#3A2D10",
+        "oklch": "oklch(30.49% 0.0476 85.02)",
+        "token": "--signal-stamp",
+        "theme": "dark",
+        "tonalRamp": [
+          "oklch(15.0% 0.0476 85.0)",
+          "oklch(26.0% 0.0476 85.0)",
+          "oklch(37.0% 0.0476 85.0)",
+          "oklch(48.0% 0.0476 85.0)",
+          "oklch(60.0% 0.0476 85.0)",
+          "oklch(72.0% 0.0476 85.0)",
+          "oklch(84.0% 0.0476 85.0)",
+          "oklch(95.0% 0.0476 85.0)"
+        ],
+        "purpose": "On the dark ground a solid amber stamp is the loudest mark on the page; the stamp keeps an amber edge and text on the soft ground instead."
+      },
+      "night-on-signal-stamp": {
+        "role": "secondary",
+        "displayName": "Graphite On Signal Stamp",
+        "canonical": "#F5B63C",
+        "oklch": "oklch(81.47% 0.1496 79.68)",
+        "token": "--signal-stamp-foreground",
+        "theme": "dark",
+        "tonalRamp": [
+          "oklch(15.0% 0.1496 79.7)",
+          "oklch(26.0% 0.1496 79.7)",
+          "oklch(37.0% 0.1496 79.7)",
+          "oklch(48.0% 0.1496 79.7)",
+          "oklch(60.0% 0.1496 79.7)",
+          "oklch(72.0% 0.1496 79.7)",
+          "oklch(84.0% 0.1496 79.7)",
+          "oklch(95.0% 0.1496 79.7)"
+        ],
+        "purpose": ""
+      },
+      "night-signal-border": {
+        "role": "secondary",
+        "displayName": "Graphite Signal Border",
+        "canonical": "#F5B63C",
+        "oklch": "oklch(81.47% 0.1496 79.68)",
+        "token": "--signal-border",
+        "theme": "dark",
+        "tonalRamp": [
+          "oklch(15.0% 0.1496 79.7)",
+          "oklch(26.0% 0.1496 79.7)",
+          "oklch(37.0% 0.1496 79.7)",
+          "oklch(48.0% 0.1496 79.7)",
+          "oklch(60.0% 0.1496 79.7)",
+          "oklch(72.0% 0.1496 79.7)",
+          "oklch(84.0% 0.1496 79.7)",
+          "oklch(95.0% 0.1496 79.7)"
+        ],
+        "purpose": "Amber edge on signal-marked regions."
+      },
+      "night-inverse": {
+        "role": "neutral",
+        "displayName": "Graphite Inverse",
+        "canonical": "#E8E7E1",
+        "oklch": "oklch(92.71% 0.0081 98.89)",
+        "token": "--inverse",
+        "theme": "dark",
+        "tonalRamp": [
+          "oklch(15.0% 0.0081 98.9)",
+          "oklch(26.0% 0.0081 98.9)",
+          "oklch(37.0% 0.0081 98.9)",
+          "oklch(48.0% 0.0081 98.9)",
+          "oklch(60.0% 0.0081 98.9)",
+          "oklch(72.0% 0.0081 98.9)",
+          "oklch(84.0% 0.0081 98.9)",
+          "oklch(95.0% 0.0081 98.9)"
+        ],
+        "purpose": "Opposite of the ground: light chips, tooltips and the bulk-action bar."
+      },
+      "night-on-inverse": {
+        "role": "neutral",
+        "displayName": "Graphite On Inverse",
+        "canonical": "#131311",
+        "oklch": "oklch(18.59% 0.0040 106.78)",
+        "token": "--inverse-foreground",
+        "theme": "dark",
+        "tonalRamp": [
+          "oklch(15.0% 0.0040 106.8)",
+          "oklch(26.0% 0.0040 106.8)",
+          "oklch(37.0% 0.0040 106.8)",
+          "oklch(48.0% 0.0040 106.8)",
+          "oklch(60.0% 0.0040 106.8)",
+          "oklch(72.0% 0.0040 106.8)",
+          "oklch(84.0% 0.0040 106.8)",
+          "oklch(95.0% 0.0040 106.8)"
+        ],
+        "purpose": ""
+      },
+      "night-inverse-muted": {
+        "role": "neutral",
+        "displayName": "Graphite Inverse Muted",
+        "canonical": "#4E4D46",
+        "oklch": "oklch(41.89% 0.0114 100.24)",
+        "token": "--inverse-muted",
+        "theme": "dark",
+        "tonalRamp": [
+          "oklch(15.0% 0.0114 100.2)",
+          "oklch(26.0% 0.0114 100.2)",
+          "oklch(37.0% 0.0114 100.2)",
+          "oklch(48.0% 0.0114 100.2)",
+          "oklch(60.0% 0.0114 100.2)",
+          "oklch(72.0% 0.0114 100.2)",
+          "oklch(84.0% 0.0114 100.2)",
+          "oklch(95.0% 0.0114 100.2)"
+        ],
+        "purpose": "Secondary text on inverse."
+      },
+      "night-chrome": {
+        "role": "neutral",
+        "displayName": "Graphite Chrome",
+        "canonical": "#0C0D0B",
+        "oklch": "oklch(15.70% 0.0045 128.78)",
+        "token": "--chrome",
+        "theme": "dark",
+        "tonalRamp": [
+          "oklch(15.0% 0.0045 128.8)",
+          "oklch(26.0% 0.0045 128.8)",
+          "oklch(37.0% 0.0045 128.8)",
+          "oklch(48.0% 0.0045 128.8)",
+          "oklch(60.0% 0.0045 128.8)",
+          "oklch(72.0% 0.0045 128.8)",
+          "oklch(84.0% 0.0045 128.8)",
+          "oklch(95.0% 0.0045 128.8)"
+        ],
+        "purpose": "Mastheads sit below the canvas, the darkest layer."
+      },
+      "night-on-chrome": {
+        "role": "neutral",
+        "displayName": "Graphite On Chrome",
+        "canonical": "#F2F1EC",
+        "oklch": "oklch(95.75% 0.0067 97.35)",
+        "token": "--chrome-foreground",
+        "theme": "dark",
+        "tonalRamp": [
+          "oklch(15.0% 0.0067 97.4)",
+          "oklch(26.0% 0.0067 97.4)",
+          "oklch(37.0% 0.0067 97.4)",
+          "oklch(48.0% 0.0067 97.4)",
+          "oklch(60.0% 0.0067 97.4)",
+          "oklch(72.0% 0.0067 97.4)",
+          "oklch(84.0% 0.0067 97.4)",
+          "oklch(95.0% 0.0067 97.4)"
+        ],
+        "purpose": ""
+      },
+      "night-chrome-muted": {
+        "role": "neutral",
+        "displayName": "Graphite Chrome Muted",
+        "canonical": "#A8A79E",
+        "oklch": "oklch(72.66% 0.0128 101.56)",
+        "token": "--chrome-muted",
+        "theme": "dark",
+        "tonalRamp": [
+          "oklch(15.0% 0.0128 101.6)",
+          "oklch(26.0% 0.0128 101.6)",
+          "oklch(37.0% 0.0128 101.6)",
+          "oklch(48.0% 0.0128 101.6)",
+          "oklch(60.0% 0.0128 101.6)",
+          "oklch(72.0% 0.0128 101.6)",
+          "oklch(84.0% 0.0128 101.6)",
+          "oklch(95.0% 0.0128 101.6)"
+        ],
+        "purpose": "Secondary text on chrome."
+      },
+      "night-ring-contrast": {
+        "role": "neutral",
+        "displayName": "Graphite Ring Contrast",
+        "canonical": "#E8E7E1",
+        "oklch": "oklch(92.71% 0.0081 98.89)",
+        "token": "--ring-contrast",
+        "theme": "dark",
+        "tonalRamp": [
+          "oklch(15.0% 0.0081 98.9)",
+          "oklch(26.0% 0.0081 98.9)",
+          "oklch(37.0% 0.0081 98.9)",
+          "oklch(48.0% 0.0081 98.9)",
+          "oklch(60.0% 0.0081 98.9)",
+          "oklch(72.0% 0.0081 98.9)",
+          "oklch(84.0% 0.0081 98.9)",
+          "oklch(95.0% 0.0081 98.9)"
+        ],
+        "purpose": "Outer focus outline in the foreground colour."
+      },
+      "night-shadow": {
+        "role": "neutral",
+        "displayName": "Graphite Shadow",
+        "canonical": "#030303",
+        "oklch": "oklch(9.69% 0.0000 0.00)",
+        "token": "--shadow",
+        "theme": "dark",
+        "tonalRamp": [
+          "oklch(15.0% 0.0000 0.0)",
+          "oklch(26.0% 0.0000 0.0)",
+          "oklch(37.0% 0.0000 0.0)",
+          "oklch(48.0% 0.0000 0.0)",
+          "oklch(60.0% 0.0000 0.0)",
+          "oklch(72.0% 0.0000 0.0)",
+          "oklch(84.0% 0.0000 0.0)",
+          "oklch(95.0% 0.0000 0.0)"
+        ],
+        "purpose": "Base for overlay shadows; deeper than the canvas so lift still reads."
+      },
+      "night-tone-neutral": {
+        "role": "tertiary",
+        "displayName": "Graphite Tone Neutral",
+        "canonical": "#A8A79E",
+        "oklch": "oklch(72.66% 0.0128 101.56)",
+        "token": "--tone-neutral",
+        "theme": "dark",
+        "tonalRamp": [
+          "oklch(15.0% 0.0128 101.6)",
+          "oklch(26.0% 0.0128 101.6)",
+          "oklch(37.0% 0.0128 101.6)",
+          "oklch(48.0% 0.0128 101.6)",
+          "oklch(60.0% 0.0128 101.6)",
+          "oklch(72.0% 0.0128 101.6)",
+          "oklch(84.0% 0.0128 101.6)",
+          "oklch(95.0% 0.0128 101.6)"
+        ],
+        "purpose": ""
+      },
+      "night-tone-neutral-bg": {
+        "role": "tertiary",
+        "displayName": "Graphite Tone Neutral Ground",
+        "canonical": "#2A2A25",
+        "oklch": "oklch(28.32% 0.0089 106.96)",
+        "token": "--tone-neutral-bg",
+        "theme": "dark",
+        "tonalRamp": [
+          "oklch(15.0% 0.0089 107.0)",
+          "oklch(26.0% 0.0089 107.0)",
+          "oklch(37.0% 0.0089 107.0)",
+          "oklch(48.0% 0.0089 107.0)",
+          "oklch(60.0% 0.0089 107.0)",
+          "oklch(72.0% 0.0089 107.0)",
+          "oklch(84.0% 0.0089 107.0)",
+          "oklch(95.0% 0.0089 107.0)"
+        ],
+        "purpose": ""
+      },
+      "night-tone-info": {
+        "role": "tertiary",
+        "displayName": "Graphite Tone Info",
+        "canonical": "#8EB8E6",
+        "oklch": "oklch(76.91% 0.0802 251.16)",
+        "token": "--tone-info",
+        "theme": "dark",
+        "tonalRamp": [
+          "oklch(15.0% 0.0802 251.2)",
+          "oklch(26.0% 0.0802 251.2)",
+          "oklch(37.0% 0.0802 251.2)",
+          "oklch(48.0% 0.0802 251.2)",
+          "oklch(60.0% 0.0802 251.2)",
+          "oklch(72.0% 0.0802 251.2)",
+          "oklch(84.0% 0.0802 251.2)",
+          "oklch(95.0% 0.0802 251.2)"
+        ],
+        "purpose": ""
+      },
+      "night-tone-info-bg": {
+        "role": "tertiary",
+        "displayName": "Graphite Tone Info Ground",
+        "canonical": "#172E48",
+        "oklch": "oklch(29.62% 0.0559 252.78)",
+        "token": "--tone-info-bg",
+        "theme": "dark",
+        "tonalRamp": [
+          "oklch(15.0% 0.0559 252.8)",
+          "oklch(26.0% 0.0559 252.8)",
+          "oklch(37.0% 0.0559 252.8)",
+          "oklch(48.0% 0.0559 252.8)",
+          "oklch(60.0% 0.0559 252.8)",
+          "oklch(72.0% 0.0559 252.8)",
+          "oklch(84.0% 0.0559 252.8)",
+          "oklch(95.0% 0.0559 252.8)"
+        ],
+        "purpose": ""
+      },
+      "night-tone-success": {
+        "role": "tertiary",
+        "displayName": "Graphite Tone Success",
+        "canonical": "#6CC69A",
+        "oklch": "oklch(75.82% 0.1087 160.99)",
+        "token": "--tone-success",
+        "theme": "dark",
+        "tonalRamp": [
+          "oklch(15.0% 0.1087 161.0)",
+          "oklch(26.0% 0.1087 161.0)",
+          "oklch(37.0% 0.1087 161.0)",
+          "oklch(48.0% 0.1087 161.0)",
+          "oklch(60.0% 0.1087 161.0)",
+          "oklch(72.0% 0.1087 161.0)",
+          "oklch(84.0% 0.1087 161.0)",
+          "oklch(95.0% 0.1087 161.0)"
+        ],
+        "purpose": "Brand green family, lifted."
+      },
+      "night-tone-success-bg": {
+        "role": "tertiary",
+        "displayName": "Graphite Tone Success Ground",
+        "canonical": "#113424",
+        "oklch": "oklch(29.40% 0.0504 161.04)",
+        "token": "--tone-success-bg",
+        "theme": "dark",
+        "tonalRamp": [
+          "oklch(15.0% 0.0504 161.0)",
+          "oklch(26.0% 0.0504 161.0)",
+          "oklch(37.0% 0.0504 161.0)",
+          "oklch(48.0% 0.0504 161.0)",
+          "oklch(60.0% 0.0504 161.0)",
+          "oklch(72.0% 0.0504 161.0)",
+          "oklch(84.0% 0.0504 161.0)",
+          "oklch(95.0% 0.0504 161.0)"
+        ],
+        "purpose": ""
+      },
+      "night-tone-warning": {
+        "role": "tertiary",
+        "displayName": "Graphite Tone Warning",
+        "canonical": "#EDA06A",
+        "oklch": "oklch(77.03% 0.1155 55.14)",
+        "token": "--tone-warning",
+        "theme": "dark",
+        "tonalRamp": [
+          "oklch(15.0% 0.1155 55.1)",
+          "oklch(26.0% 0.1155 55.1)",
+          "oklch(37.0% 0.1155 55.1)",
+          "oklch(48.0% 0.1155 55.1)",
+          "oklch(60.0% 0.1155 55.1)",
+          "oklch(72.0% 0.1155 55.1)",
+          "oklch(84.0% 0.1155 55.1)",
+          "oklch(95.0% 0.1155 55.1)"
+        ],
+        "purpose": "Burnt orange, lifted; still distinct from the amber signal."
+      },
+      "night-tone-warning-bg": {
+        "role": "tertiary",
+        "displayName": "Graphite Tone Warning Ground",
+        "canonical": "#412614",
+        "oklch": "oklch(29.87% 0.0502 53.31)",
+        "token": "--tone-warning-bg",
+        "theme": "dark",
+        "tonalRamp": [
+          "oklch(15.0% 0.0502 53.3)",
+          "oklch(26.0% 0.0502 53.3)",
+          "oklch(37.0% 0.0502 53.3)",
+          "oklch(48.0% 0.0502 53.3)",
+          "oklch(60.0% 0.0502 53.3)",
+          "oklch(72.0% 0.0502 53.3)",
+          "oklch(84.0% 0.0502 53.3)",
+          "oklch(95.0% 0.0502 53.3)"
+        ],
+        "purpose": ""
+      },
+      "night-tone-danger": {
+        "role": "tertiary",
+        "displayName": "Graphite Tone Danger",
+        "canonical": "#F28B7D",
+        "oklch": "oklch(74.38% 0.1280 28.68)",
+        "token": "--tone-danger",
+        "theme": "dark",
+        "tonalRamp": [
+          "oklch(15.0% 0.1280 28.7)",
+          "oklch(26.0% 0.1280 28.7)",
+          "oklch(37.0% 0.1280 28.7)",
+          "oklch(48.0% 0.1280 28.7)",
+          "oklch(60.0% 0.1280 28.7)",
+          "oklch(72.0% 0.1280 28.7)",
+          "oklch(84.0% 0.1280 28.7)",
+          "oklch(95.0% 0.1280 28.7)"
+        ],
+        "purpose": ""
+      },
+      "night-tone-danger-bg": {
+        "role": "tertiary",
+        "displayName": "Graphite Tone Danger Ground",
+        "canonical": "#4E1E18",
+        "oklch": "oklch(30.52% 0.0740 29.26)",
+        "token": "--tone-danger-bg",
+        "theme": "dark",
+        "tonalRamp": [
+          "oklch(15.0% 0.0740 29.3)",
+          "oklch(26.0% 0.0740 29.3)",
+          "oklch(37.0% 0.0740 29.3)",
+          "oklch(48.0% 0.0740 29.3)",
+          "oklch(60.0% 0.0740 29.3)",
+          "oklch(72.0% 0.0740 29.3)",
+          "oklch(84.0% 0.0740 29.3)",
+          "oklch(95.0% 0.0740 29.3)"
+        ],
+        "purpose": ""
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "Page titles (HeaderBlock) in Archivo SemiExpanded at the display weight (680, 640 dark), -0.02em; 30/36 below sm, 24/32 in compact headers."
+      },
+      "display-market": {
+        "displayName": "Display Market",
+        "purpose": "MARKET hero at wide containers only: 52/56 stepping to 64/68."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Section H2 on MARKET pages in the display width at 600, 38/44 in the CTA band on wide containers."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Panel and block titles at 700; 18/28 for panel and masthead names."
+      },
+      "figure": {
+        "displayName": "Figure",
+        "purpose": "The figure slot and money: display width, display weight, tabular, never wrapping; 18/28 in rows, 24/32 in cells, 38/44 in detail."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Archivo at width 100, the default interface text set on body."
+      },
+      "body-reading": {
+        "displayName": "Body Reading",
+        "purpose": "MARKET body and rich text, capped at 68ch."
+      },
+      "data": {
+        "displayName": "Data",
+        "purpose": "Dense LEDGER cells and metadata, tabular."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "The caps utility: uppercase muted column heads, definition terms, group captions. Never an eyebrow above a heading."
+      },
+      "code": {
+        "displayName": "Identifier (JetBrains Mono)",
+        "purpose": "JetBrains Mono 400/500/600 via next/font (--font-jetbrains) behind font-mono: SKUs, item codes, order, quote, transaction and request ids only."
+      }
+    },
+    "shadows": [
+      {
+        "name": "raised",
+        "value": "0 1px 0 color-mix(in oklch, var(--shadow) calc(10% * var(--shadow-weight)), transparent)",
+        "purpose": "A flat bottom edge for the raised recipe surface (with the strong rule). Not a blur."
+      },
+      {
+        "name": "overlay",
+        "value": "0 6px 16px color-mix(in oklch, var(--shadow) calc(12% * var(--shadow-weight)), transparent), 0 1px 3px color-mix(in oklch, var(--shadow) calc(8% * var(--shadow-weight)), transparent)",
+        "purpose": "Only what sits above the page: dialogs, popovers, selects, menus, the notification panel, toasts, the command palette, chart tooltips."
+      }
+    ],
+    "motion": [
+      {
+        "name": "reveal",
+        "value": "200ms cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "REVEAL: expose additional information. animate-reveal rises 4px."
+      },
+      {
+        "name": "bind",
+        "value": "140ms cubic-bezier(0.2, 0, 0, 1)",
+        "purpose": "BIND: reserve, select, approve or commit. Control state changes."
+      },
+      {
+        "name": "transfer",
+        "value": "280ms cubic-bezier(0.65, 0, 0.35, 1)",
+        "purpose": "TRANSFER: move through a commercial workflow. animate-transfer enters 8px."
+      },
+      {
+        "name": "reflow",
+        "value": "240ms cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "REFLOW: respond to filter, sort or grouping."
+      },
+      {
+        "name": "stamp",
+        "value": "180ms cubic-bezier(0.2, 0, 0, 1)",
+        "purpose": "STAMP: confirm authoritative state; scales in from 1.06."
+      },
+      {
+        "name": "thread",
+        "value": "340ms cubic-bezier(0.4, 0, 0.2, 1)",
+        "purpose": "THREAD: communicate process progression; connector draws from the left."
+      },
+      {
+        "name": "exit",
+        "value": "120ms cubic-bezier(0.7, 0, 0.84, 0)",
+        "purpose": "Exits are faster than entrances."
+      },
+      {
+        "name": "distance-sm",
+        "value": "4px",
+        "purpose": "Small translation."
+      },
+      {
+        "name": "distance-md",
+        "value": "8px",
+        "purpose": "Largest translation in product UI."
+      },
+      {
+        "name": "loading-spin",
+        "value": "0.8s linear infinite",
+        "purpose": "Loading status only: processing mark and busy buttons."
+      },
+      {
+        "name": "loading-skeleton",
+        "value": "1.4s ease-in-out infinite",
+        "purpose": "Loading status only: skeleton placeholders."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "sm",
+        "value": "40rem"
+      },
+      {
+        "name": "lg",
+        "value": "64rem"
+      },
+      {
+        "name": "@md",
+        "value": "28rem (container)"
+      },
+      {
+        "name": "@xl",
+        "value": "36rem (container)"
+      },
+      {
+        "name": "@2xl",
+        "value": "42rem (container)"
+      },
+      {
+        "name": "@3xl",
+        "value": "48rem (container)"
+      },
+      {
+        "name": "@4xl",
+        "value": "56rem (container)"
+      },
+      {
+        "name": "@5xl",
+        "value": "64rem (container)"
+      },
+      {
+        "name": "pointer-coarse",
+        "value": "(pointer: coarse): controls rise to 44px"
+      }
+    ],
+    "density": {
+      "compact": {
+        "controlHeight": "32px",
+        "rowPaddingY": "6px",
+        "cellPaddingX": "10px",
+        "gap": "8px",
+        "text": "13px",
+        "icon": "16px"
+      },
+      "comfortable": {
+        "controlHeight": "40px",
+        "rowPaddingY": "10px",
+        "cellPaddingX": "14px",
+        "gap": "12px",
+        "text": "14px",
+        "icon": "18px"
+      },
+      "spacious": {
+        "controlHeight": "48px",
+        "rowPaddingY": "14px",
+        "cellPaddingX": "18px",
+        "gap": "16px",
+        "text": "15px",
+        "icon": "20px"
+      },
+      "touchTarget": "44px"
+    },
+    "themes": {
+      "light": {
+        "source": "design/tokens/color.light.json",
+        "selector": ":root",
+        "displayWeight": 680,
+        "shadowWeight": 1
+      },
+      "dark": {
+        "source": "design/tokens/color.dark.json",
+        "selector": "@media (prefers-color-scheme: dark) :root:not([data-theme=\"light\"]), and :root[data-theme=\"dark\"]",
+        "displayWeight": 640,
+        "shadowWeight": 3
+      },
+      "choice": "web/lib/theme.ts stores system | light | dark under localStorage \"sokomesh-theme\"; themeScript in web/app/layout.tsx applies it before first paint; ThemeSwitch (P-18) changes it.",
+      "displayWeightToken": "--display-weight drives font-extrabold through --font-weight-extrabold (web/app/globals.css).",
+      "stateDeltas": "Warm stone (OKLCH hue about 95) and warm graphite (about 107), both at chroma under 0.01; hover and selected lift one step against the surface in both themes.",
+      "contrastTest": "web/tests/unit/contrast.test.ts"
+    },
+    "tracking": [
+      {
+        "name": "caps",
+        "token": "--type-caps-tracking",
+        "value": "0.06em",
+        "utility": "tracking-caps",
+        "purpose": "The only positive letter-spacing: uppercase labels (stamps, table heads, field captions)."
+      },
+      {
+        "name": "display",
+        "token": "--type-display-tracking",
+        "value": "-0.02em",
+        "utility": "tracking-display",
+        "purpose": "Tightening for display headings at 2xl and above."
+      },
+      {
+        "name": "normal",
+        "token": "--type-normal-tracking",
+        "value": "0em",
+        "utility": "tracking-normal",
+        "purpose": "Resets inherited caps tracking for lowercase details inside uppercase labels."
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Commit actions: confirm order, approve, save. Forest with white text.",
+      "html": "<button class=\"ds-btn-primary\" type=\"button\">Confirm order</button>",
+      "css": ".ds-btn-primary { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: var(--density-control-height, 40px); padding: 0 14px; border: 1px solid; border-radius: var(--radius-control, 2px); font: 600 14px/20px var(--font-archivo, Archivo), ui-sans-serif, system-ui, sans-serif; cursor: pointer; transition: background-color 140ms cubic-bezier(0.2, 0, 0, 1), border-color 140ms cubic-bezier(0.2, 0, 0, 1), color 140ms cubic-bezier(0.2, 0, 0, 1); background: var(--primary, #145C43); border-color: var(--primary, #145C43); color: var(--primary-foreground, #FFFFFF); } .ds-btn-primary:hover { background: var(--primary-hover, #0E4733); border-color: var(--primary-hover, #0E4733); } .ds-btn-primary:focus-visible { outline: 2px solid var(--ring-contrast, #13251D); outline-offset: 2px; box-shadow: 0 0 0 2px var(--ring, #F5B63C); } .ds-btn-primary:disabled { background: var(--sunken, #EAE8E2); border-color: var(--border, #DDDAD2); color: var(--muted, #585A53); cursor: not-allowed; } .ds-btn-primary:active { transform: translateY(1px); }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Default button: white with a strong rule.",
+      "html": "<button class=\"ds-btn-secondary\" type=\"button\">Request quote</button>",
+      "css": ".ds-btn-secondary { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: var(--density-control-height, 40px); padding: 0 14px; border: 1px solid; border-radius: var(--radius-control, 2px); font: 600 14px/20px var(--font-archivo, Archivo), ui-sans-serif, system-ui, sans-serif; cursor: pointer; transition: background-color 140ms cubic-bezier(0.2, 0, 0, 1), border-color 140ms cubic-bezier(0.2, 0, 0, 1), color 140ms cubic-bezier(0.2, 0, 0, 1); background: var(--surface, #FFFFFF); border-color: var(--border-strong, #7A786F); color: var(--foreground, #13251D); } .ds-btn-secondary:hover { background: var(--sunken, #EAE8E2); } .ds-btn-secondary:focus-visible { outline: 2px solid var(--ring-contrast, #13251D); outline-offset: 2px; box-shadow: 0 0 0 2px var(--ring, #F5B63C); } .ds-btn-secondary:active { transform: translateY(1px); }"
+    },
+    {
+      "name": "Signal Button",
+      "kind": "button",
+      "refersTo": "button-signal",
+      "description": "Trade-attention action only (reserve, feature). Amber with ink text and border.",
+      "html": "<button class=\"ds-btn-signal\" type=\"button\">Reserve 14 bales</button>",
+      "css": ".ds-btn-signal { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: var(--density-control-height, 40px); padding: 0 14px; border: 1px solid; border-radius: var(--radius-control, 2px); font: 600 14px/20px var(--font-archivo, Archivo), ui-sans-serif, system-ui, sans-serif; cursor: pointer; transition: background-color 140ms cubic-bezier(0.2, 0, 0, 1), border-color 140ms cubic-bezier(0.2, 0, 0, 1), color 140ms cubic-bezier(0.2, 0, 0, 1); background: var(--signal, #F5B63C); border-color: var(--signal-border, #13251D); color: var(--signal-foreground, #13251D); } .ds-btn-signal:hover { background: var(--signal-hover, #E9A82A); } .ds-btn-signal:active { transform: translateY(1px); } .ds-btn-signal:focus-visible { outline: 2px solid var(--ring-contrast, #13251D); outline-offset: 2px; box-shadow: 0 0 0 2px var(--ring, #F5B63C); }"
+    },
+    {
+      "name": "Text Input with Currency Prefix",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Money input: KES prefix inside the frame, tabular value.",
+      "html": "<label class=\"ds-field\"><span class=\"ds-field-label\">Unit price</span><span class=\"ds-input\"><span class=\"ds-input-affix\">KES</span><input value=\"1,740.00\" inputmode=\"decimal\"></span></label>",
+      "css": ".ds-field { display: flex; flex-direction: column; gap: 6px; font-family: var(--font-archivo, Archivo), ui-sans-serif, sans-serif; color: var(--foreground, #13251D); } .ds-field-label { font-size: 14px; line-height: 20px; font-weight: 600; } .ds-input { display: flex; align-items: center; height: var(--density-control-height, 40px); border: 1px solid var(--border-strong, #7A786F); border-radius: var(--radius-control, 2px); background: var(--surface, #FFFFFF); overflow: hidden; transition: border-color 140ms cubic-bezier(0.2, 0, 0, 1); } .ds-input:hover { border-color: var(--foreground, #13251D); } .ds-input:focus-within { outline: 2px solid var(--ring-contrast, #13251D); outline-offset: 2px; box-shadow: 0 0 0 2px var(--ring, #F5B63C); } .ds-input-affix { padding-left: 12px; font-size: 13px; font-weight: 600; color: var(--muted, #585A53); } .ds-input input { flex: 1; min-width: 0; border: 0; background: transparent; padding: 0 12px 0 6px; font: 400 14px/20px inherit; font-variant-numeric: tabular-nums lining-nums; color: inherit; outline: none; }"
+    },
+    {
+      "name": "Status Stamps",
+      "kind": "chip",
+      "refersTo": "stamp-success",
+      "description": "STAMP: uppercase 12px semibold, 2px corner, 1.5px border, tone pair plus drawn mark. The signal stamp is solid amber in light and amber on the soft ground in dark.",
+      "html": "<span class=\"ds-stamps\"><span class=\"ds-stamp ds-stamp-success\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.25\" stroke-linecap=\"square\" stroke-linejoin=\"miter\" aria-hidden=\"true\"><path d=\"M20 6 9 17l-5-5\"/></svg><span>Paid</span></span><span class=\"ds-stamp ds-stamp-warning\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.25\" stroke-linecap=\"square\" stroke-linejoin=\"miter\" aria-hidden=\"true\"><path d=\"m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3\"/><path d=\"M12 9v4\"/><path d=\"M12 17h.01\"/></svg><span>Low stock</span><span class=\"ds-stamp-detail\">· 14 bales</span></span><span class=\"ds-stamp ds-stamp-signal\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.25\" stroke-linecap=\"square\" stroke-linejoin=\"miter\" aria-hidden=\"true\"><path d=\"M2.7 10.3a2.41 2.41 0 0 0 0 3.41l7.59 7.59a2.41 2.41 0 0 0 3.41 0l7.59-7.59a2.41 2.41 0 0 0 0-3.41L13.7 2.71a2.41 2.41 0 0 0-3.41 0z\"/></svg><span>Reserved</span></span></span>",
+      "css": ".ds-stamps { display: inline-flex; flex-wrap: wrap; gap: 8px; } .ds-stamp { display: inline-flex; align-items: center; gap: 6px; padding: 2px 8px; border: 1.5px solid; border-radius: var(--radius-stamp, 2px); font: 600 12px/16px var(--font-archivo, Archivo), ui-sans-serif, sans-serif; letter-spacing: 0.06em; text-transform: uppercase; font-variant-numeric: tabular-nums lining-nums; white-space: nowrap; } .ds-stamp-success { color: var(--tone-success, #145C43); background: var(--tone-success-bg, #E2EEE7); border-color: var(--tone-success, #145C43); } .ds-stamp-warning { color: var(--tone-warning, #9A4A12); background: var(--tone-warning-bg, #FBEADB); border-color: var(--tone-warning, #9A4A12); } .ds-stamp-signal { color: var(--signal-stamp-foreground, #13251D); background: var(--signal-stamp, #F5B63C); border-color: var(--signal-border, #13251D); } .ds-stamp-detail { font-weight: 500; text-transform: none; letter-spacing: normal; }"
+    },
+    {
+      "name": "Segmented Toggle",
+      "kind": "chip",
+      "refersTo": "segmented-item-on",
+      "description": "One choice among a few views. Items take the inverse on-state, the same as toggle chips.",
+      "html": "<div class=\"ds-seg\" role=\"group\" aria-label=\"Chart or table\"><button class=\"ds-seg-item\" aria-pressed=\"true\" type=\"button\">Chart</button><button class=\"ds-seg-item\" aria-pressed=\"false\" type=\"button\">Table</button></div>",
+      "css": ".ds-seg { display: inline-flex; padding: 2px; border: 1px solid var(--border-strong, #7A786F); border-radius: var(--radius-control, 2px); background: var(--surface, #FFFFFF); } .ds-seg-item { height: 28px; padding: 0 12px; border: 0; border-radius: var(--radius-stamp, 2px); background: transparent; color: var(--muted, #585A53); font: 600 12px/16px var(--font-archivo, Archivo), sans-serif; cursor: pointer; transition: transform 140ms cubic-bezier(0.2, 0, 0, 1), color 140ms cubic-bezier(0.2, 0, 0, 1), background-color 140ms cubic-bezier(0.2, 0, 0, 1); } .ds-seg-item:hover { color: var(--foreground, #13251D); } .ds-seg-item[aria-pressed=\"true\"] { background: var(--inverse, #13251D); color: var(--inverse-foreground, #FFFFFF); } .ds-seg-item:focus-visible { outline: 2px solid var(--ring-contrast, #13251D); outline-offset: 2px; box-shadow: 0 0 0 2px var(--ring, #F5B63C); } @media (pointer: coarse) { .ds-seg-item { height: 44px; } } .ds-seg-item:active { transform: translateY(1px); }"
+    },
+    {
+      "name": "Order Thread",
+      "kind": "custom",
+      "refersTo": "thread",
+      "description": "THREAD motif: square nodes and patterned connectors; stale is dotted burnt orange.",
+      "html": "<ol class=\"ds-thread\" aria-label=\"Order progress\"><li class=\"ds-step\"><span class=\"ds-node ds-done\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.25\" stroke-linecap=\"square\" stroke-linejoin=\"miter\" aria-hidden=\"true\"><path d=\"M20 6 9 17l-5-5\"/></svg></span><span class=\"ds-link ds-link-solid\"></span><span class=\"ds-step-label\">Reserved</span></li><li class=\"ds-step\"><span class=\"ds-node ds-current\">2</span><span class=\"ds-link ds-link-dotted\"></span><span class=\"ds-step-label\">Awaiting payment</span></li><li class=\"ds-step ds-last\"><span class=\"ds-node ds-stale\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.25\" stroke-linecap=\"square\" stroke-linejoin=\"miter\" aria-hidden=\"true\"><path d=\"m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3\"/><path d=\"M12 9v4\"/><path d=\"M12 17h.01\"/></svg></span><span class=\"ds-step-label\">Confirmation stale</span></li></ol>",
+      "css": ".ds-thread { display: flex; list-style: none; margin: 0; padding: 0; font-family: var(--font-archivo, Archivo), sans-serif; } .ds-step { flex: 1; display: grid; grid-template-columns: 24px 1fr; grid-template-rows: 24px auto; column-gap: 8px; row-gap: 8px; } .ds-last { flex: none; } .ds-node { display: grid; place-items: center; width: 24px; height: 24px; border: 1.5px solid; border-radius: var(--radius-stamp, 2px); font: 600 12px/16px inherit; font-variant-numeric: tabular-nums; box-sizing: border-box; } .ds-done { background: var(--primary, #145C43); border-color: var(--primary, #145C43); color: var(--primary-foreground, #FFFFFF); } .ds-current { background: var(--signal, #F5B63C); border-color: var(--signal-border, #13251D); color: var(--signal-foreground, #13251D); } .ds-stale { background: var(--tone-warning-bg, #FBEADB); border-color: var(--tone-warning, #9A4A12); color: var(--tone-warning, #9A4A12); } .ds-link { align-self: center; margin-right: 8px; border-top: 2px solid; } .ds-link-solid { border-color: var(--primary, #145C43); } .ds-link-dotted { border-top-style: dotted; border-color: var(--tone-warning, #9A4A12); } .ds-step-label { grid-column: 1 / -1; font-size: 13px; line-height: 18px; font-weight: 600; color: var(--foreground, #13251D); padding-right: 12px; }"
+    },
+    {
+      "name": "Ledger Table",
+      "kind": "card",
+      "refersTo": "table-header",
+      "description": "Square ruled panel, sunken head with uppercase labels, stone rules, tabular right-aligned numbers.",
+      "html": "<div class=\"ds-ledger\"><table><thead><tr><th>Item</th><th class=\"ds-num\">Available</th><th class=\"ds-num\">Unit price</th></tr></thead><tbody><tr><td><code>MF-2KG-12</code> Maize flour 2 kg × 12 (demo)</td><td class=\"ds-num\">148 bales</td><td class=\"ds-num\">KES 1,740.00</td></tr><tr><td><code>SG-1KG-10</code> Sugar 1 kg × 10 (demo)</td><td class=\"ds-num\">14 bales</td><td class=\"ds-num\">KES 1,395.00</td></tr></tbody></table></div>",
+      "css": ".ds-ledger { border: 1px solid var(--border, #DDDAD2); border-radius: var(--radius-panel, 0px); background: var(--surface, #FFFFFF); overflow: clip; font: 400 13px/18px var(--font-archivo, Archivo), sans-serif; color: var(--foreground, #13251D); } .ds-ledger table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums lining-nums; } .ds-ledger th { background: var(--sunken, #EAE8E2); color: var(--muted, #585A53); font-size: 12px; line-height: 16px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; text-align: left; padding: 8px 14px; } .ds-ledger td { padding: 10px 14px; border-top: 1px solid var(--border, #DDDAD2); } .ds-ledger tbody tr:hover td { background: var(--sunken, #EAE8E2); } .ds-ledger .ds-num { text-align: right; white-space: nowrap; } .ds-ledger code { font: 12px/16px var(--font-jetbrains, 'JetBrains Mono'), ui-monospace, Consolas, monospace; color: var(--muted, #585A53); margin-right: 6px; }"
+    },
+    {
+      "name": "Chrome Masthead",
+      "kind": "nav",
+      "refersTo": "masthead",
+      "description": "Chrome band with the mark on the brand plate, name, muted line, command palette trigger, closed by a 6px brand-forest band. The region is on-chrome.",
+      "html": "<header class=\"ds-mast\"><div class=\"ds-mast-row\"><span class=\"ds-mast-mark\" aria-hidden=\"true\"></span><span class=\"ds-mast-text\"><span class=\"ds-mast-name\">SokoMesh Design System</span><span class=\"ds-mast-sub\">Contract version · demo data</span></span><button class=\"ds-mast-search\" type=\"button\">Jump to a component <kbd>Ctrl K</kbd></button></div><div class=\"ds-mast-band\"></div></header>",
+      "css": ".ds-mast { --ring-contrast: var(--chrome-foreground, #FFFFFF); background: var(--chrome, #13251D); color: var(--chrome-foreground, #FFFFFF); font-family: var(--font-archivo, Archivo), sans-serif; } .ds-mast-row { display: flex; align-items: center; gap: 12px; padding: 12px 16px; } .ds-mast-mark { width: 28px; height: 28px; border-radius: var(--radius-stamp, 2px); background: var(--brand-plate, #FFFFFF); } .ds-mast-text { display: flex; flex-direction: column; } .ds-mast-name { font: 700 18px/28px var(--font-archivo, Archivo), Archivo, sans-serif; } .ds-mast-sub { font-size: 13px; line-height: 18px; color: var(--chrome-muted, #B8C4BC); } .ds-mast-search { margin-left: auto; height: 32px; padding: 0 12px; display: inline-flex; align-items: center; gap: 12px; border: 1px solid var(--chrome-muted, #B8C4BC); border-radius: var(--radius-control, 2px); background: transparent; color: var(--chrome-muted, #B8C4BC); font: 400 13px/18px inherit; cursor: pointer; transition: color 140ms cubic-bezier(0.2, 0, 0, 1); } .ds-mast-search:hover { color: var(--chrome-foreground, #FFFFFF); } .ds-mast-search:focus-visible { outline: 2px solid var(--ring-contrast, #13251D); outline-offset: 2px; box-shadow: 0 0 0 2px var(--ring, #F5B63C); } .ds-mast-search kbd { font: 12px var(--font-jetbrains, 'JetBrains Mono'), ui-monospace, monospace; } @media (pointer: coarse) { .ds-mast-search { height: 44px; } } .ds-mast-band { height: 6px; background: var(--brand, #145C43); }"
+    },
+    {
+      "name": "Toggle Chip",
+      "kind": "chip",
+      "refersTo": "chip",
+      "description": "chipStyles (ui/chip.tsx): the one on/off filter or option recipe. On is inverse, matching Segmented; amber is kept for applied-filter tokens.",
+      "html": "<div class=\"ds-chips\"><button class=\"ds-chip\" type=\"button\" aria-pressed=\"true\">In stock</button><button class=\"ds-chip\" type=\"button\" aria-pressed=\"false\">Bales</button><button class=\"ds-chip\" type=\"button\" aria-pressed=\"false\">Cartons</button></div>",
+      "css": ".ds-chips { display: inline-flex; flex-wrap: wrap; gap: 8px; } .ds-chip { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 10px; border: 1px solid var(--border-strong, #7A786F); border-radius: var(--radius-control, 2px); background: var(--surface, #FFFFFF); color: var(--foreground, #13251D); font: 600 13px/18px var(--font-archivo, Archivo), ui-sans-serif, sans-serif; cursor: pointer; transition: color 140ms cubic-bezier(0.2, 0, 0, 1), background-color 140ms cubic-bezier(0.2, 0, 0, 1), transform 140ms cubic-bezier(0.2, 0, 0, 1); } .ds-chip:hover { background: var(--sunken, #EAE8E2); } .ds-chip[aria-pressed=\"true\"] { border-color: var(--inverse, #13251D); background: var(--inverse, #13251D); color: var(--inverse-foreground, #FFFFFF); } .ds-chip:active { transform: translateY(1px); } .ds-chip:focus-visible { outline: 2px solid var(--ring-contrast, #13251D); outline-offset: 2px; box-shadow: 0 0 0 2px var(--ring, #F5B63C); } @media (pointer: coarse) { .ds-chip { height: 44px; } }"
+    },
+    {
+      "name": "Theme Switch",
+      "kind": "custom",
+      "refersTo": "segmented-item-on",
+      "description": "ThemeSwitch (ui/theme.tsx, P-18): a small Segmented of System, Light, Dark with icons; the choice is applied before first paint and shared across tabs.",
+      "html": "<div class=\"ds-theme\" role=\"group\" aria-label=\"Colour theme\"><button class=\"ds-theme-item\" type=\"button\" aria-pressed=\"true\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\" stroke-linecap=\"square\" stroke-linejoin=\"miter\" aria-hidden=\"true\"><rect x=\"2\" y=\"3\" width=\"20\" height=\"14\" rx=\"2\"/><path d=\"M8 21h8M12 17v4\"/></svg>System</button><button class=\"ds-theme-item\" type=\"button\" aria-pressed=\"false\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\" stroke-linecap=\"square\" stroke-linejoin=\"miter\" aria-hidden=\"true\"><circle cx=\"12\" cy=\"12\" r=\"4\"/><path d=\"M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41\"/></svg>Light</button><button class=\"ds-theme-item\" type=\"button\" aria-pressed=\"false\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\" stroke-linecap=\"square\" stroke-linejoin=\"miter\" aria-hidden=\"true\"><path d=\"M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z\"/></svg>Dark</button></div>",
+      "css": ".ds-theme { display: inline-flex; padding: 2px; border: 1px solid var(--border-strong, #7A786F); border-radius: var(--radius-control, 2px); background: var(--surface, #FFFFFF); } .ds-theme-item { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 12px; border: 0; border-radius: var(--radius-stamp, 2px); background: transparent; color: var(--muted, #585A53); font: 600 12px/16px var(--font-archivo, Archivo), sans-serif; cursor: pointer; transition: color 140ms cubic-bezier(0.2, 0, 0, 1), background-color 140ms cubic-bezier(0.2, 0, 0, 1), transform 140ms cubic-bezier(0.2, 0, 0, 1); } .ds-theme-item:hover { color: var(--foreground, #13251D); } .ds-theme-item[aria-pressed=\"true\"] { background: var(--inverse, #13251D); color: var(--inverse-foreground, #FFFFFF); } .ds-theme-item:active { transform: translateY(1px); } .ds-theme-item:focus-visible { outline: 2px solid var(--ring-contrast, #13251D); outline-offset: 2px; box-shadow: 0 0 0 2px var(--ring, #F5B63C); } @media (pointer: coarse) { .ds-theme-item { height: 44px; } }"
+    },
+    {
+      "name": "Pagination",
+      "kind": "nav",
+      "refersTo": "button-secondary",
+      "description": "Pagination (kernel/nav): real previous/next links for crawlable lists, a tabular \"Showing 1 to 24 of 312 products\" count; ends go inert.",
+      "html": "<nav class=\"ds-pag\" aria-label=\"Pages\"><p class=\"ds-pag-count\">Showing <b>1</b> to <b>24</b> of <b>312</b> products</p><div class=\"ds-pag-links\"><span class=\"ds-pag-link\" aria-disabled=\"true\">Previous</span><a class=\"ds-pag-link\" href=\"#\" rel=\"next\">Next</a></div></nav>",
+      "css": ".ds-pag { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; font-family: var(--font-archivo, Archivo), sans-serif; } .ds-pag-count { margin: 0; font-size: 14px; line-height: 20px; color: var(--muted, #585A53); font-variant-numeric: tabular-nums lining-nums; } .ds-pag-count b { font-weight: 600; color: var(--foreground, #13251D); } .ds-pag-links { display: flex; gap: 8px; } .ds-pag-link { display: inline-flex; align-items: center; height: var(--density-control-height, 40px); padding: 0 14px; border: 1px solid var(--border-strong, #7A786F); border-radius: var(--radius-control, 2px); background: var(--surface, #FFFFFF); color: var(--foreground, #13251D); font: 600 14px/20px inherit; text-decoration: none; transition: background-color 140ms cubic-bezier(0.2, 0, 0, 1), transform 140ms cubic-bezier(0.2, 0, 0, 1); } a.ds-pag-link:hover { background: var(--sunken, #EAE8E2); } a.ds-pag-link:active { transform: translateY(1px); } .ds-pag-link[aria-disabled=\"true\"] { background: var(--sunken, #EAE8E2); border-color: var(--border, #DDDAD2); color: var(--muted, #585A53); pointer-events: none; } .ds-pag-link:focus-visible { outline: 2px solid var(--ring-contrast, #13251D); outline-offset: 2px; box-shadow: 0 0 0 2px var(--ring, #F5B63C); }"
+    },
+    {
+      "name": "Notification Bell and Panel",
+      "kind": "custom",
+      "refersTo": "panel",
+      "description": "NotificationBell opens an overlay panel of NotificationsBlock. Unread rows carry a 2px-cornered amber dot, a semibold title and a spoken \"Unread:\"; read rows go muted.",
+      "html": "<div class=\"ds-notif\"><button class=\"ds-bell\" type=\"button\" aria-label=\"Notifications, 2 unread\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\" stroke-linecap=\"square\" stroke-linejoin=\"miter\" aria-hidden=\"true\"><path d=\"M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9\"/><path d=\"M10.3 21a1.94 1.94 0 0 0 3.4 0\"/></svg><span class=\"ds-bell-count\">2</span></button><section class=\"ds-notif-panel\" aria-label=\"Notifications\"><header class=\"ds-notif-head\">Notifications <span>2 unread</span></header><ul class=\"ds-notif-list\"><li class=\"ds-notif-row\"><span class=\"ds-notif-dot ds-on\"></span><div><div class=\"ds-notif-top\"><span class=\"ds-notif-title\"><span class=\"ds-sr\">Unread: </span>Order SO-10482 confirmed</span><span class=\"ds-notif-time\">5 min ago</span></div><div class=\"ds-notif-meta\"><span>In-app</span><a href=\"#\">Open</a><button type=\"button\">Mark read</button></div></div></li><li class=\"ds-notif-row\"><span class=\"ds-notif-dot\"></span><div><div class=\"ds-notif-top\"><span class=\"ds-notif-title ds-read\">Price book updated</span><span class=\"ds-notif-time\">Yesterday</span></div><div class=\"ds-notif-meta\"><span>Email</span><a href=\"#\">Open</a></div></div></li></ul></section></div>",
+      "css": ".ds-notif { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; font-family: var(--font-archivo, Archivo), sans-serif; color: var(--foreground, #13251D); } .ds-bell { position: relative; display: grid; place-items: center; width: 40px; height: 40px; border: 1px solid var(--border-strong, #7A786F); border-radius: var(--radius-control, 2px); background: var(--surface, #FFFFFF); color: var(--foreground, #13251D); cursor: pointer; transition: background-color 140ms cubic-bezier(0.2, 0, 0, 1), transform 140ms cubic-bezier(0.2, 0, 0, 1); } .ds-bell:active { transform: translateY(1px); } .ds-bell:hover { background: var(--sunken, #EAE8E2); } .ds-bell:focus-visible { outline: 2px solid var(--ring-contrast, #13251D); outline-offset: 2px; box-shadow: 0 0 0 2px var(--ring, #F5B63C); } .ds-bell-count { position: absolute; top: -6px; right: -6px; display: grid; place-items: center; height: 20px; min-width: 20px; padding: 0 4px; box-sizing: border-box; border: 1.5px solid var(--signal-border, #13251D); border-radius: var(--radius-stamp, 2px); background: var(--signal, #F5B63C); color: var(--signal-foreground, #13251D); font: 700 12px/16px inherit; font-variant-numeric: tabular-nums; } .ds-notif-panel { width: min(24rem, 100%); border: 1px solid var(--border, #DDDAD2); border-radius: var(--radius-panel, 0px); background: var(--surface, #FFFFFF); box-shadow: 0 8px 24px color-mix(in oklch, var(--shadow, #13251D) calc(16% * var(--shadow-weight, 1)), transparent), 0 2px 6px color-mix(in oklch, var(--shadow, #13251D) calc(8% * var(--shadow-weight, 1)), transparent); overflow: hidden; } .ds-notif-head { display: flex; gap: 8px; align-items: baseline; padding: 10px 14px; border-bottom: 1px solid var(--border, #DDDAD2); font-weight: 600; } .ds-notif-head span { font-size: 13px; font-weight: 400; color: var(--muted, #585A53); } .ds-notif-list { list-style: none; margin: 0; padding: 0; } .ds-notif-row { display: flex; gap: 10px; padding: 10px 14px; border-top: 1px solid var(--border, #DDDAD2); } .ds-notif-row:first-child { border-top: 0; } .ds-notif-dot { margin-top: 6px; width: 8px; height: 8px; flex: none; border-radius: var(--radius-stamp, 2px); } .ds-notif-dot.ds-on { background: var(--signal, #F5B63C); box-shadow: 0 0 0 1px var(--signal-border, #13251D); } .ds-notif-top { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 2px 12px; } .ds-notif-title { font-size: 14px; line-height: 20px; font-weight: 600; } .ds-notif-title.ds-read { font-weight: 500; color: var(--muted, #585A53); } .ds-notif-time { font-size: 12px; line-height: 16px; color: var(--muted, #585A53); font-variant-numeric: tabular-nums; } .ds-notif-meta { display: flex; gap: 12px; margin-top: 4px; font-size: 13px; } .ds-notif-meta span { font-size: 12px; color: var(--muted, #585A53); } .ds-notif-meta a, .ds-notif-meta button { border: 0; padding: 0; background: none; font: 600 13px/18px inherit; color: var(--primary, #145C43); text-decoration: none; cursor: pointer; } .ds-notif-meta a:hover, .ds-notif-meta button:hover { text-decoration: underline; } .ds-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }"
+    },
+    {
+      "name": "Notification Preferences",
+      "kind": "custom",
+      "refersTo": "table-header",
+      "description": "NotificationPreferencesBlock: a ledger table of events by channel (in-app, email by default) with a switch in each cell.",
+      "html": "<div class=\"ds-prefs\"><table><thead><tr><th>Event</th><th>In-app</th><th>Email</th></tr></thead><tbody><tr><td>Order confirmed</td><td><button class=\"ds-switch\" role=\"switch\" aria-checked=\"true\" aria-label=\"Order confirmed, in-app\"></button></td><td><button class=\"ds-switch\" role=\"switch\" aria-checked=\"false\" aria-label=\"Order confirmed, email\"></button></td></tr><tr><td>Low stock</td><td><button class=\"ds-switch\" role=\"switch\" aria-checked=\"true\" aria-label=\"Low stock, in-app\"></button></td><td><button class=\"ds-switch\" role=\"switch\" aria-checked=\"true\" aria-label=\"Low stock, email\"></button></td></tr></tbody></table></div>",
+      "css": ".ds-prefs { border: 1px solid var(--border, #DDDAD2); border-radius: var(--radius-panel, 0px); background: var(--surface, #FFFFFF); overflow: clip; font: 400 14px/20px var(--font-archivo, Archivo), sans-serif; color: var(--foreground, #13251D); } .ds-prefs table { width: 100%; border-collapse: collapse; } .ds-prefs th { background: var(--sunken, #EAE8E2); color: var(--muted, #585A53); font-size: 12px; line-height: 16px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; text-align: left; padding: 8px 14px; } .ds-prefs td { padding: 10px 14px; border-top: 1px solid var(--border, #DDDAD2); } .ds-switch { position: relative; width: 36px; height: 20px; padding: 0; border: 1px solid var(--border-strong, #7A786F); border-radius: var(--radius-control, 2px); background: var(--sunken, #EAE8E2); cursor: pointer; transition: background-color 140ms cubic-bezier(0.2, 0, 0, 1), border-color 140ms cubic-bezier(0.2, 0, 0, 1); } .ds-switch::after { content: \"\"; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: var(--radius-stamp, 2px); background: var(--surface, #FFFFFF); box-shadow: 0 1px 2px color-mix(in oklch, var(--shadow, #13251D) 8%, transparent); transition: transform 140ms cubic-bezier(0.2, 0, 0, 1); } .ds-switch[aria-checked=\"true\"] { background: var(--primary, #145C43); border-color: var(--primary, #145C43); } .ds-switch[aria-checked=\"true\"]::after { transform: translateX(16px); } .ds-switch:focus-visible { outline: 2px solid var(--ring-contrast, #13251D); outline-offset: 2px; box-shadow: 0 0 0 2px var(--ring, #F5B63C); }"
+    }
+  ],
+  "narrative": {
+    "northStar": "Woven Trade, built as trade infrastructure",
+    "overview": "SokoMesh draws a wholesale market as one connected commercial record. Three structural ideas carry the whole system. A **UNIT** is a bounded commercial object (product, quantity, order, shipment), drawn as a square cell in a ruled grid. A **THREAD** is movement between states, drawn as a connector whose stroke pattern (solid, dashed, dotted) says how far it has gone. A **STAMP** is an authoritative state, drawn as a small uppercase rectangle with a drawn mark. None of these is skeuomorphic: no fabric, no rubber-stamp texture, no woven backgrounds.\n\nThe interface should read as modern trade infrastructure, not a SaaS dashboard. Grounds are warm neutrals at very low chroma: warm stone by day, warm graphite at night, so the forest green and the trade yellow are the only saturated colours on the page. Content sits in **containers, not floating cards**: grid cells share one rule, sections sit between full-width rules, and nothing on the canvas casts a shadow. Corners follow one rule: containers, cells, dialogs and photo wells are square; what you press or what labels a state has a 2px corner. Commercial quantities (prices, holds, minimum orders, totals) are set large in the display width so they can be compared at a glance.\n\nForest green has two jobs kept apart: **primary** is the interactive green (actions, links, selection, chart columns) and lifts on the dark ground, while **brand** is the constant forest used for regions and illustration (the CTA band, the ribbon, the masthead band). Signal amber is the colour of trade attention: the applied filter, reserved stock, \"your price\", the held quantity, the unread mark, the inner focus ring. It is never a status. Type is one grotesque in two widths: **Archivo** at its normal width for every interface string, and its SemiExpanded width for headings and money figures, with JetBrains Mono for identifiers.\n\nThe system has three experience modes over the same primitives and tokens. **MARKET** (buyer discovery and purchase) is photography-led and comfortable. **LEDGER** (seller and admin work) is dense, numeric and ruled. **FLOW** (checkout, reservations, fulfilment, warehouse) is directional, state-heavy and compact, with large primary actions. Modes are set through density and recipe variants; themes through tokens. Components never branch on mode or theme.",
+    "keyCharacteristics": [
+      "Modular rectangular composition: joined grid cells and full-width section rules, not gapped cards.",
+      "Square containers and media; 2px corners on controls and stamps; radios stay round.",
+      "Warm stone and warm graphite neutrals; restrained forest; amber held back for trade signals.",
+      "Borders over shadows: cells and panels are flat, only overlays cast a short shadow.",
+      "Prices and quantities large, tabular and labelled: \"KES 1,740.00\", \"Price per pack\".",
+      "Product photography as cut-outs on the theme's well; operational surfaces stay systematic and dense.",
+      "Six-verb motion grammar, 120 to 340 ms, no bounce, no large travel."
+    ],
+    "rules": [
+      {
+        "name": "The Named Meaning Rule",
+        "body": "An animation without a verb from this table is a defect, not a flourish. Hover does not scale anything.",
+        "section": "overview"
+      },
+      {
+        "name": "The Loading Exception Rule",
+        "body": "Two continuous animations exist and are bounded to loading status only: the spinner (`animate-spin`, 0.8s linear) and the skeleton pulse (`animate-skeleton`, 1.4s). They report system status, run only while work is pending, and are stopped by reduced motion.",
+        "section": "overview"
+      },
+      {
+        "name": "The Signal Is Not a Warning Rule",
+        "body": "Amber marks what the trader is attending to; it never means \"caution\" or \"done\". Warning is burnt orange; success is green.",
+        "section": "colors"
+      },
+      {
+        "name": "The Two Greens Rule",
+        "body": "Primary is for things you press or select and lifts with the theme; brand is for regions and illustration and stays constant.",
+        "section": "colors"
+      },
+      {
+        "name": "The Same Roles Rule",
+        "body": "A theme is a second value for each existing role, never a new role used by one theme only.",
+        "section": "colors"
+      },
+      {
+        "name": "The Paired Tone Rule",
+        "body": "A tone is used as its foreground-on-ground pair with a mark and a label. A coloured dot or tint alone never carries state (WCAG 1.4.1).",
+        "section": "colors"
+      },
+      {
+        "name": "The Token-Only Rule",
+        "body": "Tailwind's default palette, radii, text sizes, tracking and shadows are cleared in `globals.css`; only SokoMesh tokens exist as utilities. Components contain no raw hex.",
+        "section": "colors"
+      },
+      {
+        "name": "The Visible Quantity Rule",
+        "body": "A record's commercial quantity is its loudest line. The projection's `figure` slot takes the first money field in the list fields (from the `currency` widget, never a field name), sets it in the display width with its field label underneath (\"Price per pack\"), and removes it from the meta list.",
+        "section": "typography"
+      },
+      {
+        "name": "The Tabular Truth Rule",
+        "body": "Tables, inputs, outputs and anything marked `data-numeric` use tabular lining numerals.",
+        "section": "typography"
+      },
+      {
+        "name": "The Identifier Face Rule",
+        "body": "Mono means \"an identifier you could type back\". Never set prose, prices or labels in it.",
+        "section": "typography"
+      },
+      {
+        "name": "The Label Is Not a Kicker Rule",
+        "body": "The uppercase label style names data. It never sits above a heading as an eyebrow.",
+        "section": "typography"
+      },
+      {
+        "name": "The Coarse Pointer Rule",
+        "body": "Under `pointer: coarse`, control height rises to the 44px `touch-target`.",
+        "section": "layout"
+      },
+      {
+        "name": "The Different Composition Rule",
+        "body": "Narrow screens get a different arrangement, not a squeezed one: the public header moves search, sections and categories into a sheet; ledger columns drop out by container width; stat strips take as many columns as they have metrics.",
+        "section": "layout"
+      },
+      {
+        "name": "The Borders Carry Structure Rule",
+        "body": "Resting content is separated by rules and grounds. Nothing on the canvas casts a shadow to look important.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Rectangle Rule",
+        "body": "States, chips and filters are rectangles, never pills. No oversized rounded cards anywhere.",
+        "section": "shapes"
+      },
+      {
+        "name": "The Two-Tone Focus Rule",
+        "body": "Every `:focus-visible` gets a 2px outline in `ring-contrast` at 2px offset around a 2px amber ring.",
+        "section": "components"
+      }
+    ],
+    "dos": [
+      "Do take every value from `design/tokens/`; add a token before adding a value, and give it a value in both colour files.",
+      "Do compose repeated records as joined cells in one container, and pages as sections between full-width rules.",
+      "Do keep containers and media square and controls at 2px.",
+      "Do set the commercial quantity large through the `figure` slot, with its label.",
+      "Do put product photographs on the `well` as cut-outs, and keep operational surfaces systematic and dense.",
+      "Do reserve signal amber for trade attention, and use primary for what is pressed and brand for regions.",
+      "Do show money as \"KES 1,740.00\" with tabular numerals, the U+2212 minus and no wrap.",
+      "Do say \"not confirmed\" on every payment state that is not a successful phone result.",
+      "Do name each animation's verb and stay within 120 to 340ms, with no bounce.",
+      "Do check new colour pairs in `contrast.test.ts` for both themes.",
+      "Do label demo data and demo photographs as demo, and credit every CC BY and CC BY-SA photograph."
+    ],
+    "donts": [
+      "Don't add glassmorphism, gradient backgrounds, decorative 3D, glow or floating orbs.",
+      "Don't use excessive pill shapes, oversized rounded cards or arbitrary bento layouts.",
+      "Don't float cards on the canvas with gaps and shadows; join them.",
+      "Don't make SokoMesh rustic: no textures, no hand-drawn ornament, no organic shapes in components. The organic share lives in photography and the ribbon.",
+      "Don't use the ribbon more than twice a page, behind text, or in LEDGER and FLOW surfaces.",
+      "Don't use amber or yellow for warnings or success.",
+      "Don't branch a component on the theme or on a model name.",
+      "Don't scale elements on hover or add continuous motion beyond the loading spinner and skeleton.",
+      "Don't set the uppercase label above a heading as an eyebrow.",
+      "Don't present demo SVG placeholders or demo photographs as real commerce."
+    ]
+  }
+}

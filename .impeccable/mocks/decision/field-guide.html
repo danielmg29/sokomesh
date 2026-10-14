@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Field Guide — SokoMesh Design System</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--canvas:#F6F8F2;--paper:#fff;--line:#D6DCCF;--line2:#8C978A;--inset:#ECEFE6;--ink:#13251D;--muted:#4F5C54;--pri:#145C43;--sig:#F5B63C;--warn:#9A4A12;--dang:#A92A20}
+*{box-sizing:border-box;margin:0}body{width:1440px;height:900px;overflow:hidden;background:var(--canvas);color:var(--ink);font:14px/1.5 Inter,sans-serif;display:grid;grid-template-columns:56px 260px 1fr}
+.thumb{background:var(--pri);color:#fff;display:flex;flex-direction:column;align-items:center;padding-top:12px}
+.thumb span{width:40px;height:30px;display:grid;place-items:center;font:700 13px 'Plus Jakarta Sans';opacity:.75}.thumb span.on{background:var(--sig);color:var(--ink);opacity:1;border-radius:2px}
+.list{background:var(--paper);border-right:1px solid var(--line);padding:20px 16px}
+.list b.t{font:700 17px 'Plus Jakarta Sans';display:block;margin-bottom:2px}.list .m{font-size:12px;color:var(--muted);margin-bottom:16px}
+.list h4{font:700 22px 'Plus Jakarta Sans';color:var(--pri);margin:8px 0 4px}
+.list a{display:flex;justify-content:space-between;padding:5px 8px;border-radius:3px}.list a i{font-style:normal;font-size:11px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase}.list a.on{background:var(--inset);font-weight:600}
+main{padding:32px 48px;overflow:hidden}
+h1{font:800 46px/1.05 'Plus Jakarta Sans';display:flex;align-items:baseline;gap:14px}
+h1 span{font:600 12px Inter;letter-spacing:.08em;text-transform:uppercase;border:1px solid var(--line2);border-radius:2px;padding:3px 8px;color:var(--muted)}
+.lead{max-width:700px;font-size:17px;margin:10px 0 22px}
+.facts{display:grid;grid-template-columns:repeat(3,1fr);border:1px solid var(--line);background:var(--paper);margin-bottom:22px}
+.facts div{padding:14px 16px;border-right:1px solid var(--line)}.facts h3{font:700 14px 'Plus Jakarta Sans';margin-bottom:6px}.facts p{font-size:13px}
+.alike b{display:block}.alike small{display:block;color:var(--muted);font-size:12px;margin-bottom:6px}
+h2{font:700 22px 'Plus Jakarta Sans';margin-bottom:10px}
+.plates{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.plate{border:1px solid var(--line);background:var(--paper)}.plate .cap{padding:8px 12px;border-top:1px solid var(--line);font-size:12px;color:var(--muted)}.plate .cap b{color:var(--ink)}
+.row{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line);font-size:13px}
+.kebab{width:32px;height:32px;border:1px solid var(--line2);border-radius:4px;display:grid;place-items:center;font-weight:700}
+.menu{margin:8px 14px 12px auto;width:200px;border:1px solid var(--line2);background:var(--paper)}.menu div{padding:7px 12px;font-size:13px}.menu .d{color:var(--dang);border-top:1px solid var(--line)}.menu .x{color:#9AA394}
+.inl{display:flex;gap:6px;padding:12px 14px}.b{height:32px;padding:0 10px;border:1px solid var(--line2);border-radius:4px;display:inline-flex;align-items:center;font-size:12px;font-weight:600}
+</style></head><body>
+<div class="thumb"><span>A</span><span>B</span><span>C</span><span>D</span><span>E</span><span>F</span><span>G</span><span>H</span><span>I</span><span>L</span><span>M</span><span>O</span><span>P</span><span>Q</span><span>R</span><span>S</span><span>T</span><span>V</span></div>
+<div class="list"><b class="t">SokoMesh Design System</b><div class="m">Contract 0.1.0 · demo data</div>
+<h4>A</h4><a class="on">ActionMenu<i>Kernel</i></a><a>ActionBar<i>Kernel</i></a><a>ActivityBlock<i>Block</i></a><a>AppNav<i>Kernel</i></a><a>ApprovalFlowBlock<i>Ext</i></a>
+<h4>B</h4><a>Breadcrumbs<i>Kernel</i></a><a>BulkActions<i>Kernel</i></a><a>BuyerSellerValueSplit<i>Mktg</i></a>
+<h4>C</h4><a>CartBlock<i>Ext</i></a><a>CategoryContractBuilder<i>Div</i></a><a>ChatBlock<i>Block</i></a></div>
+<main>
+<h1>ActionMenu <span>Kernel · phase 05</span></h1>
+<p class="lead">The overflow of permitted commands for one record where a full ActionBar would not fit: dense catalogue rows, order tables and compact marketplace cards.</p>
+<div class="facts">
+<div><h3>Identify by</h3><p>A single trigger beside a row or card that opens commands filtered by the viewer's policies. Keyboard-first: arrows, type-ahead, Escape.</p></div>
+<div><h3>Found in</h3><p>Seller catalogue rows, order lists, inventory ledger, admin seller review.</p></div>
+<div class="alike"><h3>Look-alikes</h3><b>ActionBar</b><small>Use when commands are the point of the view.</small><b>BulkActions</b><small>Use when acting on a selection.</small></div>
+</div>
+<h2>Plates</h2>
+<div class="plates">
+<div class="plate"><div class="row"><span>Order SM-ORD-004215 · KES 48,250.00</span><span class="kebab">⋯</span></div><div class="menu"><div>Confirm order</div><div>Print pick list</div><div class="x">Ship (awaiting payment)</div><div class="d">Cancel order…</div></div><div class="cap"><b>Overflow, open</b> · compact</div></div>
+<div class="plate"><div class="inl"><span class="b">Confirm</span><span class="b">Pick list</span><span class="b">More</span></div><div class="cap"><b>Inline</b> · comfortable · first two promoted</div></div>
+<div class="plate"><div class="row"><span>Seller · Rift Valley Traders</span><span class="kebab">⋯</span></div><div class="cap"><b>Restricted</b> · no permitted commands, trigger hidden and API refuses</div></div>
+</div>
+</main></body></html>

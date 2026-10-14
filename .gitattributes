@@ -1,0 +1,12 @@
+# LF everywhere: generators write LF and CI runs on Linux.
+* text=auto eol=lf
+*.png binary
+*.ico binary
+
+# Generated artefacts: review the source, not the output (manual 8.2).
+contract/ac-contract.json        linguist-generated=true
+web/lib/contract/generated.ts    linguist-generated=true
+web/lib/design/tokens.generated.ts linguist-generated=true
+web/app/tokens.generated.css     linguist-generated=true
+backend/uv.lock                  linguist-generated=true
+web/pnpm-lock.yaml               linguist-generated=true

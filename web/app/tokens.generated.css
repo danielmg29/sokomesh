@@ -1,0 +1,226 @@
+/* AUTO-GENERATED from design/tokens/*.json by tools/gen-tokens.mts — do not edit. */
+
+:root {
+  --background: oklch(0.9608 0.0054 95.1);
+  --surface: oklch(1 0 0);
+  --sunken: oklch(0.9309 0.0083 91.49);
+  --well: oklch(0.9432 0.007 88.64);
+  --foreground: oklch(0.2458 0.0286 164.29);
+  --muted: oklch(0.4635 0.0114 119.83);
+  --border: oklch(0.8885 0.0113 89.73);
+  --border-strong: oklch(0.5717 0.0137 96.56);
+  --overlay: oklch(0.2458 0.0286 164.29 / 0.6);
+  --primary: oklch(0.4246 0.0808 164.87);
+  --primary-hover: oklch(0.3561 0.0674 164.8);
+  --primary-soft: oklch(0.9382 0.0158 160.61);
+  --primary-foreground: oklch(1 0 0);
+  --brand: oklch(0.4246 0.0808 164.87);
+  --brand-foreground: oklch(1 0 0);
+  --signal: oklch(0.8147 0.1496 79.68);
+  --signal-hover: oklch(0.7742 0.15 78.33);
+  --signal-soft: oklch(0.9579 0.0404 86.73);
+  --signal-stamp: oklch(0.8147 0.1496 79.68);
+  --signal-stamp-foreground: oklch(0.2458 0.0286 164.29);
+  --signal-foreground: oklch(0.2458 0.0286 164.29);
+  --signal-border: oklch(0.2458 0.0286 164.29);
+  --inverse: oklch(0.2458 0.0286 164.29);
+  --inverse-foreground: oklch(1 0 0);
+  --inverse-muted: oklch(0.8087 0.0172 156.83);
+  --chrome: oklch(0.2458 0.0286 164.29);
+  --chrome-foreground: oklch(1 0 0);
+  --chrome-muted: oklch(0.8087 0.0172 156.83);
+  --ring: oklch(0.8147 0.1496 79.68);
+  --ring-contrast: oklch(0.2458 0.0286 164.29);
+  --shadow: oklch(0.2458 0.0286 164.29);
+  --display-weight: 680;
+  --shadow-weight: 1;
+  --tone-neutral: oklch(0.4635 0.0114 119.83);
+  --tone-neutral-bg: oklch(0.9369 0.0083 91.49);
+  --tone-info: oklch(0.4392 0.0846 249.84);
+  --tone-info-bg: oklch(0.9392 0.0166 250.85);
+  --tone-success: oklch(0.4246 0.0808 164.87);
+  --tone-success-bg: oklch(0.9382 0.0158 160.61);
+  --tone-warning: oklch(0.5019 0.1243 49.62);
+  --tone-warning-bg: oklch(0.9466 0.0273 63.95);
+  --tone-danger: oklch(0.4867 0.1651 29.11);
+  --tone-danger-bg: oklch(0.9342 0.027 28.95);
+  --radius-stamp: 0.125rem;
+  --radius-control: 0.125rem;
+  --radius-panel: 0rem;
+  --radius-media: 0rem;
+  --border-stamp: 0.09375rem;
+  --touch-target: 2.75rem;
+  --space-unit: 0.25rem;
+  --type-xs: 0.75rem;
+  --type-xs-leading: 1rem;
+  --type-caps-tracking: 0.06em;
+  --type-normal-tracking: 0em;
+  --type-display-tracking: -0.02em;
+  --type-display-width: 112.5;
+  --type-sm: 0.8125rem;
+  --type-sm-leading: 1.125rem;
+  --type-md: 0.875rem;
+  --type-md-leading: 1.25rem;
+  --type-base: 1rem;
+  --type-base-leading: 1.625rem;
+  --type-lg: 1.125rem;
+  --type-lg-leading: 1.75rem;
+  --type-xl: 1.25rem;
+  --type-xl-leading: 1.75rem;
+  --type-2xl: 1.5rem;
+  --type-2xl-leading: 2rem;
+  --type-3xl: 1.875rem;
+  --type-3xl-leading: 2.25rem;
+  --type-4xl: 2.375rem;
+  --type-4xl-leading: 2.75rem;
+  --type-5xl: 3.25rem;
+  --type-5xl-leading: 3.5rem;
+  --type-6xl: 4rem;
+  --type-6xl-leading: 4.25rem;
+  --motion-reveal-duration: 200ms;
+  --motion-reveal-ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --motion-bind-duration: 140ms;
+  --motion-bind-ease: cubic-bezier(0.2, 0, 0, 1);
+  --motion-transfer-duration: 280ms;
+  --motion-transfer-ease: cubic-bezier(0.65, 0, 0.35, 1);
+  --motion-reflow-duration: 240ms;
+  --motion-reflow-ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --motion-stamp-duration: 180ms;
+  --motion-stamp-ease: cubic-bezier(0.2, 0, 0, 1);
+  --motion-thread-duration: 340ms;
+  --motion-thread-ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --motion-exit-duration: 120ms;
+  --motion-exit-ease: cubic-bezier(0.7, 0, 0.84, 0);
+  --motion-distance-sm: 0.25rem;
+  --motion-distance-md: 0.5rem;
+}
+
+:root {
+  --density-control-height: 2.5rem;
+  --density-row-padding-y: 0.625rem;
+  --density-cell-padding-x: 0.875rem;
+  --density-gap: 0.75rem;
+  --density-text: 0.875rem;
+  --density-icon: 1.125rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --background: oklch(0.1859 0.004 106.78);
+    --surface: oklch(0.221 0.0057 106.86);
+    --sunken: oklch(0.263 0.0073 106.89);
+    --well: oklch(0.2463 0.0074 106.93);
+    --foreground: oklch(0.9271 0.0081 98.89);
+    --muted: oklch(0.7266 0.0128 101.56);
+    --border: oklch(0.3074 0.0087 106.9);
+    --border-strong: oklch(0.5739 0.015 102.21);
+    --overlay: oklch(0.1142 0.0036 106.95 / 0.722);
+    --primary: oklch(0.6577 0.1146 161.45);
+    --primary-hover: oklch(0.7201 0.1153 161.77);
+    --primary-soft: oklch(0.2884 0.0465 160.37);
+    --primary-foreground: oklch(0.1703 0.0238 139.17);
+    --brand: oklch(0.4246 0.0808 164.87);
+    --brand-foreground: oklch(1 0 0);
+    --signal: oklch(0.8147 0.1496 79.68);
+    --signal-hover: oklch(0.8494 0.1332 82.74);
+    --signal-soft: oklch(0.3049 0.0476 85.02);
+    --signal-stamp: oklch(0.3049 0.0476 85.02);
+    --signal-stamp-foreground: oklch(0.8147 0.1496 79.68);
+    --signal-foreground: oklch(0.2458 0.0286 164.29);
+    --signal-border: oklch(0.8147 0.1496 79.68);
+    --inverse: oklch(0.9271 0.0081 98.89);
+    --inverse-foreground: oklch(0.1859 0.004 106.78);
+    --inverse-muted: oklch(0.4189 0.0114 100.24);
+    --chrome: oklch(0.157 0.0045 128.78);
+    --chrome-foreground: oklch(0.9575 0.0067 97.35);
+    --chrome-muted: oklch(0.7266 0.0128 101.56);
+    --ring: oklch(0.8147 0.1496 79.68);
+    --ring-contrast: oklch(0.9271 0.0081 98.89);
+    --shadow: oklch(0.0969 0 0);
+    --display-weight: 640;
+    --shadow-weight: 3;
+    --tone-neutral: oklch(0.7266 0.0128 101.56);
+    --tone-neutral-bg: oklch(0.2832 0.0089 106.96);
+    --tone-info: oklch(0.7691 0.0802 251.16);
+    --tone-info-bg: oklch(0.2962 0.0559 252.78);
+    --tone-success: oklch(0.7582 0.1087 160.99);
+    --tone-success-bg: oklch(0.294 0.0504 161.04);
+    --tone-warning: oklch(0.7703 0.1155 55.14);
+    --tone-warning-bg: oklch(0.2987 0.0502 53.31);
+    --tone-danger: oklch(0.7438 0.128 28.68);
+    --tone-danger-bg: oklch(0.3052 0.074 29.26);
+  }
+}
+
+:root[data-theme="dark"] {
+  --background: oklch(0.1859 0.004 106.78);
+  --surface: oklch(0.221 0.0057 106.86);
+  --sunken: oklch(0.263 0.0073 106.89);
+  --well: oklch(0.2463 0.0074 106.93);
+  --foreground: oklch(0.9271 0.0081 98.89);
+  --muted: oklch(0.7266 0.0128 101.56);
+  --border: oklch(0.3074 0.0087 106.9);
+  --border-strong: oklch(0.5739 0.015 102.21);
+  --overlay: oklch(0.1142 0.0036 106.95 / 0.722);
+  --primary: oklch(0.6577 0.1146 161.45);
+  --primary-hover: oklch(0.7201 0.1153 161.77);
+  --primary-soft: oklch(0.2884 0.0465 160.37);
+  --primary-foreground: oklch(0.1703 0.0238 139.17);
+  --brand: oklch(0.4246 0.0808 164.87);
+  --brand-foreground: oklch(1 0 0);
+  --signal: oklch(0.8147 0.1496 79.68);
+  --signal-hover: oklch(0.8494 0.1332 82.74);
+  --signal-soft: oklch(0.3049 0.0476 85.02);
+  --signal-stamp: oklch(0.3049 0.0476 85.02);
+  --signal-stamp-foreground: oklch(0.8147 0.1496 79.68);
+  --signal-foreground: oklch(0.2458 0.0286 164.29);
+  --signal-border: oklch(0.8147 0.1496 79.68);
+  --inverse: oklch(0.9271 0.0081 98.89);
+  --inverse-foreground: oklch(0.1859 0.004 106.78);
+  --inverse-muted: oklch(0.4189 0.0114 100.24);
+  --chrome: oklch(0.157 0.0045 128.78);
+  --chrome-foreground: oklch(0.9575 0.0067 97.35);
+  --chrome-muted: oklch(0.7266 0.0128 101.56);
+  --ring: oklch(0.8147 0.1496 79.68);
+  --ring-contrast: oklch(0.9271 0.0081 98.89);
+  --shadow: oklch(0.0969 0 0);
+  --display-weight: 640;
+  --shadow-weight: 3;
+  --tone-neutral: oklch(0.7266 0.0128 101.56);
+  --tone-neutral-bg: oklch(0.2832 0.0089 106.96);
+  --tone-info: oklch(0.7691 0.0802 251.16);
+  --tone-info-bg: oklch(0.2962 0.0559 252.78);
+  --tone-success: oklch(0.7582 0.1087 160.99);
+  --tone-success-bg: oklch(0.294 0.0504 161.04);
+  --tone-warning: oklch(0.7703 0.1155 55.14);
+  --tone-warning-bg: oklch(0.2987 0.0502 53.31);
+  --tone-danger: oklch(0.7438 0.128 28.68);
+  --tone-danger-bg: oklch(0.3052 0.074 29.26);
+}
+
+[data-density="compact"] {
+  --density-control-height: 2rem;
+  --density-row-padding-y: 0.375rem;
+  --density-cell-padding-x: 0.625rem;
+  --density-gap: 0.5rem;
+  --density-text: 0.8125rem;
+  --density-icon: 1rem;
+}
+
+[data-density="comfortable"] {
+  --density-control-height: 2.5rem;
+  --density-row-padding-y: 0.625rem;
+  --density-cell-padding-x: 0.875rem;
+  --density-gap: 0.75rem;
+  --density-text: 0.875rem;
+  --density-icon: 1.125rem;
+}
+
+[data-density="spacious"] {
+  --density-control-height: 3rem;
+  --density-row-padding-y: 0.875rem;
+  --density-cell-padding-x: 1.125rem;
+  --density-gap: 1rem;
+  --density-text: 0.9375rem;
+  --density-icon: 1.25rem;
+}

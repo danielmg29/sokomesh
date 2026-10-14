@@ -1,0 +1,88 @@
+{
+  "auth": {
+    "mode": "multi",
+    "session": "cookie",
+    "verification": [
+      "email"
+    ]
+  },
+  "errors": {
+    "CONFLICT": {
+      "message": "Someone else changed this record. Review the latest version and try again.",
+      "retryable": false,
+      "status": 409
+    },
+    "DUPLICATE": {
+      "message": "A record with these details already exists.",
+      "retryable": false,
+      "status": 409
+    },
+    "FORBIDDEN": {
+      "message": "Your role does not allow this action.",
+      "retryable": false,
+      "status": 403
+    },
+    "LIMIT_EXCEEDED": {
+      "message": "This request is larger than the allowed limit.",
+      "retryable": false,
+      "status": 413
+    },
+    "NOT_FOUND": {
+      "message": "We couldn't find that record. It may have been removed.",
+      "retryable": false,
+      "status": 404
+    },
+    "RATE_LIMITED": {
+      "message": "Too many requests. Wait a moment, then try again.",
+      "retryable": true,
+      "status": 429
+    },
+    "UNAVAILABLE": {
+      "message": "The service is temporarily unavailable. Try again shortly.",
+      "retryable": true,
+      "status": 503
+    },
+    "VALIDATION": {
+      "message": "Some details need attention before this can be saved.",
+      "retryable": false,
+      "status": 422
+    }
+  },
+  "events": {},
+  "limits": {
+    "defaultPageSize": 25,
+    "maxBulk": 500,
+    "maxPageSize": 100,
+    "maxRequestBytes": 1048576,
+    "maxUploadBytes": 26214400,
+    "streamChunk": 500
+  },
+  "locales": {
+    "default": "en-KE",
+    "supported": [
+      {
+        "label": "English",
+        "value": "en-KE"
+      },
+      {
+        "label": "Kiswahili",
+        "value": "sw-KE"
+      }
+    ]
+  },
+  "meta": {
+    "apiBase": "/api/v1/",
+    "contractVersion": "0.2.0",
+    "generatedBy": "backend/core/contract"
+  },
+  "models": {},
+  "policies": {
+    "roles": {
+      "buyer_owner": [],
+      "buyer_purchaser": [],
+      "marketplace_admin": [],
+      "seller_manager": [],
+      "warehouse_operator": []
+    }
+  }
+}

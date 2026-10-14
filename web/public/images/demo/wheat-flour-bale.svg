@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" width="400" height="300" role="img" aria-label="Demo illustration: bale of ten 2 kg baking flour packets">
+  <ellipse cx="200" cy="262" rx="150" ry="14" fill="#13251D" opacity=".08"/>
+  <path d="M74 112h252v148H74z" fill="#F1EEE8"/>
+  <path d="M326 112l26-22v148l-26 22z" fill="#DCD7CD"/>
+  <path d="M74 112l26-22h252l-26 22z" fill="#F8F6F2"/>
+  <g fill="#9A4A12"><path d="M90 128h102v116H90zM208 128h102v116H208z"/></g>
+  <g fill="#F6F8F2"><path d="M104 150h74v30h-74zM222 150h74v30h-74z"/></g>
+  <g fill="#F5B63C"><path d="M104 196h50v8h-50zM222 196h50v8h-50z"/></g>
+  <path d="M74 186h252" stroke="#7A5C24" stroke-width="6"/>
+  <path d="M326 186l26-22" stroke="#6A5020" stroke-width="6"/>
+</svg>

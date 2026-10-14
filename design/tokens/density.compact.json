@@ -1,0 +1,8 @@
+{
+  "control-height": { "$type": "dimension", "$value": "32px", "$description": "LEDGER and FLOW density. Primary FLOW actions still use the lg control size." },
+  "row-padding-y": { "$type": "dimension", "$value": "6px" },
+  "cell-padding-x": { "$type": "dimension", "$value": "10px" },
+  "gap": { "$type": "dimension", "$value": "8px" },
+  "text": { "$type": "dimension", "$value": "13px" },
+  "icon": { "$type": "dimension", "$value": "16px" }
+}

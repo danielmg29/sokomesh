@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Inventory Ledger — SokoMesh Design System</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--canvas:#F6F8F2;--paper:#fff;--line:#D6DCCF;--line2:#8C978A;--inset:#ECEFE6;--ink:#13251D;--muted:#4F5C54;--pri:#145C43;--sig:#F5B63C;--warn:#9A4A12;--dang:#A92A20;--info:#2A557F}
+*{box-sizing:border-box;margin:0}body{width:1440px;height:900px;overflow:hidden;background:var(--canvas);color:var(--ink);font:14px/1.45 Inter,sans-serif;font-variant-numeric:tabular-nums}
+.mast{height:64px;background:var(--ink);color:#fff;display:flex;align-items:center;gap:18px;padding:0 32px}
+.mast b{font:700 18px 'Plus Jakarta Sans'}.mast span{opacity:.75;font-size:13px}
+.band{height:6px;background:var(--pri)}
+main{padding:28px 32px}
+.top{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:16px}
+h1{font:800 38px/1.1 'Plus Jakarta Sans'}.top p{max-width:640px;font-size:15px;margin-top:6px}
+.tally{display:flex;border:1px solid var(--line);background:var(--paper)}.tally div{padding:8px 16px;border-right:1px solid var(--line);font-size:12px;color:var(--muted)}.tally b{display:block;font:700 20px 'Plus Jakarta Sans';color:var(--ink)}
+.bar{display:flex;gap:8px;align-items:center;margin-bottom:12px}
+.in{width:300px;height:36px;border:1px solid var(--line2);border-radius:4px;background:var(--paper);padding:8px 12px;color:var(--muted);font-size:13px}
+.chip{height:32px;padding:6px 12px;border:1px solid var(--line2);border-radius:3px;background:var(--paper);font-size:13px}.chip.on{background:var(--pri);color:#fff;border-color:var(--pri)}
+.sep{width:1px;height:24px;background:var(--line);margin:0 6px}
+table{width:100%;border-collapse:collapse;background:var(--paper);border:1px solid var(--line)}
+th,td{padding:9px 12px;border-bottom:1px solid var(--line);text-align:left;font-size:13px;white-space:nowrap}
+th{background:var(--inset);font:600 11px Inter;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+td code{font:12px ui-monospace,Consolas,monospace;color:var(--muted)}td b{font-weight:600}
+.cls{border:1px solid var(--line2);border-radius:2px;padding:1px 6px;font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase}
+.m{display:inline-block;width:62px;font-size:11px;font-weight:600;letter-spacing:.05em}.m.off{color:#B9C1B4}
+tr.open td{background:#F1F5EE;border-bottom:none}
+.exp td{padding:0 12px 16px;background:#F1F5EE}
+.spec{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;border:1px solid var(--line);background:var(--paper);padding:14px}
+.spec div{border:1px solid var(--line);padding:10px}.spec small{display:block;color:var(--muted);font-size:11px;letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px}
+.stamp{display:inline-block;border:1.5px solid currentColor;border-radius:2px;padding:1px 6px;font:600 11px Inter;letter-spacing:.05em;text-transform:uppercase}
+.ok{color:var(--pri);background:#E2EEE7}.wa{color:var(--warn);background:#FBEADB}.da{color:var(--dang);background:#FBE3DF}.sg{background:var(--sig)}.ne{color:var(--muted);background:var(--inset)}
+.q{font:600 15px Inter;display:block;margin-top:6px}
+</style></head><body>
+<header class="mast"><b>SokoMesh Design System</b><span>Contract 0.1.0 · demo data</span></header><div class="band"></div>
+<main>
+<div class="top"><div><h1>Component inventory</h1><p>Every component the app projects from the contract, with its class, phase and modes. Open a row to see its live states.</p></div>
+<div class="tally"><div><b>118</b>components</div><div><b>26</b>field widgets</div><div><b>13</b>divergent</div></div></div>
+<div class="bar"><div class="in">Filter by name, state or widget…</div><span class="chip on">All</span><span class="chip">Primitive</span><span class="chip">Kernel</span><span class="chip">Block</span><span class="chip">Extension</span><span class="chip">Divergent</span><span class="sep"></span><span class="chip">MARKET</span><span class="chip">LEDGER</span><span class="chip">FLOW</span></div>
+<table>
+<tr><th>Code</th><th>Component</th><th>Class</th><th>Phase</th><th>Modes</th><th>States</th><th>Used in</th></tr>
+<tr><td><code>K-14</code></td><td><b>StatusBadge</b></td><td><span class="cls">Kernel</span></td><td>05</td><td><span class="m">MARKET</span><span class="m">LEDGER</span><span class="m">FLOW</span></td><td>6 tones · 10 states</td><td>23 blocks</td></tr>
+<tr><td><code>B-05</code></td><td><b>ListBlock</b></td><td><span class="cls">Block</span></td><td>06</td><td><span class="m">MARKET</span><span class="m">LEDGER</span><span class="m">FLOW</span></td><td>loading · empty · stale · live</td><td>11 pages</td></tr>
+<tr class="open"><td><code>X-09</code></td><td><b>StockAvailabilityIndicator</b></td><td><span class="cls">Extension</span></td><td>08</td><td><span class="m">MARKET</span><span class="m">LEDGER</span><span class="m">FLOW</span></td><td>5 states · compact/full</td><td>Cards, cart, checkout</td></tr>
+<tr class="exp"><td colspan="7"><div class="spec">
+<div><small>Available</small><span class="stamp ok">In stock</span><span class="q">96 bales</span></div>
+<div><small>Low</small><span class="stamp wa">Low stock</span><span class="q">14 bales left</span></div>
+<div><small>Reserved</small><span class="stamp sg">Reserved</span><span class="q">24 held to 14:52</span></div>
+<div><small>Out of stock</small><span class="stamp da">Out of stock</span><span class="q">Restock Thu 15 Oct</span></div>
+<div><small>Unknown</small><span class="stamp ne">Not reported</span><span class="q">Last count 3 days ago</span></div>
+</div></td></tr>
+<tr><td><code>X-12</code></td><td><b>ReservationCountdown</b></td><td><span class="cls">Extension</span></td><td>08</td><td><span class="m off">MARKET</span><span class="m off">LEDGER</span><span class="m">FLOW</span></td><td>running · paused · expired</td><td>Checkout</td></tr>
+<tr><td><code>F-04</code></td><td><b>Field/currency</b></td><td><span class="cls">Field</span></td><td>03</td><td><span class="m">MARKET</span><span class="m">LEDGER</span><span class="m">FLOW</span></td><td>view · input · filter · diff</td><td>Prices, totals</td></tr>
+<tr><td><code>D-03</code></td><td><b>FulfillmentPickPackBlock</b></td><td><span class="cls">Divergent</span></td><td>08</td><td><span class="m off">MARKET</span><span class="m off">LEDGER</span><span class="m">FLOW</span></td><td>full · short · substitute</td><td>Warehouse</td></tr>
+</table>
+</main></body></html>

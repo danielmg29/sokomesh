@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Trade Units — SokoMesh Design System</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--canvas:#F6F8F2;--paper:#fff;--line:#D6DCCF;--line2:#A9B3A3;--inset:#ECEFE6;--ink:#13251D;--muted:#56635B;--pri:#145C43;--sig:#F5B63C;--warn:#A8501A;--dang:#B3261E;--info:#2F5D8A}
+*{box-sizing:border-box;margin:0}body{width:1440px;height:900px;overflow:hidden;background:var(--canvas);color:var(--ink);font:14px/1.5 Inter,sans-serif;font-variant-numeric:tabular-nums;display:grid;grid-template-columns:280px 1fr}
+aside{background:var(--pri);color:#fff;padding:24px 20px;height:900px}
+aside b{font:700 18px 'Plus Jakarta Sans';display:block}aside .m{opacity:.75;font-size:12px;margin-bottom:22px}
+aside h4{font:600 11px Inter;letter-spacing:.12em;text-transform:uppercase;opacity:.7;margin:16px 0 6px}
+aside a{display:flex;justify-content:space-between;padding:6px 10px;border-radius:3px;font-size:14px}aside a i{font-style:normal;opacity:.7}
+aside a.on{background:var(--sig);color:var(--ink);font-weight:600}
+main{padding:32px 48px;overflow:hidden}
+.k{font:600 12px Inter;letter-spacing:.12em;text-transform:uppercase;color:var(--pri)}
+h1{font:800 44px/1.05 'Plus Jakarta Sans';margin:6px 0 10px}
+.lead{max-width:700px;font-size:16px;margin-bottom:22px}
+.thread{background:var(--paper);border:1px solid var(--line);padding:22px 24px 18px;margin-bottom:22px}
+.thread h3{font:600 11px Inter;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:16px}
+.row{display:flex;align-items:center}.node{border:1.5px solid var(--ink);border-radius:2px;padding:6px 10px;font-weight:600;font-size:13px;background:var(--paper);white-space:nowrap}
+.node.ok{border-color:var(--pri);color:var(--pri);background:#E3EFE8}.node.on{background:var(--sig);border-color:var(--ink)}
+.node.bad{border-color:var(--dang);color:var(--dang);background:#FBE4E1}.node.wa{border-color:var(--warn);color:var(--warn);background:#FBEBDD}
+.seg{flex:1;height:2px;background:var(--ink);min-width:28px}.seg.dash{background:repeating-linear-gradient(90deg,var(--ink) 0 6px,transparent 6px 10px)}
+.branch{display:flex;gap:10px;margin:14px 0 0 330px}
+.cols{display:grid;grid-template-columns:1.3fr 1fr;gap:22px}
+.panel{background:var(--paper);border:1px solid var(--line)}
+.panel .hd{display:flex;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--line);background:var(--inset);font:600 12px Inter;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.panel .bd{padding:18px 16px}
+.amt{font:700 30px 'Plus Jakarta Sans'}.amt small{font:500 14px Inter;color:var(--muted)}
+.kv{display:grid;grid-template-columns:150px 1fr;gap:6px 12px;margin:14px 0;font-size:13px}.kv dt{color:var(--muted)}.kv dd{font-family:ui-monospace,Consolas,monospace}
+.prog{height:4px;background:var(--inset);margin:10px 0}.prog i{display:block;width:62%;height:4px;background:var(--pri)}
+.btns{display:flex;gap:8px;margin-top:12px}.btn{height:36px;padding:0 14px;border-radius:4px;border:1px solid var(--line2);display:inline-flex;align-items:center;font-weight:600;font-size:13px}.btn.p{background:var(--pri);color:#fff;border-color:var(--pri)}
+ul{list-style:none;padding:0}li{display:flex;justify-content:space-between;padding:9px 16px;border-bottom:1px solid var(--line);font-size:14px}li span{color:var(--muted);font-size:12px;letter-spacing:.06em;text-transform:uppercase}
+</style></head><body>
+<aside><b>SokoMesh</b><div class="m">Design System · contract 0.1.0 · demo data</div>
+<h4>Trade units</h4><a>Product &amp; category<i>14</i></a><a>Quantity &amp; money<i>6</i></a><a>Stock &amp; reservation<i>7</i></a><a>Cart<i>5</i></a><a>Quote &amp; approval<i>6</i></a><a>Order<i>8</i></a><a class="on">Payment<i>6</i></a><a>Shipment &amp; fulfilment<i>6</i></a><a>Return &amp; dispute<i>4</i></a><a>Organization &amp; seller<i>7</i></a><a>Audit &amp; integration<i>5</i></a>
+<h4>The loom</h4><a>Foundations<i>21</i></a><a>Primitives<i>13</i></a><a>Field renderers<i>26</i></a><a>Kernel &amp; blocks<i>23</i></a>
+</aside>
+<main>
+<div class="k">Trade unit 07 · FLOW</div>
+<h1>Payment</h1>
+<p class="lead">A payment changes an order once. SellaPay sends an M-Pesa STK prompt to the buyer's phone; until SokoMesh confirms it, every surface says what it is waiting for.</p>
+<div class="thread"><h3>State thread · SM-F-14</h3>
+<div class="row"><span class="node ok">Created</span><span class="seg"></span><span class="node ok">STK sent</span><span class="seg"></span><span class="node on">Awaiting M-Pesa</span><span class="seg dash"></span><span class="node">Confirmed</span><span class="seg dash"></span><span class="node">Reconciled</span></div>
+<div class="branch"><span class="node bad">Failed</span><span class="node bad">Cancelled on phone</span><span class="node wa">Confirmation stale</span></div>
+</div>
+<div class="cols">
+<div class="panel"><div class="hd"><span>PaymentStatusPanel · FLOW</span><span>Kernel extension</span></div><div class="bd">
+<div class="amt">KES 48,250.00 <small>· order SM-ORD-004215</small></div>
+<div class="prog"><i></i></div>
+<b>Check the phone ending 678 and enter the M-Pesa PIN.</b>
+<dl class="kv"><dt>Transaction</dt><dd>TXN-1770727500-12345</dd><dt>Phone</dt><dd>+254 712 345 678</dd><dt>Stock held until</dt><dd>14:52 EAT (11 min)</dd></dl>
+<div class="btns"><span class="btn p">Resend prompt</span><span class="btn">Use another number</span></div>
+</div></div>
+<div class="panel"><div class="hd"><span>Projects this unit</span><span>6</span></div>
+<ul><li>CheckoutSummaryBlock<span>Flow</span></li><li>PaymentStatusPanel<span>Flow</span></li><li>Field/currency<span>Loom</span></li><li>StatusBadge<span>Loom</span></li><li>ToastFeedback<span>Loom</span></li><li>ReconciliationTraceBlock<span>Ledger</span></li></ul></div>
+</div>
+</main></body></html>

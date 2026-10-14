@@ -1,0 +1,83 @@
+{
+  "$schema": "https://design-tokens.github.io/community-group/format/",
+  "brand": {
+    "name": "SokoMesh",
+    "tagline": "Trade without the tangle",
+    "color": {
+      "primary": {
+        "$value": "#145C43",
+        "$type": "color"
+      },
+      "accent": {
+        "$value": "#F5B63C",
+        "$type": "color"
+      },
+      "ink": {
+        "$value": "#13251D",
+        "$type": "color"
+      },
+      "surface": {
+        "$value": "#F6F8F2",
+        "$type": "color"
+      },
+      "focus": {
+        "$value": "#F5B63C",
+        "$type": "color"
+      }
+    },
+    "radius": {
+      "small": {
+        "$value": "8px",
+        "$type": "dimension"
+      },
+      "medium": {
+        "$value": "14px",
+        "$type": "dimension"
+      },
+      "large": {
+        "$value": "24px",
+        "$type": "dimension"
+      }
+    },
+    "spacing": {
+      "1": {
+        "$value": "4px",
+        "$type": "dimension"
+      },
+      "2": {
+        "$value": "8px",
+        "$type": "dimension"
+      },
+      "3": {
+        "$value": "12px",
+        "$type": "dimension"
+      },
+      "4": {
+        "$value": "16px",
+        "$type": "dimension"
+      },
+      "5": {
+        "$value": "20px",
+        "$type": "dimension"
+      },
+      "6": {
+        "$value": "24px",
+        "$type": "dimension"
+      },
+      "7": {
+        "$value": "28px",
+        "$type": "dimension"
+      },
+      "8": {
+        "$value": "32px",
+        "$type": "dimension"
+      }
+    },
+    "type": {
+      "recommendation": {
+        "$value": "Plus Jakarta Sans for headings and Inter for product text",
+        "$type": "string"
+      }
+    }
+  }
+}

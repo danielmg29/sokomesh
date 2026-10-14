@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" width="400" height="300" role="img" aria-label="Demo illustration: bale of twelve 2 kg maize flour packets">
+  <ellipse cx="200" cy="262" rx="150" ry="14" fill="#13251D" opacity=".08"/>
+  <path d="M74 112h252v148H74z" fill="#F3E6C4"/>
+  <path d="M326 112l26-22v148l-26 22z" fill="#E2D2A6"/>
+  <path d="M74 112l26-22h252l-26 22z" fill="#F8EFD6"/>
+  <g fill="#F5B63C"><path d="M90 128h66v56H90zM166 128h66v56h-66zM242 128h68v56h-68z"/></g>
+  <g fill="#145C43"><path d="M90 192h66v52H90zM166 192h66v52h-66zM242 192h68v52h-68z"/></g>
+  <g fill="#FFFFFF" opacity=".85"><path d="M100 140h46v10h-46zM176 140h46v10h-46zM252 140h48v10h-48z"/></g>
+  <path d="M74 150h252M74 222h252" stroke="#8C6A2B" stroke-width="6"/>
+  <path d="M326 150l26-22M326 222l26-22" stroke="#7A5C24" stroke-width="6"/>
+</svg>

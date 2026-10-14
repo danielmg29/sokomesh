@@ -1,0 +1,33 @@
+# Environment
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.ruff_cache/
+backend/staticfiles/
+backend/media/
+*.sqlite3
+
+# Node / Next (web/.gitignore has the framework-specific rules)
+node_modules/
+
+# Editors and OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Claude Code local settings
+.claude/settings.local.json
+
+# Impeccable: question servers and review captures are per-session; briefs and decision sketches are kept
+.impeccable/questions/
+.impeccable/review/
+
+# Untrusted photo downloads; only the cut-outs in web/public/images/products are committed
+design/photography/raw/

@@ -1,0 +1,305 @@
+@import "tailwindcss";
+@import "./tokens.generated.css";
+
+/*
+ * Semantic tokens -> Tailwind namespaces. Values live only in tokens.generated.css.
+ * Default palettes, radii and text sizes are cleared so only SokoMesh tokens exist as utilities.
+ */
+@theme inline {
+  --color-*: initial;
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-sunken: var(--sunken);
+  --color-well: var(--well);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-overlay: var(--overlay);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-soft: var(--primary-soft);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-brand: var(--brand);
+  --color-brand-foreground: var(--brand-foreground);
+  --color-signal: var(--signal);
+  --color-signal-hover: var(--signal-hover);
+  --color-signal-soft: var(--signal-soft);
+  --color-signal-stamp: var(--signal-stamp);
+  --color-signal-stamp-foreground: var(--signal-stamp-foreground);
+  --color-signal-foreground: var(--signal-foreground);
+  --color-signal-border: var(--signal-border);
+  --color-inverse: var(--inverse);
+  --color-inverse-foreground: var(--inverse-foreground);
+  --color-inverse-muted: var(--inverse-muted);
+  --color-chrome: var(--chrome);
+  --color-chrome-foreground: var(--chrome-foreground);
+  --color-chrome-muted: var(--chrome-muted);
+  --color-ring: var(--ring);
+  --color-ring-contrast: var(--ring-contrast);
+  --color-tone-neutral: var(--tone-neutral);
+  --color-tone-neutral-bg: var(--tone-neutral-bg);
+  --color-tone-info: var(--tone-info);
+  --color-tone-info-bg: var(--tone-info-bg);
+  --color-tone-success: var(--tone-success);
+  --color-tone-success-bg: var(--tone-success-bg);
+  --color-tone-warning: var(--tone-warning);
+  --color-tone-warning-bg: var(--tone-warning-bg);
+  --color-tone-danger: var(--tone-danger);
+  --color-tone-danger-bg: var(--tone-danger-bg);
+  --color-transparent: transparent;
+  --color-current: currentColor;
+
+  --radius-*: initial;
+  --radius-xs: var(--radius-stamp);
+  --radius-sm: var(--radius-control);
+  --radius-md: var(--radius-panel);
+  --radius-lg: var(--radius-media);
+
+  --spacing: var(--space-unit);
+
+  --text-*: initial;
+  --text-xs: var(--type-xs);
+  --text-xs--line-height: var(--type-xs-leading);
+  --text-sm: var(--type-sm);
+  --text-sm--line-height: var(--type-sm-leading);
+  --text-md: var(--type-md);
+  --text-md--line-height: var(--type-md-leading);
+  --text-base: var(--type-base);
+  --text-base--line-height: var(--type-base-leading);
+  --text-lg: var(--type-lg);
+  --text-lg--line-height: var(--type-lg-leading);
+  --text-xl: var(--type-xl);
+  --text-xl--line-height: var(--type-xl-leading);
+  --text-2xl: var(--type-2xl);
+  --text-2xl--line-height: var(--type-2xl-leading);
+  --text-3xl: var(--type-3xl);
+  --text-3xl--line-height: var(--type-3xl-leading);
+  --text-4xl: var(--type-4xl);
+  --text-4xl--line-height: var(--type-4xl-leading);
+  --text-5xl: var(--type-5xl);
+  --text-5xl--line-height: var(--type-5xl-leading);
+  --text-6xl: var(--type-6xl);
+  --text-6xl--line-height: var(--type-6xl-leading);
+
+  --tracking-*: initial;
+  --tracking-caps: var(--type-caps-tracking);
+  --tracking-normal: var(--type-normal-tracking);
+  --tracking-display: var(--type-display-tracking);
+
+  --font-weight-extrabold: var(--display-weight);
+  /* One grotesque, two widths (docs/design/constitution.md, 2026-10-13 amendment): Archivo at 100 for
+     interface text, at the SemiExpanded width for display headings and money figures. */
+  --font-sans: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
+  --font-display--font-variation-settings: "wdth" var(--type-display-width);
+  --font-mono: var(--font-jetbrains), ui-monospace, "Cascadia Mono", Consolas, "SF Mono", monospace;
+
+  --shadow-*: initial;
+  /* Borders carry structure. `raised` is a flat bottom edge, not a blur; only overlays (menus, dialogs,
+     toasts) cast a short shadow, because they sit above the page rather than in its grid. Derived from ink. */
+  --shadow-raised: 0 1px 0 color-mix(in oklch, var(--shadow) calc(10% * var(--shadow-weight)), transparent);
+  --shadow-overlay: 0 6px 16px color-mix(in oklch, var(--shadow) calc(12% * var(--shadow-weight)), transparent), 0 1px 3px color-mix(in oklch, var(--shadow) calc(8% * var(--shadow-weight)), transparent);
+
+  --ease-reveal: var(--motion-reveal-ease);
+  --ease-bind: var(--motion-bind-ease);
+  --ease-transfer: var(--motion-transfer-ease);
+  --ease-reflow: var(--motion-reflow-ease);
+  --ease-stamp: var(--motion-stamp-ease);
+  --ease-thread: var(--motion-thread-ease);
+  --ease-exit: var(--motion-exit-ease);
+}
+
+/* Motion grammar (constitution): every animation names its meaning. */
+@utility motion-reveal {
+  transition-duration: var(--motion-reveal-duration);
+  transition-timing-function: var(--motion-reveal-ease);
+}
+@utility motion-bind {
+  transition-duration: var(--motion-bind-duration);
+  transition-timing-function: var(--motion-bind-ease);
+}
+@utility motion-transfer {
+  transition-duration: var(--motion-transfer-duration);
+  transition-timing-function: var(--motion-transfer-ease);
+}
+@utility motion-reflow {
+  transition-duration: var(--motion-reflow-duration);
+  transition-timing-function: var(--motion-reflow-ease);
+}
+@utility motion-stamp {
+  transition-duration: var(--motion-stamp-duration);
+  transition-timing-function: var(--motion-stamp-ease);
+}
+@utility motion-thread {
+  transition-duration: var(--motion-thread-duration);
+  transition-timing-function: var(--motion-thread-ease);
+}
+/* Uppercase label: field captions, table heads, menu groups. One size, weight and tracking. */
+@utility caps {
+  font-size: var(--type-xs);
+  line-height: var(--type-xs-leading);
+  font-weight: 600;
+  letter-spacing: var(--type-caps-tracking);
+  text-transform: uppercase;
+}
+@utility tabular {
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+@keyframes reveal-in {
+  from { opacity: 0; transform: translateY(calc(var(--motion-distance-sm) * -1)); }
+}
+@keyframes stamp-in {
+  from { opacity: 0; transform: scale(1.06); }
+}
+@keyframes thread-draw {
+  from { transform: scaleX(0); }
+}
+@keyframes transfer-in {
+  from { opacity: 0; transform: translateX(var(--motion-distance-md)); }
+}
+@keyframes skeleton-pulse {
+  50% { opacity: 0.55; }
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@utility animate-reveal {
+  animation: reveal-in var(--motion-reveal-duration) var(--motion-reveal-ease) both;
+}
+@utility animate-stamp {
+  animation: stamp-in var(--motion-stamp-duration) var(--motion-stamp-ease) both;
+}
+@utility animate-thread {
+  transform-origin: left center;
+  animation: thread-draw var(--motion-thread-duration) var(--motion-thread-ease) both;
+}
+@utility animate-transfer {
+  animation: transfer-in var(--motion-transfer-duration) var(--motion-transfer-ease) both;
+}
+@utility animate-skeleton {
+  animation: skeleton-pulse 1.4s ease-in-out infinite;
+}
+@utility animate-spin {
+  animation: spin 0.8s linear infinite;
+}
+
+/* Explicit data-theme wins; otherwise the system preference decides. Prefer tokens; this is for assets
+   that cannot take a variable (the logo files). */
+@custom-variant dark {
+  &:where([data-theme="dark"], [data-theme="dark"] *) { @slot; }
+  @media (prefers-color-scheme: dark) {
+    &:where(:root:not([data-theme="light"]), :root:not([data-theme="light"]) *) { @slot; }
+  }
+}
+
+/* Chrome regions (mastheads): the outer focus outline switches to the chrome foreground. */
+@utility on-chrome {
+  --ring-contrast: var(--chrome-foreground);
+}
+
+@custom-variant density-compact (&:where([data-density="compact"], [data-density="compact"] *));
+@custom-variant density-spacious (&:where([data-density="spacious"], [data-density="spacious"] *));
+
+@layer base {
+  :root {
+    color-scheme: light;
+    accent-color: var(--primary);
+    caret-color: var(--primary);
+  }
+  :root[data-theme="dark"] { color-scheme: dark; }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) { color-scheme: dark; }
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    scrollbar-color: var(--border-strong) var(--sunken);
+  }
+
+  body {
+    background: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+    font-size: var(--type-md);
+    line-height: var(--type-md-leading);
+  }
+
+  h1, h2, h3, h4 {
+    font-family: var(--font-display);
+    text-wrap: balance;
+    letter-spacing: -0.01em;
+  }
+  /* Page and section headings take the display width; h3 and h4 are card and panel titles and stay at
+     the text width unless they opt in with font-display. */
+  h1, h2 {
+    font-variation-settings: "wdth" var(--type-display-width);
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  ::selection {
+    background: var(--signal);
+    color: var(--signal-foreground);
+  }
+
+  a {
+    text-underline-offset: 0.2em;
+    text-decoration-thickness: 1px;
+  }
+
+  table, input, output, [data-numeric] {
+    font-variant-numeric: tabular-nums lining-nums;
+  }
+
+  /* Two-tone focus: amber brand ring inside an ink outline that meets WCAG 1.4.11. */
+  :focus-visible {
+    outline: 2px solid var(--ring-contrast);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 2px var(--color-ring);
+  }
+
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: var(--sunken); }
+  ::-webkit-scrollbar-thumb { background: var(--border-strong); border: 2px solid var(--sunken); border-radius: var(--radius-control); }
+
+  /* The only device query in the system (manual 6.12): coarse pointers get 44px controls. */
+  @media (pointer: coarse) {
+    :root, [data-density="compact"], [data-density="comfortable"] {
+      --density-control-height: var(--touch-target);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, ::before, ::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+/* Rich text: styles exactly the backend allow-list (lib/richtext.ts) and nothing else. */
+@layer components {
+  .rich-text {
+    max-width: 68ch;
+    overflow-wrap: anywhere;
+  }
+  .rich-text > * + * { margin-top: 0.75em; }
+  .rich-text h3, .rich-text h4 { font-weight: 700; margin-top: 1.25em; }
+  .rich-text h3 { font-size: var(--type-lg); line-height: var(--type-lg-leading); }
+  .rich-text h4 { font-size: var(--type-md); line-height: var(--type-md-leading); }
+  .rich-text strong, .rich-text b { font-weight: 600; }
+  .rich-text ul, .rich-text ol { padding-left: 1.25em; }
+  .rich-text ul { list-style: square; }
+  .rich-text ol { list-style: decimal; }
+  .rich-text li + li { margin-top: 0.25em; }
+  .rich-text li::marker { color: var(--color-muted); }
+  .rich-text a { color: var(--color-primary); text-decoration: underline; }
+  .rich-text a:hover { color: var(--color-primary-hover); }
+}

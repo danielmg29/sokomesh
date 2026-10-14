@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" width="400" height="300" role="img" aria-label="Demo illustration: carton of twenty-five 800 g laundry soap bars">
+  <ellipse cx="200" cy="262" rx="150" ry="14" fill="#13251D" opacity=".08"/>
+  <path d="M82 130h220v130H82z" fill="#2A557F"/>
+  <path d="M302 130l38-28v130l-38 28z" fill="#22476B"/>
+  <path d="M82 130l38-28h220l-38 28z" fill="#3B6A96"/>
+  <g fill="#F2D35B"><path d="M104 104l30-22h60l-30 22zM180 104l30-22h60l-30 22z"/></g>
+  <path d="M100 160h184v70H100z" fill="#FFFFFF"/>
+  <path d="M112 174h96v12h-96z" fill="#2A557F"/>
+  <path d="M112 196h150v6H112zM112 210h120v6H112z" fill="#A9B3A3"/>
+</svg>
