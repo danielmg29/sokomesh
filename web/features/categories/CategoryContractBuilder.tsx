@@ -6,8 +6,9 @@
 
 import { Plus, Trash2 } from 'lucide-react'
 import { useState } from 'react'
+import { EmptyState } from '@/components/kernel/feedback/EmptyState'
 import { FieldFilter, FieldInput } from '@/components/kernel/fields/FieldInput'
-import type { FilterValue } from '@/components/kernel/fields/types'
+import { asStringList, type FilterValue } from '@/components/kernel/fields/types'
 import { Button, IconButton } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/choice'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/disclosure'
@@ -15,8 +16,11 @@ import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
 import { Stamp } from '@/components/ui/stamp'
 import { TBody, THead, Table, Td, Th, Tr } from '@/components/ui/table'
+import { FacetChips, TablePager, TableSearch, TableToolbar } from '@/components/ui/table-controls'
+import { useTableQuery } from '@/lib/client/use-table-query'
 import { cn } from '@/lib/cn'
 import type { FieldMeta } from '@/lib/contract/types'
+import type { Accessors } from '@/lib/query'
 
 export type Attribute = {
   key: string
@@ -30,6 +34,14 @@ export type Attribute = {
 }
 
 type Status = 'draft' | 'published'
+
+/** An attribute with its position, so edits made in a filtered or paged view land on the right row. */
+type Indexed = { a: Attribute; i: number }
+const flagOptions = [{ value: 'required', label: 'Required' }, { value: 'facet', label: 'Buyer filter' }, { value: 'comparable', label: 'Compared' }] as const
+const attributeAccess: Accessors<Indexed> = {
+  text: ({ a }) => [a.key, a.label, a.unit, a.choices],
+  value: ({ a }, key) => (key === 'type' ? a.type : key === 'flags' ? flagOptions.filter(f => a[f.value]).map(f => f.value) : undefined),
+}
 
 const typeOptions = [
   { value: 'enum', label: 'Choice' }, { value: 'decimal', label: 'Measurement' }, { value: 'integer', label: 'Count' }, { value: 'string', label: 'Text' }, { value: 'boolean', label: 'Yes / no' },
@@ -69,6 +81,11 @@ export function CategoryContractBuilder({ category, version, attributes: initial
   const fields = attrs.map(attributeToField)
   const update = (i: number, patch: Partial<Attribute>) => { setAttrs(list => list.map((a, j) => (j === i ? { ...a, ...patch } : a))); if (published) setStatus('draft') }
   const look = published ? { tone: 'success' as const, label: `Published v${version}` } : invalid ? { tone: 'danger' as const, label: 'Invalid' } : { tone: 'info' as const, label: `Draft v${version + 1}` }
+  const t = useTableQuery(attrs.map((a, i) => ({ a, i })), attributeAccess, { pageSize: 10 })
+  const typeCounts = t.counts('type')
+  const flagCounts = t.counts('flags')
+  const facet = (key: string) => asStringList(t.query.filters[key]?.value)
+  const setFacet = (key: string) => (next: string[]) => t.setFilter(key, next.length ? { op: 'in', value: next } : undefined)
 
   return (
     <section className="flex min-w-0 flex-col gap-4 rounded-md border border-border bg-surface p-4" aria-label={`Category contract: ${category}`}>
@@ -88,11 +105,21 @@ export function CategoryContractBuilder({ category, version, attributes: initial
           <TabsTrigger value="display">Display</TabsTrigger>
         </TabsList>
         <TabsContent value="attributes" className="flex flex-col gap-3">
-          <div className="overflow-x-auto rounded-sm border border-border" data-density="compact">
+          <TableToolbar active={t.active} onClear={t.clear}
+            search={<TableSearch label="Search attributes" placeholder="Key, label, unit or choice…" value={t.query.q} onChange={t.setSearch} />}
+            facets={<>
+              <FacetChips label="Type" options={typeOptions.map(o => ({ ...o, count: typeCounts[o.value] ?? 0 }))} value={facet('type')} onChange={setFacet('type')} />
+              <FacetChips label="Marked" options={flagOptions.map(o => ({ ...o, count: flagCounts[o.value] ?? 0 }))} value={facet('flags')} onChange={setFacet('flags')} />
+            </>} />
+          <div className="rounded-sm border border-border" data-density="compact">
+            {t.result.total === 0 ? (
+              <EmptyState kind="no-results" title="No attributes match" description="Try another key or remove a filter." action={<Button variant="secondary" onClick={t.clear}>Clear search and filters</Button>} />
+            ) : (
+            <div className="overflow-x-auto">
             <Table caption="Attributes">
               <THead><tr><Th>Key</Th><Th>Label</Th><Th>Type</Th><Th>Unit</Th><Th>Required</Th><Th>Filter</Th><Th>Compare</Th><Th><span className="sr-only">Remove</span></Th></tr></THead>
               <TBody>
-                {attrs.map((a, i) => (
+                {t.result.rows.map(({ a, i }) => (
                   <Tr key={i} className={cn(errors[a.key] && 'bg-tone-danger-bg/30')}>
                     <Td><Input aria-label={`Key for ${a.label}`} value={a.key} onChange={e => update(i, { key: e.target.value })} className="h-8 w-36 font-mono text-sm" aria-invalid={Boolean(errors[a.key]) || undefined} />{errors[a.key] ? <p className="mt-1 max-w-48 text-xs font-medium text-tone-danger">{errors[a.key]}</p> : null}</Td>
                     <Td><Input aria-label={`Label for ${a.key}`} value={a.label} onChange={e => update(i, { label: e.target.value })} className="h-8 w-40" /></Td>
@@ -106,8 +133,12 @@ export function CategoryContractBuilder({ category, version, attributes: initial
                 ))}
               </TBody>
             </Table>
+            </div>
+            )}
+            <TablePager result={t.result} onPage={t.setPage} onPageSize={t.setPageSize} noun={{ one: 'attribute', other: 'attributes' }} unfiltered={attrs.length} className="border-t border-border" />
           </div>
-          <Button size="sm" variant="secondary" leadingIcon={Plus} className="self-start" onClick={() => { setAttrs(list => [...list, { key: `attribute_${list.length + 1}`, label: 'New attribute', type: 'enum', required: false, facet: false, comparable: false, choices: ['Option A'] }]); setStatus('draft') }}>Add attribute</Button>
+          {/* A new attribute goes last: clear the view and turn to the last page so it is in sight. */}
+          <Button size="sm" variant="secondary" leadingIcon={Plus} className="self-start" onClick={() => { setAttrs(list => [...list, { key: `attribute_${list.length + 1}`, label: 'New attribute', type: 'enum', required: false, facet: false, comparable: false, choices: ['Option A'] }]); setStatus('draft'); t.clear(); t.setPage(Number.MAX_SAFE_INTEGER) }}>Add attribute</Button>
         </TabsContent>
         <TabsContent value="units">
           <ul className="flex flex-col divide-y divide-border rounded-sm border border-border text-md">

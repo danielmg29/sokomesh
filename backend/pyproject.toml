@@ -9,6 +9,7 @@ dependencies = [
     "channels-redis>=4",
     "django>=6.1,<6.2",
     "django-environ>=0.14.0",
+    "nh3==0.3.7",
     "psycopg[binary,pool]>=3.3.6",
     "redis>=5",
     "uvicorn[standard]>=0.54.0",

@@ -95,6 +95,58 @@ SECURE_CSP = {"default-src": ["'self'"], "frame-ancestors": ["'none'"]}
 LANGUAGE_CODE = "en-us"
 # Languages SokoMesh writes to people in (product owner, 2026-10-13): Kenya's two official languages.
 # Labels are endonyms so each reads in its own language in a picker. Exported as the contract's `locales`.
+# The only HTML the four rich-text fields may store (spec p.5; widened by the product owner on
+# 2026-10-14 to carry underline, strikethrough, inline code, quotes, rules, captioned images, video
+# embeds and simple tables). core/richtext.py sanitises against it on every write; it is exported as
+# the contract's `richText`, which the web editor and its preview mirror. Tags map to their allowed
+# attributes. Images load over https or from this origin; video is stored as an oEmbed reference to
+# an allow-listed provider, never as an iframe, and the client builds the player from `player`.
+AC_RICH_TEXT = {
+    "tags": {
+        "p": [],
+        "br": [],
+        "h3": [],
+        "h4": [],
+        "strong": [],
+        "em": [],
+        "u": [],
+        "s": [],
+        "code": [],
+        "ul": [],
+        "ol": [],
+        "li": [],
+        "blockquote": [],
+        "hr": [],
+        "a": ["href"],
+        "figure": ["class"],
+        "figcaption": [],
+        "img": ["src", "alt"],
+        "oembed": ["url"],
+        "table": [],
+        "thead": [],
+        "tbody": [],
+        "tr": [],
+        "th": [],
+        "td": [],
+    },
+    "classes": {"figure": ["image", "media"]},
+    "link_schemes": ["https", "http", "mailto"],
+    "image_schemes": ["https"],
+    "same_origin_images": True,
+    "embeds": [
+        {
+            "name": "YouTube",
+            "url": r"^https://www\.youtube\.com/watch\?v=([A-Za-z0-9_-]{11})$",
+            "player": "https://www.youtube-nocookie.com/embed/{id}",
+        },
+        {
+            "name": "Vimeo",
+            "url": r"^https://vimeo\.com/(\d{6,12})$",
+            "player": "https://player.vimeo.com/video/{id}?dnt=1",
+        },
+    ],
+}
+
 AC_LOCALES = {
     "default": "en-KE",
     "supported": [("en-KE", "English"), ("sw-KE", "Kiswahili")],
@@ -110,7 +162,7 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 
 AC_CONTRACT = {
     # Bump with every contract change: major = breaking, minor = additive, patch = presentational.
-    "version": "0.2.0",
+    "version": "0.3.0",
     "api_base": "/api/v1/",
     "path": Path(env("AC_CONTRACT_PATH", default=str(REPO_DIR / "contract" / "ac-contract.json"))),
 }

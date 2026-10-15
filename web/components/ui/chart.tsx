@@ -1,11 +1,46 @@
 'use client'
 
-import { useState, type KeyboardEvent } from 'react'
+import { useMemo, useState, type KeyboardEvent } from 'react'
+import { useTableQuery } from '@/lib/client/use-table-query'
 import { cn } from '@/lib/cn'
+import type { Accessors } from '@/lib/query'
 import { Segmented } from './choice'
 import { TBody, THead, Table, Td, Th, Tr } from './table'
+import { FacetChips, TablePager, TableSearch, TableToolbar } from './table-controls'
 
 export type ColumnDatum = { key: string; label: string; value: number; display: string }
+
+/**
+ * The chart's own data as a table: searchable by category or figure, narrowed to values above or at and
+ * below the mean, in pages, so a 90-day range stays readable without a scroll box.
+ */
+function ChartTable({ data, title, categoryLabel, valueLabel }: { data: readonly ColumnDatum[]; title: string; categoryLabel: string; valueLabel: string }) {
+  const mean = data.length ? data.reduce((sum, d) => sum + d.value, 0) / data.length : 0
+  const access = useMemo<Accessors<ColumnDatum>>(() => ({
+    text: d => [d.label, d.display],
+    value: (d, key) => (key === 'level' ? (d.value > mean ? 'above' : 'below') : d[key as keyof ColumnDatum]),
+  }), [mean])
+  const t = useTableQuery(data, access, { pageSize: 10 })
+  const counts = t.counts('level')
+  const level = t.query.filters.level?.value
+  return (
+    <div className="flex flex-col gap-3">
+      <TableToolbar active={t.active} onClear={t.clear}
+        search={<TableSearch label={`Search ${title}`} placeholder={`${categoryLabel} or figure…`} value={t.query.q} onChange={t.setSearch} />}
+        facets={<FacetChips label="Value" value={Array.isArray(level) ? level.map(String) : []}
+          options={[{ value: 'above', label: 'Above average', count: counts.above ?? 0 }, { value: 'below', label: 'At or below average', count: counts.below ?? 0 }]}
+          onChange={next => t.setFilter('level', next.length ? { op: 'in', value: next } : undefined)} />} />
+      <div className="rounded-sm border border-border" data-density="compact">
+        {t.result.total ? (
+          <Table caption={title}><THead><tr><Th>{categoryLabel}</Th><Th numeric>{valueLabel}</Th></tr></THead>
+            <TBody>{t.result.rows.map(d => <Tr key={d.key}><Td>{d.label}</Td><Td numeric>{d.display}</Td></Tr>)}</TBody>
+          </Table>
+        ) : <p className="px-3 py-6 text-center text-md text-muted">Nothing matches. Clear the search or the value filter.</p>}
+        <TablePager result={t.result} onPage={t.setPage} onPageSize={t.setPageSize} noun={{ one: 'row', other: 'rows' }} unfiltered={data.length} className="border-t border-border" />
+      </div>
+    </div>
+  )
+}
 
 function niceMax(max: number) {
   if (max <= 0) return 1
@@ -63,11 +98,7 @@ export function ColumnChart({ data, title, valueLabel, formatTick, height = 200,
         <Segmented label="Chart or table" size="sm" value={view} onValueChange={setView} items={[{ value: 'chart', label: 'Chart' }, { value: 'table', label: 'Table' }]} />
       </div>
       {view === 'table' ? (
-        <div className="max-h-72 overflow-auto rounded-sm border border-border" data-density="compact">
-          <Table caption={title}><THead sticky><tr><Th>{categoryLabel}</Th><Th numeric>{valueLabel}</Th></tr></THead>
-            <TBody>{data.map(d => <Tr key={d.key}><Td>{d.label}</Td><Td numeric>{d.display}</Td></Tr>)}</TBody>
-          </Table>
-        </div>
+        <ChartTable data={data} title={title} categoryLabel={categoryLabel} valueLabel={valueLabel} />
       ) : (
         <div className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-2 pt-6">
           <div className="relative text-right text-xs text-muted tabular" style={{ height }} aria-hidden="true">

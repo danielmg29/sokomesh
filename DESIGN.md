@@ -321,7 +321,7 @@ Every animation names one of six meanings (constitution). If it has none, remove
 | TRANSFER | Move through a workflow | 280ms | cubic-bezier(0.65, 0, 0.35, 1) | Step changes; `animate-transfer` enters 8px from the side |
 | REFLOW | Respond to filter, sort, grouping | 240ms | cubic-bezier(0.16, 1, 0.3, 1) | Ledger and recipe re-layout, applied filter tokens |
 | STAMP | Confirm authoritative state | 180ms | cubic-bezier(0.2, 0, 0, 1) | Fresh stamp, current thread node, radio dot; scales in from 1.06 |
-| THREAD | Show process progression | 340ms | cubic-bezier(0.4, 0, 0.2, 1) | Connector draws left to right into the current step; the market mesh draws once |
+| THREAD | Show process progression | 340ms | cubic-bezier(0.4, 0, 0.2, 1) | Connector draws left to right into the current step; flow-story rules turn primary behind the current step and signal on it |
 | Exit | Leave (faster than entering) | 120ms | cubic-bezier(0.7, 0, 0.84, 0) | Overlays and toasts closing |
 
 Travel is capped at 4px (`motion-distance-sm`) and 8px (`motion-distance-md`). `prefers-reduced-motion` collapses every animation and transition to 0.01ms globally. Theme changes are instant: no cross-fade. The ribbon is static.
@@ -343,7 +343,7 @@ A warm, very low-chroma neutral system with one authoritative green in two roles
 - **Forest Primary** (`forest-primary`, night `night-primary`): the interactive green. Primary actions, links, selected and completed states, chart columns, caret and accent colour. White on it reads 7.95:1 in light; in dark it lifts to a brighter forest with ink on it, because white fails on the lifted green.
 - **Forest Deep** (`forest-deep`, night `night-primary-hover`): hover and pressed primary; the active chart column.
 - **Forest Soft** (`forest-soft`, night `night-primary-soft`): selected rows and active navigation.
-- **Brand Forest** (`brand-forest`, the same value in both themes) with **On Brand** white (7.95:1): brand regions and illustration only: the CTA band, the ribbon, mesh nodes, the 6px band under the masthead. It is not an interactive colour and does not lift at night.
+- **Brand Forest** (`brand-forest`, the same value in both themes) with **On Brand** white (7.95:1): brand regions and illustration only: the CTA band, the ribbon, the 6px band under the masthead. It is not an interactive colour and does not lift at night.
 
 ### Secondary
 - **Signal Amber** (`signal-amber`, unchanged in both themes): trade attention only: applied filter tokens, reserved stock and the held-quantity strip, featured, "your price", the current flow step, the unread mark, text selection, the inner tone of the focus ring, the ribbon's thread. Text on it is always ink (8.88:1). It is never text on the light canvas.
@@ -428,6 +428,8 @@ The scale is fixed in `design/tokens/type.json`: 12/16, 13/18, 14/20, 16/26, 18/
 
 Spacing is a 4px grid (`--spacing` is bound to `space-unit`). Layout primitives in `web/components/layout/primitives.tsx` respond to **container queries**, not the viewport. Split collapses to one column below `@3xl`; its ratios are `sidebar`, `wide-aside`, `half`, `media-first` and `aside-first` (an 18rem facet column). Marketing sections lay out by container too (decision 20).
 
+**MARKET pages after the references.** The landing opens on two photographic doors (buy, sell) with the trade terms as a ruled row beneath; then photographic category tiles, a product row, one oversized statement, two photographic stories and a CTA with a photograph. Sections are held apart by space (80 to 112px) rather than rules, and each rises in once on scroll. The category page names the category large beside its photograph, puts filters and sort in one bar and gives the grid the full width. The product page scrolls its photographs on the left while the buying column stays in view on the right.
+
 **Containers over floating cards.** Repeated records sit in one container whose cells share rules: the list has a top and left rule, each cell a right and bottom rule, so a short last row leaves open ground instead of an empty grey cell. `ListBlock` (card intent), `RelatedBlock`, `CategoryShowcase`, `MediaManager`, the hero shelf and the trust proofs all use it. Sections of a page sit between full-width rules (`divide-y`) at a 48px rhythm.
 
 Density is a region property, set with `data-density`:
@@ -438,7 +440,7 @@ Density is a region property, set with `data-density`:
 | comfortable | 40px | 10px | 14px | 12px | 14px | 18px | default |
 | spacious | 48px | 14px | 18px | 16px | 15px | 20px | MARKET on phones |
 
-Page templates L-01 to L-25 are composed live in `web/features/design-system/specimens/templates.tsx` from the real blocks. The landing (L-01) runs header, hero, category discovery, then the mechanisms (mesh, value split, flow, trust, terms) and the CTA: commerce before explanation.
+Page templates L-01 to L-25 are composed live in `web/features/design-system/specimens/templates.tsx` from the real blocks. The landing (L-01) runs header, hero, category discovery, a product row, the statement and the two stories, then the mechanisms (mesh, flow, trust) and the CTA over a chrome footer: commerce before explanation.
 
 **The Coarse Pointer Rule.** Under `pointer: coarse`, control height rises to the 44px `touch-target`.
 
@@ -467,6 +469,8 @@ One rule, from `design/tokens/shape.json`:
 
 ## Imagery
 
+**Scene photographs** (`design/photography/scenes.py`, from `scenes.json`) lead MARKET pages: shops, warehouses, roads and fields from Unsplash. Every one gets the same treatment so a page reads as one shoot: a crop to its slot, one warm matte grade (saturation 0.9, warmth 2.5%, blacks lifted to 10, highlights to 247), and where text sits on the photograph a baked darker lower part (white text) or a light veil in the photograph's own top colour (dark text). Text contrast is measured on the file. Files have content-hashed names, a blur placeholder and a focal point that the interface applies as `object-position`. Below the two-column width, hero text moves under the photograph onto a solid ground.
+
 Product photographs are **cut-outs**: `design/photography/cutout.py` keys each photograph against its own border colour (only ground connected to the edge is removed, so a white product in a white bowl survives), removes the ground's colour from edge pixels so no halo glows on the dark well, trims, adds a short black contact shadow at low alpha, and writes WebP with alpha to `web/public/images/products/`. The web layer sets them on `well` with 6% padding (10% in category cells), so the theme decides the ground. Per-photo options (crop, erase, ground mode, key thresholds, speck removal) live in `design/photography/sources.json`; the ground can be the frame's median colour, a graded column field for studio sweeps, colourfulness (to drop a neutral plate) or one channel (to drop a dark cloth). The script also writes `credits.json` and `README.md` beside the files from the same manifest; the design-system page lists the credits under the ledger. CC BY-SA cut-outs are shared under the same licence. Alt text describes what the photograph shows and says it is a demo photograph; category tiles use empty alt because the category name is the link text.
 
 ## Components
@@ -476,7 +480,7 @@ Components come in tiers. Put new work in the lowest tier that can express it: d
 | Tier | Path | Holds |
 |---|---|---|
 | Tokens | `design/tokens/` | Every value. Generated to CSS and TS. |
-| Primitives | `web/components/ui/` | Button, Input, chip recipe, choice, ThemeSwitch, Select, Combobox, Dialog, Table, Stamp, Thread, ColumnChart, Icon, Toast, BrandLogo |
+| Primitives | `web/components/ui/` | Button, Input, chip recipe, choice, ThemeSwitch, Select, Combobox, Dialog, Table, table controls (TableSearch, FacetChips, TablePager), Stamp, Thread, ColumnChart, Icon, Toast, BrandLogo |
 | Layout | `web/components/layout/` | Stack, Cluster, Split, Grid, DensityRegion, Container, AppShell |
 | Kernel | `web/components/kernel/` | Recipes (intent, density, tone, surface), slots (title, subtitle, badge, media, figure, meta, timestamp, owner, actions), field registry, feedback, actions, nav, blocks, ProjectedForm, Projection |
 | Commerce | `web/components/commerce/` | Stock, pricing, cart, checkout, orders, catalog, admin, notifications |
@@ -485,8 +489,27 @@ Components come in tiers. Put new work in the lowest tier that can express it: d
 ### Buttons
 2px corner, 1px border, semibold. sm 32px; md follows density; lg 48px for FLOW primary actions. **Primary** forest; **Secondary** surface with the strong rule; **Ghost**; **Signal** amber with ink, for trade-attention actions only; **Danger** and outlines; **link**. BIND transitions, a 1px press settle, no scale on hover. Icon-only buttons require a label.
 
+### Tables
+Every table searches, filters and pages, live, through one engine (`web/lib/query.ts`, state in `web/lib/client/use-table-query.ts`), so the same words find the same rows everywhere:
+- **Search** needs every word somewhere in the row, ignoring case and accents, at most 8 words and 200 characters. Contract lists search only `meta.search`.
+- **Filters** follow the field's declared operators (`in`, `eq`, `contains`, `range`, `gte`, `lte`, `isnull`); distance (`near`) needs the server and is not offered client-side. Typed commerce tables use **facet chips** whose counts say what each choice would show beside the other filters; a chip that would show nothing is disabled.
+- **Sorting** is stable and type-aware (numbers by value, dates by instant, text by `en-KE` collation with numbers in order); blanks sort last both ways. Contract lists sort only over `meta.ordering`.
+- **Pages** are numbered (first, last and a window around the current page, with gaps), "Showing 1 to 10 of 27, from 34" when filtered, rows per page from 10, 25, 50, 100 up to `limits.maxPageSize`. Changing what matches returns to page 1; changing the page size keeps the first visible row. Narrow containers keep previous and next with "Page 2 of 3".
+- No match shows the no-results empty state with one "Clear search and filters" action, inside the table's own frame.
+
+Crawlable public lists keep the cursor `Pagination` links; a server-paged list sends the same query to the API instead of filtering in memory. The price tier ladder, the product comparison matrix and tables inside rich-text content are not record lists and have no controls.
+
 ### Product cells (Projection, media intent)
 The photo sits in its well at 4:3 with the stock STAMP pinned top left; below it the title, the seller (subtitle), the meta list (pack, minimum order) and, closing the cell at the same height across a row, the **figure** with its label. Actions follow. In row intent the figure sits right-aligned beside the timestamp; in detail it sits under the title at 38/44.
+
+### Storefront sections
+- **`StorySplit`** (M-12): a scene photograph on one half and the argument on the other, in one ruled container; photograph left or right, never three in a row.
+- **`TradeStatement`** (M-13): one statement per page at `text-statement` (`clamp(3rem, 13cqw, 10.5rem)`, leading 0.9), two lines in ink and primary, with a product cut-out standing in front of the words; the words stay real text and the photograph is decorative.
+- **`MarketMeshVisualization`** (M-03): one product's record. The parts of the market sit on the light ground and the record on the chrome ground, and each part shares a grid row with the entry it wrote, so rules and the lit band run straight across the seam (subgrid rows; no connector lines). Availability is set at `text-statement`, and the record closes on its own sum (in, out, available). Choosing a part lights its row on both sides and steps the other entries back. Below the two-column width the record stands alone and drops the running balance.
+- **`TradeFlowStory`** (M-06): four numbered steps as one ruled thread (display-width numerals, 2px top rules: primary behind the current step, signal on it), then the step's argument beside its real component on the well, with a "Next" link.
+- **`InventoryTrustProof`** (M-07): the argument and an index of the three guarantees hold their place on the left (sticky) while the proofs scroll past on the right, each on the well with the component that enforces it, after Not Another Bill's two-column page. No segmented control: all three proofs are on the page.
+- **`MarketingFooter`** (M-10): the page close on the chrome ground with the reversed logo, so a MARKET page is bookended by the masthead's chrome strip and the footer.
+- **`CategoryHero`** (X-29) and **`SortSelect`** (K-19): the catalogue header and the one sort control, whose options come from the contract's allow-listed `ordering` with labels from each field's label and type.
 
 ### Stamps
 Uppercase 12px semibold at `tracking-caps`, 2px corner, 1.5px border, tone pair, tabular, each tone with a drawn mark; precise conditions override the mark (pending clock, processing spinner, partial, restricted lock, unavailable, unknown). `fresh` plays STAMP once.
@@ -517,6 +540,11 @@ Surface, strong rule, 2px corner, height from density. Prefix and suffix sit ins
 ### Notifications
 `NotificationBell` with an amber count stamp; `NotificationsBlock` as panel or page section; `NotificationPreferencesBlock` opens with the **language** select (from the contract's `locales`: English, Kiswahili) and its help line, then the ledger of events by channel with a switch per cell; every change saves on its own and says "Saving".
 
+### Rich-text editor
+`RichTextInput` lazy-loads `components/kernel/fields/rich-text/RichTextEditor.tsx` (Tiptap, CKEditor 5 classic layout) for the four rich-text fields only. One frame with a 2px corner and the strong rule; the toolbar band is `sunken` with 32px square tools (44px on coarse pointers), a "Text style" menu (Paragraph, Heading, Subheading) and 1px separators between groups: history, text style and marks, link, lists with indent, insert (image, video, table, quote, rule). The editor measures its own width: below 560px the extra marks and indent tools, and below 700px the insert group, fold into "Show more items" (a labelled menu). Pressed tools take `primary-soft` with primary ink; unavailable tools stay focusable with `aria-disabled`. The toolbar is one tab stop with arrow-key movement; Alt+F10 reaches it from the text and Esc returns. Forms for link, image, video and table open inline under the toolbar (REVEAL), not in floating balloons; the selected link, image, video or table gets a contextual bar with its own actions. A status bar gives the Alt+F10 hint, words, and characters against the field's limit (danger ink when over). Images need a text alternative or an explicit "Decorative image"; uploads wait for the media pipeline and say so. Video is a still card in the editor and a click-to-play card in the view (`VideoEmbed`), loading the provider only on press.
+
+**The Server Allow-List Rule.** Rich text can contain only what the contract's `richText` lists; the editor's schema, the client preview and the server sanitiser all read that one policy.
+
 ### Icons
 Lucide outlines through `Icon`: 1.75 stroke, square caps, mitred joins. No icon containers, no icons in circles.
 
@@ -527,7 +555,7 @@ Lucide outlines through `Icon`: 1.75 stroke, square caps, mitred joins. No icon 
 Every interactive component considers default, hover, focus-visible, active, disabled, loading, empty, error, success and permission-restricted, in both themes. Commerce components also consider out-of-stock, low-stock, reserved, reservation-expired, repriced, approval-required, payment-pending, partially-fulfilled, delayed and webhook-stale. Unavailable actions say why.
 
 ### Reference surface
-`/design-system` is the live inventory: 150 catalogue rows in `catalogue.ts` (11 foundations, 18 primitives, 26 fields, 18 kernel, 10 blocks, 28 kernel extensions, 3 divergent, 11 marketing, 25 templates), rendered from the real components with labelled Kenyan demo data.
+`/design-system` is the live inventory: 155 catalogue rows in `catalogue.ts` (11 foundations, 19 primitives, 26 fields, 19 kernel, 10 blocks, 29 kernel extensions, 3 divergent, 13 marketing, 25 templates), rendered from the real components with labelled Kenyan demo data.
 
 ## Do's and Don'ts
 

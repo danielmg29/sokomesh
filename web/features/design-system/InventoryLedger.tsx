@@ -4,7 +4,7 @@
 // .impeccable/surfaces; components shown here are the real ones used by the app.
 
 import { Boxes, ChevronRight, Grid3X3, Search, X } from 'lucide-react'
-import { lazy, Suspense, useMemo, useState, type ComponentType } from 'react'
+import { lazy, Suspense, useDeferredValue, useMemo, useRef, useState, type ComponentType } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { LoadingState } from '@/components/kernel/feedback/LoadingState'
 import { EmptyState } from '@/components/kernel/feedback/EmptyState'
@@ -16,13 +16,16 @@ import { chipStyles } from '@/components/ui/chip'
 import { Icon } from '@/components/ui/icon'
 import { Input } from '@/components/ui/input'
 import { TooltipProvider } from '@/components/ui/overlay'
+import { TablePager } from '@/components/ui/table-controls'
 import { ThemeSwitch } from '@/components/ui/theme'
 import { ToastProvider } from '@/components/ui/toast'
 import { cn } from '@/lib/cn'
-import { CONTRACT_VERSION } from '@/lib/contract/generated'
+import { CONTRACT_VERSION, limits } from '@/lib/contract/generated'
+import { filterRows, pageSizes, paginate, type Accessors } from '@/lib/query'
 import type { Density } from '@/lib/design/tokens.generated'
 // Generated with the cut-outs by design/photography/cutout.py; CC BY and CC BY-SA require these credits.
 import photoCredits from '@/public/images/products/credits.json'
+import sceneCredits from '@/public/images/scenes/scenes.json'
 import { catalogue, chainOf, classes, composedIn, modes, type Entry, type EntryClass, type Mode, type SpecimenModule } from './catalogue'
 import { JumpContext } from './kit'
 
@@ -43,6 +46,12 @@ const templateCount = catalogue.filter(e => e.cls === 'Template').length
 const position = new Map(catalogue.map((e, i) => [e.code, i]))
 const byComposed = (a: Entry, b: Entry) => (composedIn.get(b.code) ?? 0) - (composedIn.get(a.code) ?? 0) || position.get(a.code)! - position.get(b.code)!
 const defaultDensity = (e: Entry): Density => (e.modes.length === 1 && e.modes[0] !== 'MARKET' ? 'compact' : 'comfortable')
+// The inventory searches with the same engine as every table: all words must match, ignoring case and accents.
+const entryAccess: Accessors<Entry> = {
+  text: e => [e.code, e.name, e.summary, e.usedIn, e.source, ...e.states],
+  value: (e, key) => (key === 'class' ? e.cls : key === 'mode' ? e.modes : undefined),
+}
+const pageOf = (index: number, size: number) => Math.floor(index / size) + 1
 
 function useLedgerState() {
   const params = useSearchParams()
@@ -51,8 +60,13 @@ function useLedgerState() {
   const mode = (params.get('mode') as Mode | null) ?? null
   const open = params.has('open') ? (params.get('open') ?? '').split(',').filter(Boolean) : DEFAULT_OPEN
   const order: Order = params.get('order') === 'build' ? 'build' : 'composed'
-  // Native history keeps useSearchParams in sync without a navigation (Next.js App Router).
-  const write = (next: { q?: string; cls?: EntryClass | null; mode?: Mode | null; open?: string[]; order?: Order }) => {
+  const page = Number(params.get('page')) || null
+  const size = pageSizes.find(s => s === Number(params.get('size'))) ?? limits.defaultPageSize
+  // A deep link that opens a row (?open=M-03) lands on that row's page until the reader moves.
+  const [landing, setLanding] = useState(() => (!params.has('page') && params.has('open') ? (params.get('open') ?? '').split(',').find(Boolean) ?? null : null))
+  // Native history keeps useSearchParams in sync without a navigation (Next.js App Router). Changing what
+  // matches returns to the first page; turning a page keeps the filters.
+  const write = (next: { q?: string; cls?: EntryClass | null; mode?: Mode | null; open?: string[]; order?: Order; page?: number; size?: number }) => {
     const p = new URLSearchParams(params.toString())
     const set = (k: string, v: string | null | undefined) => (v ? p.set(k, v) : p.delete(k))
     if ('q' in next) set('q', next.q)
@@ -60,9 +74,13 @@ function useLedgerState() {
     if ('mode' in next) set('mode', next.mode)
     if ('open' in next) p.set('open', next.open!.join(','))
     if ('order' in next) set('order', next.order === 'build' ? 'build' : null)
+    if ('size' in next) set('size', next.size === limits.defaultPageSize ? null : String(next.size))
+    if ('page' in next) set('page', next.page && next.page > 1 ? String(next.page) : null)
+    else if ('q' in next || 'cls' in next || 'mode' in next || 'order' in next) p.delete('page')
+    if (!('open' in next) || 'page' in next) setLanding(null)
     window.history.replaceState(null, '', `?${p.toString()}`)
   }
-  return { q, cls, mode, open, order, write }
+  return { q, cls, mode, open, order, page, size, landing, write }
 }
 
 function Masthead({ onJump }: { onJump: (code: string) => void }) {
@@ -151,20 +169,28 @@ function EntryDetail({ entry }: { entry: Entry }) {
 }
 
 function Ledger() {
-  const { q, cls, mode, open, order, write } = useLedgerState()
+  const { q, cls, mode, open, order, page, size, landing, write } = useLedgerState()
   const [query, setQuery] = useState(q)
-  const rows = useMemo(() => {
-    const needle = query.trim().toLowerCase()
-    const hits = catalogue.filter(e =>
-      (!cls || e.cls === cls) && (!mode || e.modes.includes(mode)) &&
-      (!needle || [e.code, e.name, e.summary, e.usedIn, ...e.states].some(s => s.toLowerCase().includes(needle))))
-    return order === 'composed' ? hits.toSorted(byComposed) : hits
-  }, [query, cls, mode, order])
-  const toggle = (code: string) => write({ open: open.includes(code) ? open.filter(c => c !== code) : [...open, code] })
+  const typed = useDeferredValue(query)
+  const top = useRef<HTMLDivElement>(null)
+  const ordered = useMemo(() => (order === 'composed' ? catalogue.toSorted(byComposed) : [...catalogue]), [order])
+  const hits = useMemo(() => filterRows(ordered, typed, {
+    class: cls ? { op: 'eq', value: cls } : undefined,
+    mode: mode ? { op: 'in', value: [mode] } : undefined,
+  }, entryAccess), [ordered, typed, cls, mode])
+  const landingIndex = landing ? hits.findIndex(e => e.code === landing) : -1
+  const result = paginate(hits, page ?? (landingIndex >= 0 ? pageOf(landingIndex, size) : 1), size)
+  const rows = result.rows
+  const toggle = (code: string) => write({ open: open.includes(code) ? open.filter(c => c !== code) : [...open, code], page: result.page })
   const jump = (code: string) => {
-    write({ q: '', cls: null, mode: null, open: [...new Set([...open, code])] })
+    const i = ordered.findIndex(e => e.code === code)
+    write({ q: '', cls: null, mode: null, open: [...new Set([...open, code])], page: i >= 0 ? pageOf(i, size) : 1 })
     setQuery('')
     requestAnimationFrame(() => document.getElementById(`row-${code}`)?.scrollIntoView({ block: 'start' }))
+  }
+  const turn = (next: { page?: number; size?: number }) => {
+    write(next.size ? { size: next.size, page: pageOf(result.from - 1, next.size) } : { page: next.page })
+    top.current?.scrollIntoView({ block: 'nearest' })
   }
   const chip = (on: boolean) => chipStyles({ on, className: 'px-3' })
   const modeChip = (on: boolean) => chipStyles({ on, className: 'px-3 text-xs tracking-caps' })
@@ -186,7 +212,7 @@ function Ledger() {
             <div className="w-full sm:w-80">
               <Input type="search" aria-label="Filter components" placeholder="Filter by name, state or widget…" prefix={<Icon icon={Search} />} value={query} onChange={e => { setQuery(e.target.value); write({ q: e.target.value }) }} />
             </div>
-            <span className="text-sm text-muted tabular" aria-live="polite">{rows.length} of {catalogue.length}</span>
+            <span className="text-sm text-muted tabular" aria-live="polite">{hits.length} of {catalogue.length}</span>
             <div className="ml-auto"><Segmented label="Order" size="sm" value={order} onValueChange={v => write({ order: v })} items={[{ value: 'composed', label: 'Most composed' }, { value: 'build', label: 'Build order' }]} /></div>
             {(cls || mode || query) ? <Button size="sm" variant="ghost" leadingIcon={X} onClick={() => { setQuery(''); write({ q: '', cls: null, mode: null }) }}>Clear filters</Button> : null}
           </div>
@@ -198,8 +224,8 @@ function Ledger() {
           </div>
         </div>
 
-        <div className="@container overflow-clip rounded-md border border-border bg-surface">
-          {rows.length === 0 ? (
+        <div ref={top} className="@container scroll-mt-4 overflow-clip rounded-md border border-border bg-surface">
+          {hits.length === 0 ? (
             <EmptyState kind="no-results" title="No components match" description="Try a component name (CartBlock), a widget (currency) or a state (reserved)." action={<Button variant="secondary" onClick={() => { setQuery(''); write({ q: '', cls: null, mode: null }) }}>Clear filters</Button>} />
           ) : (
             <table className="w-full border-collapse text-md">
@@ -225,13 +251,17 @@ function Ledger() {
               </tbody>
             </table>
           )}
+          <TablePager result={result} onPage={p => turn({ page: p })} onPageSize={s => turn({ size: s })} noun={{ one: 'component', other: 'components' }} unfiltered={catalogue.length} className="border-t border-border" />
         </div>
         <p className="flex items-center gap-2 text-sm text-muted"><Icon icon={Boxes} />Source: SokoMesh Feature Build Order and Field Specification v1.1, pp. 51 to 58, and the SokoMesh Design Constitution. Organizations, people and figures are demo data.</p>
         <section aria-label="Photography credits" className="flex flex-col gap-2 border-t border-border pt-4 text-sm text-muted">
-          <p><span className="caps mr-2">Photography</span>Product photographs are demo material from Wikimedia Commons, cut out for the theme&apos;s well. They show the goods, not the demo brands.</p>
+          <p><span className="caps mr-2">Photography</span>Demo material. Product photographs are from Wikimedia Commons, cut out for the theme&apos;s well; they show the goods, not the demo brands. Scene photographs are from Unsplash, cropped and graded.</p>
           <ul className="grid grid-cols-1 gap-x-6 gap-y-1 sm:grid-cols-2">
             {photoCredits.map(c => (
               <li key={c.key_name}><a href={c.page} className="underline underline-offset-2 hover:text-foreground">{c.title}</a>, {c.author}, {c.license}</li>
+            ))}
+            {Object.values(sceneCredits).map(c => (
+              <li key={c.key}><a href={c.credit.page} className="underline underline-offset-2 hover:text-foreground">{c.credit.title}</a>, {c.credit.author}, {c.credit.license}</li>
             ))}
           </ul>
         </section>

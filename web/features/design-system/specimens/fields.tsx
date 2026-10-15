@@ -29,6 +29,18 @@ type Spec = {
 
 const longNote = 'Certificate of incorporation is a photocopy, and the KRA PIN certificate names Mwangaza Wholesale Depot rather than Mwangaza Wholesalers Ltd. Upload the original scan of the certificate and a PIN certificate in the registered name. The single business permit is in order. Resubmit once both documents match the registered name so the review can continue without another round of messages.'
 
+// Every kind of content the editor can produce, as the backend would store it. The video is Big Buck Bunny
+// (Blender Foundation, CC BY 3.0); it loads from YouTube only when the reader presses play.
+const richFull = {
+  html: '<h3>Storage and handling</h3><p>Bales are <strong>shrink-wrapped</strong> and stacked <u>at most six high</u> on pallets. See our <a href="https://mwangaza-demo.co.ke/delivery" rel="noopener noreferrer nofollow">delivery terms</a>.</p>'
+    + '<figure class="image"><img src="/images/products/maize-flour.webp" alt="A heap of yellow maize flour"><figcaption>Sifted maize flour, as packed in every 2 kg packet (demo photograph).</figcaption></figure>'
+    + '<ul><li><p>Dispatch within 24 hours</p><ul><li><p>Same day for orders before 11:00</p></li></ul></li><li><p>Own fleet to Nakuru, Kericho and Narok</p></li></ul>'
+    + '<blockquote><p>Keep in a cool, dry place, off the floor.</p></blockquote>'
+    + '<table><tbody><tr><th><p>Pack</p></th><th><p>Units</p></th><th><p>Net weight</p></th></tr><tr><td><p>Bale</p></td><td><p>12 × 2 kg</p></td><td><p>24 kg</p></td></tr><tr><td><p>Sack</p></td><td><p>1 × 25 kg</p></td><td><p>25 kg</p></td></tr></tbody></table>'
+    + '<figure class="media"><oembed url="https://www.youtube.com/watch?v=aqz-KE-bpKQ"></oembed></figure><hr><p>Questions? Use <code>MVN-2K-12</code> when you call.</p>',
+  text: '',
+}
+
 const richAfter = { html: '<h3>Mwangaza Wholesalers</h3><p>Family wholesaler serving the Rift Valley since 2011.</p><ul><li>Dispatch within 24 hours</li><li>Own fleet to Nakuru, Kericho, Narok and Bomet</li></ul>', text: 'Mwangaza Wholesalers. Family wholesaler serving the Rift Valley since 2011. Dispatch within 24 hours. Own fleet to Nakuru, Kericho, Narok and Bomet.' }
 
 const specs: Record<string, Spec> = {
@@ -131,6 +143,8 @@ function FieldSpecimen({ code }: { code: string }) {
       {widget === 'image' ? <Plate label="View · media (cover)"><div className="max-w-xs overflow-hidden rounded-md border border-border"><FieldView field={s.field} value={products[0]!.image} context="media" /></div></Plate> : null}
       <Plate label="View · empty"><FieldView field={s.field} value={null} /></Plate>
       {!s.noInput ? <Plate label="Input" note="Contract constraints mirrored on blur"><FieldInput field={s.field} value={value} onChange={setValue} options={s.options} /></Plate> : null}
+      {widget === 'richtext' ? <Plate label="Input · every content type" note="Image, nested list, quote, table, video and rule" span><FieldInput field={{ ...s.field, maxLength: 4000 }} value={richFull} onChange={() => undefined} mirror={false} /></Plate> : null}
+      {widget === 'richtext' ? <Plate label="View · every content type" note="Video plays only on request" span><FieldView field={s.field} value={richFull} context="comfortable" /></Plate> : null}
       {widget === 'image' ? <Plate label="Input · upload lifecycle" span><ImageLifecycle /></Plate> : null}
       {widget === 'file' ? <Plate label="States" span><FileLifecycle /></Plate> : null}
       {widget === 'secret' ? <Plate label="Rotate · revealed once" span><SecretLifecycle /></Plate> : null}

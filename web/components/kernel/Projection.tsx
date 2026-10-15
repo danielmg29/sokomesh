@@ -50,8 +50,24 @@ function Figure({ slot, size, align = 'start' }: { slot?: Filled; size: 'md' | '
   )
 }
 
-function MetaList({ items, ctx, now, layout }: { items: Filled[]; ctx: FieldContext; now?: string; layout: 'inline' | 'stack' | 'grid' }) {
+// In a merchandised cell, text values speak for themselves ("Bale of 12 × 2 kg"); numbers and quantities keep
+// their label ("Minimum order 5 packs"). Read from the widget, so no field name is involved.
+const SELF_EVIDENT = new Set(['text', 'textarea', 'select', 'relation', 'unit'])
+
+function MetaList({ items, ctx, now, layout }: { items: Filled[]; ctx: FieldContext; now?: string; layout: 'inline' | 'stack' | 'grid' | 'values' }) {
   if (!items.length) return null
+  if (layout === 'values') {
+    return (
+      <dl className="flex flex-wrap gap-x-3 gap-y-0.5 text-sm text-muted">
+        {items.map(s => (
+          <div key={s.field.name} className="flex min-w-0 items-baseline gap-1">
+            <dt className={cn(SELF_EVIDENT.has(s.field.widget) && 'sr-only')}>{s.field.label}</dt>
+            <dd className="min-w-0"><FieldView field={s.field} value={s.value} context="compact" now={now} /></dd>
+          </div>
+        ))}
+      </dl>
+    )
+  }
   return (
     <dl className={cn(
       layout === 'inline' && 'flex flex-wrap gap-x-4 gap-y-1 text-sm',
@@ -148,23 +164,27 @@ export function Projection({ meta, record, context, override, pref, onRun, pendi
     )
   }
 
-  // card and media: the photo sits in its well with the state stamped on it; the figure closes the cell
-  // at the same height in every cell of a row, so prices line up across the grid.
+  // card and media: the photo sits in a square well with the state stamped on it; as on a merchandised
+  // shelf, the seller reads first, the name second, the pack as one quiet line, and the figure closes the
+  // cell at the same height in every cell of a row, so prices line up across the grid.
   const pad = density === 'compact' ? 'p-3' : density === 'spacious' ? 'p-5' : 'p-4'
+  const merch = intent === 'media'
+  const subtitle = slots.subtitle ? <span className={cn('text-sm text-muted', merch && 'truncate')}><FieldView field={slots.subtitle.field} value={slots.subtitle.value} context="compact" /></span> : null
   return (
-    <article className={root}>
+    <article className={cn(root, merch && 'group')}>
       {slots.media ? (
         <div className="relative border-b border-border">
           <FieldView field={slots.media.field} value={slots.media.value} context="media" />
-          {badge ? <div className="absolute top-2 left-2">{badge}</div> : null}
+          {badge ? <div className="absolute top-2.5 left-2.5">{badge}</div> : null}
         </div>
       ) : null}
-      <div className={cn('flex min-w-0 flex-1 flex-col gap-2', intent === 'media' && pad)}>
-        <Title slot={slots.title} href={href} className={cn(density === 'spacious' ? 'text-lg' : 'text-md', 'leading-snug')} />
-        {slots.subtitle ? <span className="text-sm text-muted"><FieldView field={slots.subtitle.field} value={slots.subtitle.value} context="compact" /></span> : null}
-        <MetaList items={slots.meta} ctx={intent === 'media' ? 'media' : ctx} now={now} layout="stack" />
+      <div className={cn('flex min-w-0 flex-1 flex-col', merch ? cn('gap-1', pad) : 'gap-2')}>
+        {merch ? subtitle : null}
+        <Title slot={slots.title} href={href} className={cn(density === 'spacious' ? 'text-lg' : 'text-md', 'leading-snug', merch && 'group-hover:underline')} />
+        {merch ? null : subtitle}
+        <MetaList items={slots.meta} ctx={merch ? 'media' : ctx} now={now} layout={merch ? 'values' : 'stack'} />
         {badge && !slots.media ? <div>{badge}</div> : null}
-        {slots.figure ? <div className="mt-auto border-t border-border pt-3"><Figure slot={slots.figure} size={density === 'compact' ? 'md' : 'lg'} /></div> : null}
+        {slots.figure ? <div className={cn('mt-auto', merch ? 'pt-3' : 'border-t border-border pt-3')}><Figure slot={slots.figure} size={density === 'compact' ? 'md' : 'lg'} /></div> : null}
         {extra}
         {actions ? <div className={cn('relative z-10 pt-1', !slots.figure && 'mt-auto')}><ActionBar meta={meta} record={record} onRun={onRun} pending={pending} density={density} inline={2} /></div> : null}
       </div>

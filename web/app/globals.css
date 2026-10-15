@@ -81,6 +81,8 @@
   --text-5xl--line-height: var(--type-5xl-leading);
   --text-6xl: var(--type-6xl);
   --text-6xl--line-height: var(--type-6xl-leading);
+  --text-statement: var(--type-statement);
+  --text-statement--line-height: var(--type-statement-leading);
 
   --tracking-*: initial;
   --tracking-caps: var(--type-caps-tracking);
@@ -166,6 +168,22 @@
   to { transform: rotate(360deg); }
 }
 
+/* REVEAL on scroll: sections rise into place as they enter the viewport, driven by the scroll timeline
+   (no scroll listeners). Browsers without scroll timelines, and readers who ask for reduced motion, see
+   the section in place. */
+@keyframes scroll-reveal-in {
+  from { opacity: 0; transform: translateY(var(--motion-distance-md)); }
+}
+@utility scroll-reveal {
+  @supports (animation-timeline: view()) {
+    animation: scroll-reveal-in auto var(--motion-reveal-ease) both;
+    animation-timeline: view();
+    animation-range: entry 0% entry 55%;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
 @utility animate-reveal {
   animation: reveal-in var(--motion-reveal-duration) var(--motion-reveal-ease) both;
 }
@@ -302,4 +320,27 @@
   .rich-text li::marker { color: var(--color-muted); }
   .rich-text a { color: var(--color-primary); text-decoration: underline; }
   .rich-text a:hover { color: var(--color-primary-hover); }
+  .rich-text u { text-decoration: underline; text-decoration-thickness: 1px; }
+  .rich-text s { text-decoration: line-through; }
+  .rich-text code { font-family: var(--font-mono); font-size: 0.875em; background: var(--color-sunken); padding: 0.1em 0.35em; border-radius: var(--radius-control); }
+  .rich-text li > p { margin: 0; }
+  .rich-text li > ul, .rich-text li > ol { margin-top: 0.25em; }
+  .rich-text ul ul { list-style: circle; }
+  .rich-text blockquote { border-left: 3px solid var(--color-border-strong); padding-left: 1em; color: var(--color-muted); }
+  .rich-text hr { border: 0; border-top: 1px solid var(--color-border); margin-block: 1.25em; }
+  /* Captioned images (figure.image): the photo sits on the theme's well, like product cells. */
+  .rich-text figure.image { display: flex; flex-direction: column; gap: 0.5em; }
+  .rich-text figure.image img { max-width: 100%; height: auto; background: var(--color-well); }
+  .rich-text figcaption { font-size: var(--type-sm); line-height: var(--type-sm-leading); color: var(--color-muted); }
+  .rich-text table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums lining-nums; }
+  .rich-text th, .rich-text td { border: 1px solid var(--color-border); padding: 0.4em 0.65em; text-align: left; vertical-align: top; }
+  .rich-text th { background: var(--color-sunken); font-weight: 600; }
+  .rich-text th > p, .rich-text td > p { margin: 0; }
+
+  /* Editor-only states (components/kernel/fields/rich-text). */
+  .rich-text-editor .ProseMirror { overflow-wrap: anywhere; }
+  .rich-text-editor .ProseMirror-selectednode { outline: 2px solid var(--color-ring); outline-offset: 2px; }
+  .rich-text-editor td, .rich-text-editor th { position: relative; }
+  .rich-text-editor .selectedCell::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: color-mix(in oklch, var(--signal) 22%, transparent); }
+  .rich-text-editor .tiptap p.is-editor-empty:first-child::before { content: attr(data-placeholder); float: left; height: 0; pointer-events: none; color: var(--color-muted); }
 }

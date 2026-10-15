@@ -1,15 +1,19 @@
 'use client'
 
 import { ArrowDownLeft, ArrowUpRight, Pause } from 'lucide-react'
-import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
-import { unitLabel } from '@/components/kernel/fields/types'
+import { useEffect, useRef, useSyncExternalStore } from 'react'
+import { EmptyState } from '@/components/kernel/feedback/EmptyState'
+import { asStringList, unitLabel } from '@/components/kernel/fields/types'
 import { RelativeTime } from '@/components/kernel/fields/islands'
 import { Empty } from '@/components/kernel/fields/views'
+import { Button } from '@/components/ui/button'
 import { Icon } from '@/components/ui/icon'
-import { chipStyles } from '@/components/ui/chip'
 import { Stamp, type StampCondition } from '@/components/ui/stamp'
 import { ScrollArea, TBody, THead, Table, Td, Th, Tr } from '@/components/ui/table'
+import { FacetChips, TablePager, TableSearch, TableToolbar } from '@/components/ui/table-controls'
+import { useTableQuery } from '@/lib/client/use-table-query'
 import { cn } from '@/lib/cn'
+import type { Accessors } from '@/lib/query'
 import type { Tone } from '@/lib/contract/types'
 import { formatDay, formatTime } from '@/lib/format'
 import type { InventoryMovement, MovementType, Reservation, ReservationStatus, Stock, StockState } from './types'
@@ -140,30 +144,35 @@ const movementLabel: Record<MovementType, string> = {
   receipt: 'Receipt', reservation: 'Reservation', release: 'Release', allocation: 'Allocation', adjustment: 'Adjustment', shipment: 'Shipment',
 }
 
-/** Immutable stock ledger: available quantity is derivable from these rows alone (SM-F-07). */
-export function InventoryLedgerBlock({ movements, unit, now, density = 'compact' }: { movements: readonly InventoryMovement[]; unit: string; now?: string; density?: 'compact' | 'comfortable' }) {
-  const [types, setTypes] = useState<MovementType[]>([])
-  const shown = types.length ? movements.filter(m => types.includes(m.type)) : movements
-  const present = [...new Set(movements.map(m => m.type))]
+const movementAccess: Accessors<InventoryMovement> = {
+  text: m => [movementLabel[m.type], m.reference, m.actor, m.reason],
+  value: (m, key) => m[key as keyof InventoryMovement],
+}
+
+/**
+ * Immutable stock ledger: available quantity is derivable from these rows alone (SM-F-07). Search covers
+ * the movement, reference, person and reason; the movement chips count what each would show.
+ */
+export function InventoryLedgerBlock({ movements, unit, now, density = 'compact', pageSize = 10 }: { movements: readonly InventoryMovement[]; unit: string; now?: string; density?: 'compact' | 'comfortable'; pageSize?: number }) {
+  const t = useTableQuery(movements, movementAccess, { pageSize })
+  const types = asStringList(t.query.filters.type?.value)
+  const counts = t.counts('type')
+  const present = [...new Set(movements.map(m => m.type))] as MovementType[]
   return (
     <section className="flex min-w-0 flex-col gap-3" aria-label="Inventory ledger" data-density={density}>
-      <div className="flex flex-wrap gap-1.5" role="group" aria-label="Movement types">
-        {present.map(t => {
-          const on = types.includes(t)
-          return (
-            <button key={t} type="button" aria-pressed={on} onClick={() => setTypes(s => (on ? s.filter(x => x !== t) : [...s, t]))}
-              className={chipStyles({ on })}>
-              {movementLabel[t]}
-            </button>
-          )
-        })}
-      </div>
+      <TableToolbar active={t.active} onClear={t.clear}
+        search={<TableSearch label="Search movements" placeholder="Reference, person or reason…" value={t.query.q} onChange={t.setSearch} />}
+        facets={<FacetChips label="Movement" options={present.map(v => ({ value: v, label: movementLabel[v], count: counts[v] ?? 0 }))} value={types}
+          onChange={next => t.setFilter('type', next.length ? { op: 'in', value: next } : undefined)} />} />
       <div className="overflow-hidden rounded-md border border-border bg-surface">
+        {t.result.total === 0 ? (
+          <EmptyState kind="no-results" title="No movements match" description="Try another reference or remove a movement type." action={<Button variant="secondary" onClick={t.clear}>Clear search and filters</Button>} />
+        ) : (
         <ScrollArea label="Inventory movements, scrolls sideways">
           <Table caption="Inventory movements">
             <THead><tr><Th>When</Th><Th>Movement</Th><Th>Reference</Th><Th numeric>Change</Th><Th numeric>Balance</Th><Th>By</Th><Th>Reason</Th></tr></THead>
             <TBody>
-              {shown.map(m => {
+              {t.result.rows.map(m => {
                 const inbound = m.quantity > 0
                 return (
                   <Tr key={m.id} interactive>
@@ -183,6 +192,8 @@ export function InventoryLedgerBlock({ movements, unit, now, density = 'compact'
             </TBody>
           </Table>
         </ScrollArea>
+        )}
+        <TablePager result={t.result} onPage={t.setPage} onPageSize={t.setPageSize} noun={{ one: 'movement', other: 'movements' }} unfiltered={movements.length} className="border-t border-border" />
         <p className="border-t border-border px-3 py-2.5 text-sm text-muted">
           Quantities in {unitLabel(unit, 2)}. Rows are never edited: corrections are new adjustment movements with a reason.
         </p>

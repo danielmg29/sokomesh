@@ -19,6 +19,7 @@ import { AppNav, MobileNav, type NavItem } from '@/components/kernel/nav/AppNav'
 import { Breadcrumbs } from '@/components/kernel/nav/Breadcrumbs'
 import { Pagination } from '@/components/kernel/nav/Pagination'
 import { CommandPalette } from '@/components/kernel/nav/CommandPalette'
+import { SortSelect } from '@/components/kernel/blocks/FiltersBlock'
 import { Projection } from '@/components/kernel/Projection'
 import { intents, surfaces, tones } from '@/components/kernel/recipes/recipes'
 import { resolveSlots } from '@/components/kernel/slots/resolve'
@@ -314,10 +315,20 @@ function Pages() {
   )
 }
 
+function SortSpecimen() {
+  const [sort, setSort] = useState('-updated_at')
+  return (
+    <Plates cols={2}>
+      <Plate label="from the contract's ordering" note={`value: ${sort}`}><SortSelect meta={productMeta} value={sort} onChange={setSort} /></Plate>
+      <Plate label="no ordering allowed" note="Renders nothing"><SortSelect meta={{ ...productMeta, ordering: [] }} value="" onChange={() => undefined} /></Plate>
+    </Plates>
+  )
+}
+
 const map: Record<string, () => ReactNode> = {
   'K-01': Recipes, 'K-02': ProjectionSpecimen, 'K-03': Dispatchers, 'K-04': Forms, 'K-05': ActionBarSpecimen, 'K-06': ActionMenuSpecimen,
   'K-07': BulkSpecimen, 'K-08': ConfirmSpecimen, 'K-09': StatusSpecimen, 'K-10': Nav, 'K-11': Crumbs, 'K-12': Palette, 'K-13': Empties,
-  'K-14': Errors, 'K-15': Loading, 'K-16': Toasts, 'K-17': PageBlocksSpecimen, 'K-18': Pages,
+  'K-14': Errors, 'K-15': Loading, 'K-16': Toasts, 'K-17': PageBlocksSpecimen, 'K-18': Pages, 'K-19': SortSpecimen,
 }
 
 export default function KernelSpecimens({ code }: { code: string }) {

@@ -20,11 +20,14 @@ import { Progress, RangeSlider, Skeleton } from '@/components/ui/progress'
 import { Select } from '@/components/ui/select'
 import { Stamp } from '@/components/ui/stamp'
 import { ScrollArea, Separator, TBody, THead, Table, Td, Th, Tr } from '@/components/ui/table'
+import { FacetChips, TablePager, TableSearch, TableToolbar } from '@/components/ui/table-controls'
 import { ThemeSwitch } from '@/components/ui/theme'
 import { Thread } from '@/components/ui/thread'
 import { useToast } from '@/components/ui/toast'
-import { formatMoney } from '@/lib/money'
-import { categoryChoices, relationOptions } from '../fixtures'
+import { useTableQuery } from '@/lib/client/use-table-query'
+import { formatAmount, formatMoney } from '@/lib/money'
+import type { Accessors } from '@/lib/query'
+import { categoryChoices, products, relationOptions, sellers } from '../fixtures'
 import { Plate, Plates } from '../kit'
 
 function Buttons() {
@@ -248,6 +251,77 @@ function Dates() {
   )
 }
 
+type StockRow = { id: string; sku: string; product: string; onHand: number; price: string; seller: string; minutes: number }
+
+/** Every demo product as listed by each of the four demo sellers: 32 rows, fixed figures, no randomness. */
+const stockRows: StockRow[] = products.flatMap((p, i) => Object.values(sellers).map((seller, j) => ({
+  id: `${p.id}-${seller.id}`, sku: `${String(p.sku)}-${seller.id.slice(4).toUpperCase()}`, product: String(p.name),
+  onHand: (i * 37 + j * 53) % 7 === 0 ? 0 : (i * 41 + j * 29) % 180, price: (Number(p.unit_price) + j * 35).toFixed(2), seller: seller.label, minutes: 3 + ((i * 7 + j * 11) % 240),
+})))
+const level = (r: StockRow) => (r.onHand === 0 ? 'out' : r.onHand < 20 ? 'low' : 'in')
+const stockAccess: Accessors<StockRow> = {
+  text: r => [r.sku, r.product, r.seller],
+  value: (r, key) => (key === 'level' ? level(r) : r[key as keyof StockRow]),
+}
+const levels = [{ value: 'in', label: 'In stock' }, { value: 'low', label: 'Low' }, { value: 'out', label: 'Out' }]
+
+/** The primitives composed into a live table: search, two facets with live counts and pages, all client-side. */
+function LiveStockTable() {
+  const t = useTableQuery(stockRows, stockAccess, { pageSize: 10 })
+  const sellerCounts = t.counts('seller')
+  const levelCounts = t.counts('level')
+  const chips = (key: string) => {
+    const v = t.query.filters[key]?.value
+    return Array.isArray(v) ? v.map(String) : []
+  }
+  const setChips = (key: string) => (next: string[]) => t.setFilter(key, next.length ? { op: 'in', value: next } : undefined)
+  return (
+    <div className="flex flex-col gap-3">
+      <TableToolbar active={t.active} onClear={t.clear}
+        search={<TableSearch label="Search stock" placeholder="SKU, product or seller…" value={t.query.q} onChange={t.setSearch} />}
+        facets={<>
+          <FacetChips label="Seller" options={Object.values(sellers).map(x => ({ value: x.label, label: x.label.replace(/ (Ltd|Traders|Distributors|Supplies)$/, ''), count: sellerCounts[x.label] ?? 0 }))} value={chips('seller')} onChange={setChips('seller')} />
+          <FacetChips label="Stock" options={levels.map(l => ({ ...l, count: levelCounts[l.value] ?? 0 }))} value={chips('level')} onChange={setChips('level')} />
+        </>} />
+      <div className="overflow-hidden rounded-md border border-border">
+        {t.result.total ? (
+          <ScrollArea label="Stock, scrolls sideways">
+            <Table caption="Stock by seller"><THead><tr><Th>SKU</Th><Th>Product</Th><Th numeric>On hand</Th><Th numeric>Price (KES)</Th><Th>Seller</Th><Th>Updated</Th></tr></THead>
+              <TBody>{t.result.rows.map(r => <Tr key={r.id} interactive><Td className="whitespace-nowrap"><code className="font-mono">{r.sku}</code></Td><Td className="font-medium whitespace-nowrap">{r.product}</Td><Td numeric>{r.onHand}</Td><Td numeric>{formatAmount(r.price)}</Td><Td className="whitespace-nowrap">{r.seller}</Td><Td className="whitespace-nowrap text-muted">{r.minutes < 60 ? `${r.minutes} min ago` : `${Math.floor(r.minutes / 60)} h ago`}</Td></Tr>)}</TBody>
+            </Table>
+          </ScrollArea>
+        ) : <p className="px-3 py-8 text-center text-md text-muted">Nothing matches. Clear the search or a filter.</p>}
+        <TablePager result={t.result} onPage={t.setPage} onPageSize={t.setPageSize} noun={{ one: 'listing', other: 'listings' }} unfiltered={stockRows.length} className="border-t border-border" />
+      </div>
+    </div>
+  )
+}
+
+/** The table controls in their states, each on its own so the state is visible without interaction. */
+function TableControlsSpecimen() {
+  const [q, setQ] = useState('maize')
+  const [chips, setChips] = useState<string[]>(['low'])
+  const noop = () => undefined
+  const pager = (page: number, pageCount: number, total: number, unfiltered?: number) => (
+    <div className="rounded-md border border-border bg-surface">
+      <TablePager result={{ page, pageCount, pageSize: 10, total, from: total ? (page - 1) * 10 + 1 : 0, to: Math.min(total, page * 10) }} onPage={noop} onPageSize={noop} noun={{ one: 'order', other: 'orders' }} unfiltered={unfiltered} />
+    </div>
+  )
+  return (
+    <Plates cols={2}>
+      <Plate label="live: search, facets, pages" note="32 demo listings" span><LiveStockTable /></Plate>
+      <Plate label="TableSearch · typed"><TableToolbar search={<TableSearch label="Search orders" value={q} onChange={setQ} />} active onClear={() => setQ('')} /></Plate>
+      <Plate label="FacetChips · counts, zero disabled"><FacetChips label="Stock" options={[{ value: 'in', label: 'In stock', count: 21 }, { value: 'low', label: 'Low', count: 6 }, { value: 'out', label: 'Out', count: 0 }]} value={chips} onChange={setChips} /></Plate>
+      <Plate label="TablePager · first page">{pager(1, 3, 27)}</Plate>
+      <Plate label="middle page, numbers with gaps">{pager(5, 9, 87)}</Plate>
+      <Plate label="last page">{pager(3, 3, 27)}</Plate>
+      <Plate label="filtered, from the full count">{pager(1, 1, 4, 27)}</Plate>
+      <Plate label="no matches">{pager(1, 1, 0, 27)}</Plate>
+      <Plate label="narrow container"><div className="max-w-xs">{pager(2, 3, 27)}</div></Plate>
+    </Plates>
+  )
+}
+
 function Tables() {
   const rows = [['MVN-2K-12', 'Mavuno Maize Flour 2 kg', '96', '1,740.00'], ['SKB-1K-24', 'Sukari Bora Sugar 1 kg', '14', '3,960.00'], ['JUA-3L-06', 'Jua Gold Cooking Oil 3 L', '0', '5,220.00']]
   return (
@@ -261,6 +335,7 @@ function Tables() {
           </ScrollArea>
         </div>
       </Plate>
+      <Plate label="Table with search, filters and pages" note="see P-19 for the controls"><LiveStockTable /></Plate>
       <Plate label="Separator"><Cluster gap="md"><span>Goods</span><Separator orientation="vertical" className="h-5" /><span>Delivery</span><Separator orientation="vertical" className="h-5" /><span>Total</span></Cluster></Plate>
     </Plates>
   )
@@ -358,7 +433,7 @@ function ThemeSwitchSpecimen() {
 const map: Record<string, () => ReactNode> = {
   'P-01': Buttons, 'P-02': Inputs, 'P-03': Choices, 'P-04': Toggles, 'P-05': Badges, 'P-06': Overlays, 'P-07': Disclosure, 'P-08': Floating,
   'P-09': CommandSpecimen, 'P-10': Dates, 'P-11': Tables, 'P-12': FeedbackPrimitives, 'P-13': FormParts, 'P-14': StampSpecimen, 'P-15': ThreadSpecimen,
-  'P-16': SegmentedRange, 'P-17': ChartSpecimen, 'P-18': ThemeSwitchSpecimen,
+  'P-16': SegmentedRange, 'P-17': ChartSpecimen, 'P-18': ThemeSwitchSpecimen, 'P-19': TableControlsSpecimen,
 }
 
 export default function PrimitiveSpecimens({ code }: { code: string }) {

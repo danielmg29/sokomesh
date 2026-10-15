@@ -74,12 +74,24 @@ export type ModelMeta = {
 
 export type ErrorMeta = { status: number; retryable: boolean; message: string }
 
+/** Tags with their allowed attributes, URL rules and video providers (`url` is a canonical-URL pattern). */
+export type RichTextPolicy = {
+  tags: Readonly<Record<string, readonly string[]>>
+  classes: Readonly<Record<string, readonly string[]>>
+  linkSchemes: readonly string[]
+  imageSchemes: readonly string[]
+  sameOriginImages: boolean
+  embeds: readonly { name: string; url: string; player: string }[]
+}
+
 export type Contract = {
   meta: { contractVersion: string; apiBase: string; generatedBy: string }
   auth: { mode: 'single' | 'multi'; verification: string[]; session: 'cookie' }
   limits: Record<string, number>
   /** Languages the backend writes to people in (notifications, documents); `value` is a BCP 47 tag. */
   locales: { default: string; supported: readonly Choice[] }
+  /** The rich-text allow-list the backend sanitises against (backend/core/richtext.py). */
+  richText: RichTextPolicy
   errors: Record<string, ErrorMeta>
   policies: { roles: Record<string, string[]> }
   events: Record<string, unknown>

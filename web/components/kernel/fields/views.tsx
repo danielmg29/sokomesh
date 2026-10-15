@@ -7,7 +7,7 @@ import { cn } from '@/lib/cn'
 import { formatDate, formatDateTime, formatPhone } from '@/lib/format'
 import { formatAmount, formatMoney } from '@/lib/money'
 import { StatusBadge } from '../feedback/StatusBadge'
-import { CopyValue, RelativeTime } from './islands'
+import { CopyValue, RelativeTime, VideoEmbed } from './islands'
 import {
   asAddress, asFile, asImage, asLocation, asNumber, asRelation, asRichText, asSecret, asString, asStringList, choiceLabel,
   formatBytes, isEmpty, unitLabel, type ViewProps,
@@ -37,12 +37,23 @@ export function TextareaView({ value, context }: ViewProps) {
   return <p className={cn('whitespace-pre-line', compact(context) && 'line-clamp-2')}>{s}</p>
 }
 
+// The sanitiser's exact output for a video reference (backend/core/richtext.py, lib/richtext.ts).
+const MEDIA = /<figure class="media"><oembed url="([^"]+)"><\/oembed><\/figure>/g
+
 export function RichTextView({ value, context }: ViewProps) {
   const rt = asRichText(value)
   if (!rt || !rt.html) return <Empty />
   if (compact(context)) return <p className="line-clamp-2 text-muted">{rt.text}</p>
-  // HTML arrives sanitised by the backend against the rich-text allow-list (spec p.5).
-  return <div className="rich-text" dangerouslySetInnerHTML={{ __html: rt.html }} />
+  // HTML arrives sanitised by the backend against the contract's rich-text allow-list. Video references
+  // become click-to-play cards; everything else is rendered as stored.
+  const parts = rt.html.split(MEDIA)
+  return (
+    <div className="flex max-w-[68ch] flex-col gap-[0.75em]">
+      {parts.map((part, i) => (i % 2 === 1
+        ? <VideoEmbed key={i} url={part.replaceAll('&amp;', '&')} />
+        : part.trim() ? <div key={i} className="rich-text" dangerouslySetInnerHTML={{ __html: part }} /> : null))}
+    </div>
+  )
 }
 
 export function CurrencyView({ field, value, context }: ViewProps) {
@@ -165,7 +176,7 @@ export function ImageView({ value, context }: ViewProps) {
   const list = Array.isArray(value) ? value.map(asImage).filter((i): i is NonNullable<typeof i> => Boolean(i)) : [asImage(value)].filter((i): i is NonNullable<typeof i> => Boolean(i))
   if (!list.length) {
     return (
-      <span className={cn('grid place-items-center bg-well text-muted', context === 'media' ? 'aspect-[4/3] w-full' : 'size-10 rounded-sm')}>
+      <span className={cn('grid place-items-center bg-well text-muted', context === 'media' ? 'aspect-square w-full' : 'size-10 rounded-sm')}>
         <Icon icon={ImageOff} label="No image" />
       </span>
     )
@@ -184,7 +195,7 @@ export function ImageView({ value, context }: ViewProps) {
         height={img.height ?? 600}
         sizes="(min-width: 1024px) 25vw, (min-width: 640px) 45vw, 90vw"
         // Product photographs are cut-outs: the theme's well is their ground, so one file serves both themes.
-        className={cn('w-full bg-well object-contain', context === 'media' ? 'aspect-[4/3] p-[6%]' : 'max-h-80 rounded-md border border-border p-4')}
+        className={cn('w-full bg-well object-contain', context === 'media' ? 'aspect-square p-[9%]' : 'max-h-80 rounded-md border border-border p-4')}
       />
     )
   }

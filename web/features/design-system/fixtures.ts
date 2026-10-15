@@ -4,6 +4,7 @@
 
 import type { Stock } from '@/components/commerce/types'
 import type { FieldMeta, ModelMeta, Rec } from '@/lib/contract/types'
+import sceneData from '@/public/images/scenes/scenes.json'
 
 /** Fixed clock so relative times and countdown anchors read the same on every render. */
 export const DEMO_NOW = '2026-10-12T11:41:00+03:00'
@@ -12,6 +13,10 @@ export const DEMO_NOW = '2026-10-12T11:41:00+03:00'
 // and set on the theme's well. They show the goods, not the invented brands' packaging; credits are in
 // public/images/products/README.md.
 const img = (file: string, alt: string, width: number, height: number) => ({ url: `/images/products/${file}.webp`, alt, width, height })
+
+/** Scene photographs (design/photography/scenes.py): Unsplash, graded and cropped; credits in the manifest. */
+export const scenes = sceneData
+export type SceneKey = keyof typeof sceneData
 
 export const sellers = {
   mwangaza: { id: 'org-mwg', label: 'Mwangaza Wholesalers Ltd', detail: 'Nakuru' },
@@ -142,6 +147,25 @@ export const orders: Rec[] = [
   { id: 'o-4170', order_number: 'SM-ORD-004170', buyer: buyers.wanjiru, status: 'disputed', lines: 2, total: '8700.00', delivery_address: nakuruAddress, submitted_at: '2026-10-09T13:30:00+03:00', _can: ['print'], version: 7 },
 ]
 
+/**
+ * A fortnight of one seller's order book for the list specimens, so search, filters and pages have rows to
+ * work through. Built from fixed tables, never random, so every render and test sees the same orders.
+ */
+const historyStatuses = ['delivered', 'delivered', 'shipped', 'confirmed', 'picking', 'delivered', 'cancelled', 'partially_fulfilled', 'delivered', 'submitted', 'delivered'] as const
+export const orderHistory: Rec[] = [
+  ...orders,
+  ...Array.from({ length: 22 }, (_, i): Rec => {
+    const n = 4165 - i * 3
+    const status = historyStatuses[i % historyStatuses.length]!
+    const lines = 1 + ((i * 7) % 9)
+    const at = `2026-10-0${9 - Math.floor(i / 3)}T${String(8 + ((i * 5) % 9)).padStart(2, '0')}:${String((i * 13) % 60).padStart(2, '0')}:00+03:00`
+    return {
+      id: `o-${n}`, order_number: `SM-ORD-00${n}`, buyer: i % 2 ? buyers.baraka : buyers.wanjiru, status, lines, total: (lines * (3480 + ((i * 1270) % 4200))).toFixed(2),
+      delivery_address: nakuruAddress, submitted_at: at, _can: status === 'submitted' ? sellerCan : ['print'], version: 2 + (i % 6),
+    }
+  }),
+]
+
 /** Organization accounts (SM-F-01) plus seller profile fields: one form exercising most widgets. */
 export const organizationMeta: ModelMeta = {
   key: 'organization', label: 'Organization', labelPlural: 'Organizations', displayField: 'name',
@@ -162,7 +186,7 @@ export const organizationMeta: ModelMeta = {
     { name: 'delivery_regions', type: 'enum', widget: 'multiselect', label: 'Delivery counties', maxItems: 5, group: 'trading', weight: 33, choices: ['Nakuru', 'Nairobi', 'Kiambu', 'Kericho', 'Uasin Gishu', 'Kisumu', 'Narok'].map(c => ({ value: c, label: c })) },
     { name: 'accepts_substitutes', type: 'boolean', widget: 'boolean', label: 'Accept substitutes when an item is short', group: 'trading', weight: 34 },
     { name: 'trading_since', type: 'date', widget: 'date', label: 'Trading since', group: 'trading', weight: 35 },
-    { name: 'description', type: 'rich_text', widget: 'richtext', label: 'Public profile', maxLength: 2000, group: 'profile', weight: 40, help: 'Shown on your seller page. Headings, lists and links only.' },
+    { name: 'description', type: 'rich_text', widget: 'richtext', label: 'Public profile', maxLength: 2000, group: 'profile', weight: 40, help: 'Shown on your seller page. Text, links, images, video and tables.' },
     { name: 'logo', type: 'file', widget: 'image', label: 'Logo', accept: ['image/png', 'image/jpeg'], maxBytes: 2_097_152, group: 'profile', weight: 41 },
     { name: 'registration_certificate', type: 'file', widget: 'file', label: 'Certificate of incorporation', accept: ['application/pdf', 'image/jpeg'], maxBytes: 10_485_760, required: true, group: 'profile', weight: 42 },
   ],

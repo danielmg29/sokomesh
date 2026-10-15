@@ -1,5 +1,5 @@
-// AUTO-GENERATED from contract/ac-contract.json (contract 0.2.0) by tools/gen-contract.mts — do not edit.
-export const CONTRACT_VERSION = "0.2.0"
+// AUTO-GENERATED from contract/ac-contract.json (contract 0.3.0) by tools/gen-contract.mts — do not edit.
+export const CONTRACT_VERSION = "0.3.0"
 export const API_BASE = "/api/v1/"
 export const auth = {
   "mode": "multi",
@@ -28,6 +28,71 @@ export const locales = {
       "value": "sw-KE"
     }
   ]
+} as const
+export const richText = {
+  "classes": {
+    "figure": [
+      "image",
+      "media"
+    ]
+  },
+  "embeds": [
+    {
+      "name": "YouTube",
+      "player": "https://www.youtube-nocookie.com/embed/{id}",
+      "url": "^https://www\\.youtube\\.com/watch\\?v=([A-Za-z0-9_-]{11})$"
+    },
+    {
+      "name": "Vimeo",
+      "player": "https://player.vimeo.com/video/{id}?dnt=1",
+      "url": "^https://vimeo\\.com/(\\d{6,12})$"
+    }
+  ],
+  "imageSchemes": [
+    "https"
+  ],
+  "linkSchemes": [
+    "https",
+    "http",
+    "mailto"
+  ],
+  "sameOriginImages": true,
+  "tags": {
+    "a": [
+      "href"
+    ],
+    "blockquote": [],
+    "br": [],
+    "code": [],
+    "em": [],
+    "figcaption": [],
+    "figure": [
+      "class"
+    ],
+    "h3": [],
+    "h4": [],
+    "hr": [],
+    "img": [
+      "src",
+      "alt"
+    ],
+    "li": [],
+    "oembed": [
+      "url"
+    ],
+    "ol": [],
+    "p": [],
+    "s": [],
+    "strong": [],
+    "table": [],
+    "tbody": [],
+    "td": [],
+    "th": [],
+    "thead": [],
+    "tr": [],
+    "u": [],
+    "ul": []
+  }
 } as const
 export type Locale = (typeof locales)['supported'][number]['value']
 export const errors = {

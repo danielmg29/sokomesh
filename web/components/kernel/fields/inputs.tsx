@@ -1,9 +1,7 @@
 'use client'
 
-import {
-  Bold, Heading3, ImagePlus, Italic, Link2, List, ListOrdered, LoaderCircle, MapPin, Minus, Plus, RefreshCw, RemoveFormatting, ShieldCheck, Trash2, TriangleAlert, Upload,
-} from 'lucide-react'
-import { useEffect, useRef, useState, type ChangeEvent, type ReactNode } from 'react'
+import { ImagePlus, LoaderCircle, MapPin, Minus, Plus, RefreshCw, ShieldCheck, Trash2, TriangleAlert, Upload } from 'lucide-react'
+import { lazy, Suspense, useEffect, useRef, useState, type ChangeEvent, type ReactNode } from 'react'
 import { Button, IconButton } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/choice'
 import { Combobox, MultiSelect } from '@/components/ui/combobox'
@@ -12,14 +10,12 @@ import { useFieldControlProps } from '@/components/ui/form-field'
 import { DatePicker } from '@/components/ui/calendar'
 import { Icon } from '@/components/ui/icon'
 import { Input, Textarea } from '@/components/ui/input'
-import { Popover } from '@/components/ui/overlay'
 import { Progress } from '@/components/ui/progress'
 import { Select } from '@/components/ui/select'
 import { Stamp } from '@/components/ui/stamp'
 import { cn } from '@/lib/cn'
 import { KENYA_COUNTIES } from '@/lib/kenya'
 import { fromMinor, toMinor } from '@/lib/money'
-import { sanitizeRichText } from '@/lib/richtext'
 import { StatusBadge } from '../feedback/StatusBadge'
 import { CopyValue } from './islands'
 import { FileView, SecretView } from './views'
@@ -231,69 +227,37 @@ export function DatetimeInput({ value, onChange, disabled }: InputProps) {
   )
 }
 
-const toolbar: { icon: typeof Bold; label: string; command: string; arg?: string }[] = [
-  { icon: Bold, label: 'Bold', command: 'bold' },
-  { icon: Italic, label: 'Italic', command: 'italic' },
-  { icon: Heading3, label: 'Heading', command: 'formatBlock', arg: 'h3' },
-  { icon: List, label: 'Bulleted list', command: 'insertUnorderedList' },
-  { icon: ListOrdered, label: 'Numbered list', command: 'insertOrderedList' },
-  { icon: RemoveFormatting, label: 'Clear formatting', command: 'removeFormat' },
-]
+// The editor (Tiptap and its toolbar) loads only where a rich-text field renders; the four designated
+// fields are the only ones that can (spec p.5).
+const RichTextEditor = lazy(() => import('./rich-text/RichTextEditor'))
 
-/** WYSIWYG for the four designated fields only. Output is allow-listed HTML plus plain text. */
+/** Same frame as the editor while it loads, so the field does not jump. */
+function EditorSkeleton() {
+  return (
+    <div className="flex flex-col rounded-sm border border-border-strong bg-surface" aria-busy="true" aria-label="Loading the editor">
+      <div className="h-10 border-b border-border bg-sunken" />
+      <div className="flex min-h-48 flex-col gap-2 px-4 py-4"><span className="h-3 w-3/4 animate-skeleton bg-sunken" /><span className="h-3 w-1/2 animate-skeleton bg-sunken" /></div>
+      <div className="h-7 border-t border-border bg-sunken" />
+    </div>
+  )
+}
+
+/** WYSIWYG for the four designated fields only. Output is the contract's allow-listed HTML plus plain text. */
 export function RichTextInput({ field, value, onChange, disabled }: InputProps) {
   const control = useFieldControlProps()
-  const ref = useRef<HTMLDivElement>(null)
-  const initial = useRef(asRichText(value)?.html ?? '')
-  const [link, setLink] = useState('')
-  const textLength = asRichText(value)?.text.length ?? 0
-  const over = field.maxLength !== undefined && textLength > field.maxLength
-
-  useEffect(() => {
-    if (ref.current) ref.current.innerHTML = initial.current
-  }, [])
-
-  const emit = () => { if (ref.current) onChange(sanitizeRichText(ref.current.innerHTML)) }
-  const run = (command: string, arg?: string) => {
-    ref.current?.focus()
-    document.execCommand(command, false, arg)
-    emit()
-  }
-
   return (
-    <div className={cn('flex flex-col rounded-sm border border-border-strong bg-surface', over && 'border-tone-danger', disabled && 'bg-sunken')}>
-      <div role="toolbar" aria-label="Formatting" className="flex flex-wrap items-center gap-0.5 border-b border-border p-1">
-        {toolbar.map(t => (
-          <IconButton key={t.label} icon={t.icon} label={t.label} size="icon-sm" disabled={disabled} onMouseDown={e => e.preventDefault()} onClick={() => run(t.command, t.arg)} />
-        ))}
-        <Popover
-          label="Add link"
-          trigger={<Button size="icon-sm" variant="ghost" aria-label="Add link" disabled={disabled}><Icon icon={Link2} /></Button>}
-        >
-          <form className="flex gap-2" onSubmit={e => { e.preventDefault(); if (/^https:\/\//.test(link)) { run('createLink', link); setLink('') } }}>
-            <Input type="url" value={link} onChange={e => setLink(e.target.value)} placeholder="https://" aria-label="Link address" />
-            <Button type="submit" size="md" variant="primary">Add</Button>
-          </form>
-        </Popover>
-      </div>
-      <div
-        ref={ref}
+    <Suspense fallback={<EditorSkeleton />}>
+      <RichTextEditor
         id={control.id}
-        role="textbox"
-        aria-multiline="true"
-        aria-describedby={control['aria-describedby']}
-        aria-invalid={over || control['aria-invalid'] || undefined}
-        contentEditable={!disabled}
-        suppressContentEditableWarning
-        onInput={emit}
-        className="rich-text min-h-36 px-3 py-2 text-md leading-relaxed outline-none focus-visible:shadow-none focus-visible:outline-none"
+        label={field.label}
+        describedBy={control['aria-describedby']}
+        invalid={control['aria-invalid']}
+        value={asRichText(value)?.html ?? ''}
+        onChange={onChange}
+        disabled={disabled}
+        maxLength={field.maxLength}
       />
-      {field.maxLength ? (
-        <span className={cn('self-end px-3 pb-2 text-xs tabular', over ? 'font-semibold text-tone-danger' : 'text-muted')} aria-live="polite">
-          {textLength.toLocaleString('en-KE')} / {field.maxLength.toLocaleString('en-KE')} characters
-        </span>
-      ) : null}
-    </div>
+    </Suspense>
   )
 }
 

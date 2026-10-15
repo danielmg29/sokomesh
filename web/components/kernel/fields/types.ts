@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import type { ComboOption } from '@/components/ui/combobox'
 import type { FieldMeta } from '@/lib/contract/types'
+import type { FilterValue } from '@/lib/query'
 
 /** View contexts (manual 6.5). `media` is the card/hero presentation. */
 export type FieldContext = 'compact' | 'comfortable' | 'spacious' | 'media'
@@ -20,8 +21,8 @@ export type InputProps = {
   onSearch?: (query: string) => void
 }
 
-export type FilterOp = 'eq' | 'in' | 'contains' | 'gte' | 'lte' | 'range' | 'isnull' | 'near'
-export type FilterValue = { op: FilterOp; value: unknown }
+// Filter operators and values are defined once, beside the engine that evaluates them.
+export type { FilterOp, FilterValue } from '@/lib/query'
 
 export type FilterProps = {
   field: FieldMeta

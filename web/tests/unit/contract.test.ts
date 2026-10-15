@@ -2,7 +2,7 @@ import { describe, expect, test } from 'vitest'
 import artefact from '../../../contract/ac-contract.json'
 import { renderContract } from '../../tools/contract.mts'
 import { decimalString } from '@/lib/contract/decimal'
-import { CONTRACT_VERSION, errors, limits, locales, roles } from '@/lib/contract/generated'
+import { CONTRACT_VERSION, errors, limits, locales, richText, roles } from '@/lib/contract/generated'
 import type { Contract } from '@/lib/contract/types'
 
 const contract = artefact as Contract
@@ -12,6 +12,7 @@ describe('generated client matches the committed artefact', () => {
     expect(CONTRACT_VERSION).toBe(contract.meta.contractVersion)
     expect(limits).toEqual(contract.limits)
     expect(locales).toEqual(contract.locales)
+    expect(richText).toEqual(contract.richText)
     expect(errors).toEqual(contract.errors)
     expect([...roles]).toEqual(Object.keys(contract.policies.roles))
   })

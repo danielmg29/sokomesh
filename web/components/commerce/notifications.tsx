@@ -17,8 +17,12 @@ import { Popover } from '@/components/ui/overlay'
 import { Select } from '@/components/ui/select'
 import { Stamp } from '@/components/ui/stamp'
 import { ScrollArea, TBody, THead, Table, Td, Th, Tr } from '@/components/ui/table'
+import { FacetChips, TablePager, TableSearch, TableToolbar } from '@/components/ui/table-controls'
+import { asStringList } from '@/components/kernel/fields/types'
+import { useTableQuery } from '@/lib/client/use-table-query'
 import { cn } from '@/lib/cn'
 import { locales } from '@/lib/contract/generated'
+import type { Accessors } from '@/lib/query'
 
 export type NotificationStatus = 'queued' | 'sent' | 'failed' | 'read'
 export type NotificationChannel = 'in_app' | 'email'
@@ -141,6 +145,14 @@ export function NotificationPreferencesBlock({ preferences, channels = ['in_app'
 }) {
   const events = [...new Set(preferences.map(p => p.event))]
   const find = (event: NotificationEvent, channel: NotificationChannel) => preferences.find(p => p.event === event && p.channel === channel)
+  // "On" means at least one channel delivers the event; the facet follows each switch as it changes.
+  const access: Accessors<NotificationEvent> = {
+    text: e => [eventLabel[e].label, eventLabel[e].detail],
+    value: (e, key) => (key === 'state' ? (preferences.some(p => p.event === e && p.enabled) ? 'on' : 'off') : key === 'channels' ? preferences.filter(p => p.event === e && p.enabled).map(p => p.channel) : undefined),
+  }
+  const t = useTableQuery(events, access, { pageSize: 10 })
+  const stateCounts = t.counts('state')
+  const channelCounts = t.counts('channels')
   return (
     <section className="flex flex-col gap-2" aria-label="Notification preferences">
       <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-2 border border-border bg-surface p-4">
@@ -154,11 +166,23 @@ export function NotificationPreferencesBlock({ preferences, channels = ['in_app'
         </FormField>
         {savingKey === 'locale' ? <span role="status" className="text-sm text-muted">Saving</span> : null}
       </div>
-      <ScrollArea className="rounded-md border border-border bg-surface" label="Notification preferences">
+      <TableToolbar active={t.active} onClear={t.clear}
+        search={<TableSearch label="Search events" placeholder="Orders, payments…" value={t.query.q} onChange={t.setSearch} />}
+        facets={<>
+          <FacetChips label="Delivery" options={[{ value: 'on', label: 'On', count: stateCounts.on ?? 0 }, { value: 'off', label: 'Off everywhere', count: stateCounts.off ?? 0 }]}
+            value={asStringList(t.query.filters.state?.value)} onChange={next => t.setFilter('state', next.length ? { op: 'in', value: next } : undefined)} />
+          <FacetChips label="On by" options={channels.map(c => ({ value: c, label: channelLook[c].label, count: channelCounts[c] ?? 0 }))}
+            value={asStringList(t.query.filters.channels?.value)} onChange={next => t.setFilter('channels', next.length ? { op: 'in', value: next } : undefined)} />
+        </>} />
+      <div className="rounded-md border border-border bg-surface">
+      {t.result.total === 0 ? (
+        <EmptyState kind="no-results" title="No events match" description="Try another word or remove a filter." action={<Button variant="secondary" onClick={t.clear}>Clear search and filters</Button>} />
+      ) : (
+      <ScrollArea label="Notification preferences">
         <Table caption="Notification preferences by event and channel">
           <THead><tr><Th>Event</Th>{channels.map(c => <Th key={c}><span className="inline-flex items-center gap-1.5"><Icon icon={channelLook[c].icon} />{channelLook[c].label}</span></Th>)}</tr></THead>
           <TBody>
-            {events.map(e => (
+            {t.result.rows.map(e => (
               <Tr key={e}>
                 <Td><span className="flex flex-col"><span className="font-medium">{eventLabel[e].label}</span><span className="text-sm text-muted">{eventLabel[e].detail}</span></span></Td>
                 {channels.map(c => {
@@ -184,6 +208,9 @@ export function NotificationPreferencesBlock({ preferences, channels = ['in_app'
           </TBody>
         </Table>
       </ScrollArea>
+      )}
+      <TablePager result={t.result} onPage={t.setPage} onPageSize={t.setPageSize} noun={{ one: 'event', other: 'events' }} unfiltered={events.length} className="border-t border-border" />
+      </div>
       {restricted ? <p className="text-sm text-muted">{restricted}</p> : <p className="text-sm text-muted">Repeated deliveries of the same event are sent once.</p>}
     </section>
   )

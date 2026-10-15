@@ -1,10 +1,12 @@
 'use client'
 
+import { ArrowRight } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
 import { PaymentStatusPanel } from '@/components/commerce/checkout'
 import { PriceTierTable } from '@/components/commerce/pricing'
 import { InventoryLedgerBlock, ReservationCountdown, ReservationIndicator, StockAvailabilityIndicator } from '@/components/commerce/stock'
 import { Projection } from '@/components/kernel/Projection'
+import { Icon } from '@/components/ui/icon'
 import { Thread } from '@/components/ui/thread'
 import { Segmented } from '@/components/ui/choice'
 import { cn } from '@/lib/cn'
@@ -12,9 +14,9 @@ import { formatTime } from '@/lib/format'
 import { CategoryContractBuilder, type Attribute } from '@/features/categories/CategoryContractBuilder'
 import { ProductComparisonBlock, type CompareProduct } from '@/features/comparison/ProductComparisonBlock'
 import { FulfillmentPickPackBlock, type PickLine } from '@/features/fulfillment/FulfillmentPickPackBlock'
-import { CategoryShowcase, MarketingCTA, MarketingFooter, MercantileHero, TradeRibbon, WholesaleMetricsStrip, type HeroEmphasis } from '@/features/marketing/Marketing'
-import { BuyerSellerValueSplit, InventoryTrustProof, MarketingHeader, MarketMeshVisualization, TradeFlowStory } from '@/features/marketing/MarketingInteractive'
-import { DEMO_NOW, images, productMeta, products, sellers, stockFor } from '../fixtures'
+import { CategoryShowcase, MarketingCTA, MarketingFooter, MercantileHero, StorySplit, TradeRibbon, TradeStatement, WholesaleMetricsStrip, cta, type HeroEmphasis, type HeroPanel } from '@/features/marketing/Marketing'
+import { BuyerSellerValueSplit, InventoryTrustProof, MarketingHeader, MarketMeshVisualization, TradeFlowStory, type MeshRecord } from '@/features/marketing/MarketingInteractive'
+import { DEMO_NOW, images, productMeta, products, scenes, sellers, stockFor } from '../fixtures'
 import { Plate, Plates } from '../kit'
 
 export const maizeContract: Attribute[] = [
@@ -73,6 +75,31 @@ function Header() {
   )
 }
 
+/** The two doors of the landing hero: one per side of the market, each with its own photograph and action. */
+export const heroPanels: readonly [HeroPanel, HeroPanel] = [
+  { scene: scenes['hero-retail'], heading: 'Order wholesale against real stock.', body: 'One cart across several wholesalers. Stock is held for you while you pay by M-Pesa.', cta: cta.buy, text: 'light', place: 'bottom' },
+  { scene: scenes['hero-warehouse'], heading: 'Sell to every retailer from one stock ledger.', body: 'Publish against category contracts, price by buyer group and quantity, and fulfil from the order record.', cta: cta.sell, text: 'dark', place: 'top' },
+]
+
+/** A merchandised row of product cells from the real projection (after Tanini Home and Bélanger listings). */
+export function ProductRail({ title = 'Restock this week', records = products.slice(0, 4) }: { title?: string; records?: typeof products }) {
+  return (
+    <section aria-labelledby="rail-title" className="@container scroll-reveal flex flex-col gap-6">
+      <div className="flex flex-wrap items-baseline justify-between gap-3">
+        <h2 id="rail-title" className="text-3xl font-semibold @5xl:text-4xl">{title}</h2>
+        <a href="#products" className="inline-flex items-center gap-1 text-md font-semibold text-primary hover:underline">All products<Icon icon={ArrowRight} /></a>
+      </div>
+      <ul className="grid grid-cols-2 border-t border-l border-border @4xl:grid-cols-4">
+        {records.map(p => (
+          <li key={p.id} className="flex border-r border-b border-border bg-surface">
+            <Projection meta={productMeta} record={p} context="list" override={{ intent: 'media', surface: 'flat' }} now={DEMO_NOW} href="#product" className="w-full" />
+          </li>
+        ))}
+      </ul>
+    </section>
+  )
+}
+
 /** The hero's market: four product cells from the real projection, and the hold one buyer has on the first. */
 export function MarketShelf() {
   return (
@@ -100,7 +127,8 @@ function Hero() {
   const [emphasis, setEmphasis] = useState<HeroEmphasis>('default')
   return (
     <Plates cols={1}>
-      <Plate label="emphasis" tone="canvas">
+      <Plate label="photo split: two doors" note="Unsplash photographs, graded; credits under the ledger" tone="canvas"><MercantileHero panels={heroPanels} /></Plate>
+      <Plate label="emphasis, with the live shelf" tone="canvas">
         <div className="mb-2"><Segmented label="Emphasis" size="sm" value={emphasis} onValueChange={setEmphasis} items={[{ value: 'default', label: 'Default' }, { value: 'buyer', label: 'Buyer' }, { value: 'seller', label: 'Seller' }]} /></div>
         <div className="px-2"><MercantileHero emphasis={emphasis} board={<MarketShelf />} /></div>
       </Plate>
@@ -109,30 +137,49 @@ function Hero() {
   )
 }
 
+/** One product's record as the demo seed tells it: received, listed, held, paid, handed over. */
+export const meshRecord: MeshRecord = {
+  product: { name: 'Mavuno Maize Flour 2 kg', listing: 'Mwangaza Wholesalers Ltd, sold by the bale of 12 × 2 kg', image: { src: images.maize.url, width: images.maize.width, height: images.maize.height } },
+  unit: 'bale',
+  stations: [
+    { key: 'sellers', label: 'Sellers', figure: '4 wholesalers', role: 'Receive stock into the record and set its price.',
+      entry: { label: 'Received', reference: 'GRN-3302', detail: 'Peter Kamau, Mwangaza store in Nakuru', at: '10 Oct, 07:40', change: 120, available: 120 } },
+    { key: 'catalogue', label: 'Catalogue', figure: '2 category contracts', role: 'Decide what a listing must say before it goes live.',
+      entry: { label: 'Published', detail: 'Under the Maize flour v3 contract by Faith Chebet', at: '11 Oct, 16:00', available: 120 } },
+    { key: 'buyers', label: 'Buyers', figure: '2 retail shops', role: 'Hold stock for 15 minutes while they pay.',
+      entry: { label: 'Held at checkout', reference: 'RSV-88213', detail: 'Wanjiru General Stores, for 15 minutes', at: '12 Oct, 11:22', change: -24, available: 96 } },
+    { key: 'orders', label: 'Orders', figure: 'One change per event', role: 'Turn a paid hold into a sale, exactly once.',
+      entry: { label: 'Paid and confirmed', reference: 'SM-ORD-004215', detail: 'M-Pesa through SellaPay, applied once', at: '12 Oct, 11:30', available: 96 } },
+    { key: 'fulfilment', label: 'Fulfilment', figure: 'Pick, pack, hand over', role: 'Record each handover against the order.',
+      entry: { label: 'Handed over', detail: 'To Rift Express, expected 12:00 to 14:00', at: '12 Oct, 11:50', available: 96 } },
+  ],
+}
+
 function Mesh() {
   return (
-    <Plates cols={2}>
-      <Plate label="animated (draws once)" span><MarketMeshVisualization mode="animated" /></Plate>
-      <Plate label="static"><MarketMeshVisualization mode="static" /></Plate>
-      <Plate label="reduced motion"><MarketMeshVisualization mode="reduced-motion" /></Plate>
+    <Plates cols={1}>
+      <Plate label="animated (entries rise in once)" tone="canvas"><MarketMeshVisualization record={meshRecord} mode="animated" /></Plate>
+      <Plate label="static" tone="canvas"><MarketMeshVisualization record={meshRecord} mode="static" /></Plate>
+      <Plate label="reduced motion, narrow" tone="canvas"><div className="max-w-md"><MarketMeshVisualization record={meshRecord} mode="reduced-motion" /></div></Plate>
     </Plates>
   )
 }
 
 // The category name is the link text, so the photograph is decorative here.
 export const categories = [
-  { key: 'flour', name: 'Flour & grains', products: 64, image: images.maize.url, alt: '' },
-  { key: 'sugar', name: 'Sugar & sweeteners', products: 18, image: images.sugar.url, alt: '' },
-  { key: 'oils', name: 'Cooking oils', products: 22, image: images.oil.url, alt: '' },
-  { key: 'tea', name: 'Tea & beverages', products: 15, image: images.tea.url, alt: '' },
-  { key: 'household', name: 'Household & cleaning', products: 31, image: images.soap.url, alt: '' },
-  { key: 'dairy', name: 'Dairy', products: 9, image: images.milk.url, alt: '' },
+  { key: 'flour', name: 'Flour & grains', products: 64, image: images.maize.url, alt: '', scene: scenes['category-grains'] },
+  { key: 'sugar', name: 'Sugar & sweeteners', products: 18, image: images.sugar.url, alt: '', scene: scenes['category-sugar'] },
+  { key: 'oils', name: 'Cooking oils', products: 22, image: images.oil.url, alt: '', scene: scenes['category-oil'] },
+  { key: 'tea', name: 'Tea & beverages', products: 15, image: images.tea.url, alt: '', scene: scenes['category-tea'] },
+  { key: 'household', name: 'Household & cleaning', products: 31, image: images.soap.url, alt: '', scene: scenes['category-household'] },
+  { key: 'dairy', name: 'Dairy', products: 9, image: images.milk.url, alt: '', scene: scenes['category-dairy'] },
 ]
 
 function Categories() {
   return (
     <Plates cols={1}>
-      <Plate label="grid" note="Product counts are demo data" tone="canvas"><CategoryShowcase categories={categories} /></Plate>
+      <Plate label="photo" note="Scene photographs; product counts are demo data" tone="canvas"><CategoryShowcase categories={categories} layout="photo" /></Plate>
+      <Plate label="grid" note="Product cut-outs on the well" tone="canvas"><CategoryShowcase categories={categories} /></Plate>
       <Plate label="carousel" tone="canvas"><CategoryShowcase categories={categories} layout="carousel" /></Plate>
       <Plate label="stacked" tone="canvas"><div className="max-w-md"><CategoryShowcase categories={categories.slice(0, 4)} layout="stacked" /></div></Plate>
     </Plates>
@@ -153,7 +200,7 @@ export const sellerValue = [
 ]
 
 function ValueSplit() {
-  return <Plates cols={1}><Plate label="split"><BuyerSellerValueSplit buyer={buyerValue} seller={sellerValue} /></Plate><Plate label="tabs"><BuyerSellerValueSplit layout="tabs" buyer={buyerValue} seller={sellerValue} /></Plate></Plates>
+  return <Plates cols={1}><Plate label="stories" note="A photograph per side, left then right" tone="canvas"><BuyerSellerValueSplit layout="stories" buyer={buyerValue} seller={sellerValue} scenes={{ buyer: scenes['story-delivery'], seller: scenes['story-stock'] }} /></Plate><Plate label="split"><BuyerSellerValueSplit buyer={buyerValue} seller={sellerValue} /></Plate><Plate label="tabs"><BuyerSellerValueSplit layout="tabs" buyer={buyerValue} seller={sellerValue} /></Plate></Plates>
 }
 
 export function flowSteps() {
@@ -215,6 +262,7 @@ function Metrics() {
 function CTA() {
   return (
     <Plates cols={1}>
+      <Plate label="dual, with photograph" tone="canvas"><MarketingCTA scene={scenes['story-road']} /></Plate>
       <Plate label="dual · full" tone="canvas"><MarketingCTA /></Plate>
       <Plate label="buyer · compact" tone="canvas"><MarketingCTA audience="buyer" size="compact" /></Plate>
       <Plate label="seller · compact" tone="canvas"><MarketingCTA audience="seller" size="compact" /></Plate>
@@ -236,13 +284,33 @@ function Ribbon() {
   )
 }
 
+function Story() {
+  return (
+    <Plates cols={1}>
+      <Plate label="photo left, with a list and a link" tone="canvas"><StorySplit scene={scenes['story-delivery']} title="Deliveries that arrive on the day shown" body="Every seller states a dispatch day and a delivery fee before you pay, and the order record shows each handover." items={buyerValue.slice(0, 2)} link={cta.flow} /></Plate>
+      <Plate label="photo right" tone="canvas"><StorySplit scene={scenes['story-stock']} side="right" title="Stock you can count on" body="Availability is the sum of receipts, holds, releases and shipments, so the figure a buyer sees is the figure in the store." /></Plate>
+    </Plates>
+  )
+}
+
+/** The statement, as on the landing page: the tagline with the oil bottle standing in front of it. */
+export const statement = {
+  lines: ['Trade without', 'the tangle.'] as const,
+  product: { src: images.oil.url, width: images.oil.width, height: images.oil.height },
+  body: 'One record of stock, price and order sits between every buyer and seller, so nobody restocks against a guess.',
+}
+
+function Statement() {
+  return <Plates cols={1}><Plate label="tagline with a product in front" tone="canvas"><TradeStatement {...statement} link={cta.flow} /></Plate></Plates>
+}
+
 function Footer() {
   return <Plates cols={1}><Plate label="full" tone="canvas"><MarketingFooter /></Plate><Plate label="minimal" tone="canvas"><MarketingFooter variant="minimal" /></Plate></Plates>
 }
 
 const map: Record<string, () => ReactNode> = {
   'D-01': Builder, 'D-02': Comparison, 'D-03': PickPack,
-  'M-01': Header, 'M-02': Hero, 'M-03': Mesh, 'M-04': Categories, 'M-05': ValueSplit, 'M-06': Flow, 'M-07': Trust, 'M-08': Metrics, 'M-09': CTA, 'M-10': Footer, 'M-11': Ribbon,
+  'M-01': Header, 'M-02': Hero, 'M-03': Mesh, 'M-04': Categories, 'M-05': ValueSplit, 'M-06': Flow, 'M-07': Trust, 'M-08': Metrics, 'M-09': CTA, 'M-10': Footer, 'M-11': Ribbon, 'M-12': Story, 'M-13': Statement,
 }
 
 export default function DivergentSpecimens({ code }: { code: string }) {

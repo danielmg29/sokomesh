@@ -128,7 +128,7 @@ webhook-stale
 
 The product owner judged the first build generic and set a new blend: **Clean & Minimalist 40% + Geometric 25% + Professional/Corporate 20% + Organic/Natural 10% + Flat 5%**. SokoMesh should read as modern trade infrastructure, not a SaaS dashboard. This amendment overrides the visual rules above where they differ.
 
-- **Composition.** Modular rectangular composition on strong grids. Containers over floating cards: grid cells share one rule (joined borders) instead of sitting apart with gaps and shadows. Sections sit between full-width rules. Visible commercial quantities (prices, holds, minimum orders) are set large.
+- **Composition.** Modular rectangular composition on strong grids. Containers over floating cards: grid cells share one rule (joined borders) instead of sitting apart with gaps and shadows. Sections on operational pages sit between full-width rules; MARKET pages hold sections apart with generous space, as the storefront references do (2026-10-15). Visible commercial quantities (prices, holds, minimum orders) are set large.
 - **Surfaces.** Warm neutral grounds at very low chroma: warm stone in the light theme (`#F3F2EE` canvas, white cells), warm graphite in the dark theme. The brand kit's `#F6F8F2` stays in the brand files. Forest green is restrained (primary actions, selection, one brand band); trade yellow marks signals only.
 - **Shape.** One rule: containers, cells, dialogs and photo wells are square (0); what you press or what labels a state has a 2px corner. Radios stay round because roundness is their affordance.
 - **Depth.** Borders over shadows. Cells and panels have no shadow; only overlays that sit above the page (menus, dialogs, toasts) cast a short one.

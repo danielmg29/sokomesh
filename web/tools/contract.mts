@@ -45,6 +45,7 @@ export function renderContract(contract: Contract): string {
     constant('auth', contract.auth),
     constant('limits', contract.limits),
     constant('locales', contract.locales),
+    constant('richText', contract.richText),
     `export type Locale = (typeof locales)['supported'][number]['value']`,
     constant('errors', contract.errors),
     `export type ErrorCode = keyof typeof errors`,

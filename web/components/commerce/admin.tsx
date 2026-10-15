@@ -3,6 +3,8 @@
 import { Download, KeyRound, Webhook } from 'lucide-react'
 import { useState } from 'react'
 import { StatsBlock, type Metric } from '@/components/kernel/blocks/DataBlocks'
+import { EmptyState } from '@/components/kernel/feedback/EmptyState'
+import { asStringList } from '@/components/kernel/fields/types'
 import { FieldInput } from '@/components/kernel/fields/FieldInput'
 import { RelativeTime } from '@/components/kernel/fields/islands'
 import { Button } from '@/components/ui/button'
@@ -14,13 +16,54 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/disclo
 import { Icon } from '@/components/ui/icon'
 import { Stamp } from '@/components/ui/stamp'
 import { ScrollArea, TBody, THead, Table, Td, Th, Tr } from '@/components/ui/table'
+import { FacetChips, TablePager, TableSearch, TableToolbar } from '@/components/ui/table-controls'
+import { useTableQuery } from '@/lib/client/use-table-query'
 import { cn } from '@/lib/cn'
 import type { FieldMeta, Tone } from '@/lib/contract/types'
 import { formatDate } from '@/lib/format'
 import { formatMoney } from '@/lib/money'
+import type { Accessors } from '@/lib/query'
 
 export type AnalyticsRange = '7d' | '30d' | '90d'
 export type AnalyticsPeriod = { metrics: Metric[]; daily: ColumnDatum[]; topProducts: { rank: number; product: string; units: string; revenue: string }[] }
+
+type TopProduct = AnalyticsPeriod['topProducts'][number]
+
+/** The sale unit of a units figure ("1,284 bales" is sold by the bale), used as the facet. */
+const soldBy = (t: TopProduct) => t.units.replace(/^[\d,.\s]+/, '').trim()
+const topAccess: Accessors<TopProduct> = {
+  text: t => [t.product, t.units],
+  value: (t, key) => (key === 'unit' ? soldBy(t) : t[key as keyof TopProduct]),
+}
+
+/** Ranked products for the period, searchable by name and narrowed by the unit they sell in. */
+function TopProducts({ rows }: { rows: readonly TopProduct[] }) {
+  const t = useTableQuery(rows, topAccess, { pageSize: 10 })
+  const counts = t.counts('unit')
+  const units = [...new Set(rows.map(soldBy))].filter(Boolean).sort()
+  return (
+    <div className="flex min-w-0 flex-col overflow-hidden rounded-md border border-border bg-surface" data-density="compact">
+      <div className="flex flex-col gap-3 px-4 pt-4 pb-3">
+        <span className="font-sans text-md font-semibold">Top products</span>
+        <TableToolbar active={t.active} onClear={t.clear}
+          search={<TableSearch label="Search top products" placeholder="Product…" value={t.query.q} onChange={t.setSearch} className="sm:max-w-none" />}
+          facets={units.length > 1 ? <FacetChips label="Sold by" options={units.map(u => ({ value: u, label: u, count: counts[u] ?? 0 }))} value={asStringList(t.query.filters.unit?.value)}
+            onChange={next => t.setFilter('unit', next.length ? { op: 'in', value: next } : undefined)} /> : undefined} />
+      </div>
+      {t.result.total === 0 ? (
+        <EmptyState kind="no-results" title="No products match" description="Try another name or remove the unit filter." action={<Button variant="secondary" onClick={t.clear}>Clear search and filters</Button>} />
+      ) : (
+        <ScrollArea label="Top products">
+          <Table caption="Top products by revenue">
+            <THead><tr><Th>#</Th><Th>Product</Th><Th numeric>Units</Th><Th numeric>Revenue</Th></tr></THead>
+            <TBody>{t.result.rows.map(r => <Tr key={r.rank}><Td className="text-muted tabular">{r.rank}</Td><Td className="font-medium">{r.product}</Td><Td numeric className="whitespace-nowrap">{r.units}</Td><Td numeric className="font-semibold whitespace-nowrap">{formatMoney(r.revenue)}</Td></Tr>)}</TBody>
+          </Table>
+        </ScrollArea>
+      )}
+      <TablePager result={t.result} onPage={t.setPage} onPageSize={t.setPageSize} noun={{ one: 'product', other: 'products' }} unfiltered={rows.length} className="mt-auto border-t border-border" />
+    </div>
+  )
+}
 
 /** Seller dashboard (SM-F-19): cards, chart and export reconcile to one shared metric definition. */
 export function SellerAnalyticsGrid({ periods, definitionVersion, state = 'ready' }: { periods: Record<AnalyticsRange, AnalyticsPeriod>; definitionVersion: string; state?: 'ready' | 'loading' | 'empty' | 'error' }) {
@@ -39,15 +82,7 @@ export function SellerAnalyticsGrid({ periods, definitionVersion, state = 'ready
           <div className="rounded-md border border-border bg-surface p-4">
             <ColumnChart data={p.daily} title="Confirmed revenue per day (KES)" valueLabel="Revenue (KES)" formatTick={tick} />
           </div>
-          <div className="overflow-hidden rounded-md border border-border bg-surface" data-density="compact">
-            <div className="px-4 pt-4 pb-2 font-sans text-md font-semibold">Top products</div>
-            <ScrollArea label="Top products">
-              <Table caption="Top products by revenue">
-                <THead><tr><Th>#</Th><Th>Product</Th><Th numeric>Units</Th><Th numeric>Revenue</Th></tr></THead>
-                <TBody>{p.topProducts.map(t => <Tr key={t.rank}><Td className="text-muted tabular">{t.rank}</Td><Td className="font-medium">{t.product}</Td><Td numeric className="whitespace-nowrap">{t.units}</Td><Td numeric className="font-semibold whitespace-nowrap">{formatMoney(t.revenue)}</Td></Tr>)}</TBody>
-              </Table>
-            </ScrollArea>
-          </div>
+          <TopProducts rows={p.topProducts} />
         </div>
       ) : null}
       <p className="text-sm text-muted">Figures use metric definitions <code className="font-mono">{definitionVersion}</code>: confirmed orders only, net of cancellations, in East Africa Time.</p>

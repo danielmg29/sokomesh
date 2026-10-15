@@ -4,9 +4,10 @@ import { ArrowDown, ArrowUp, Copy, ImagePlus, LayoutGrid, Rows3 } from 'lucide-r
 import Image from 'next/image'
 import { useState, type ReactNode } from 'react'
 import { FiltersBlock, type FilterValues } from '@/components/kernel/blocks/FiltersBlock'
+import { EmptyState } from '@/components/kernel/feedback/EmptyState'
 import { FieldInput } from '@/components/kernel/fields/FieldInput'
 import { FileView } from '@/components/kernel/fields/views'
-import { formatBytes, type FileValue } from '@/components/kernel/fields/types'
+import { asStringList, formatBytes, type FileValue } from '@/components/kernel/fields/types'
 import { ProjectedForm, type FormRecipe, type SubmitResult } from '@/components/kernel/forms/ProjectedForm'
 import { Button, IconButton } from '@/components/ui/button'
 import { Checkbox, Segmented } from '@/components/ui/choice'
@@ -15,8 +16,11 @@ import { Input } from '@/components/ui/input'
 import { Progress } from '@/components/ui/progress'
 import { Stamp } from '@/components/ui/stamp'
 import { ScrollArea, TBody, THead, Table, Td, Th, Tr } from '@/components/ui/table'
+import { FacetChips, TablePager, TableSearch, TableToolbar } from '@/components/ui/table-controls'
 import { Thread, type ThreadStep } from '@/components/ui/thread'
+import { useTableQuery } from '@/lib/client/use-table-query'
 import { cn } from '@/lib/cn'
+import type { Accessors, FilterValue } from '@/lib/query'
 import type { FieldMeta, ModelMeta, Tone } from '@/lib/contract/types'
 import { formatDate } from '@/lib/format'
 
@@ -110,7 +114,11 @@ export function ProductEditorBlock({ meta, mode, layout = 'inline', status, init
 
 export type VariantRow = { id: string; sku: string; attributes: Record<string, string>; packagingUnit: string; unitsPerPack: string; moq: string; active: boolean }
 
-/** Variant creation from category attribute combinations; duplicates and invalid MOQs are flagged inline. */
+/**
+ * Variant creation from category attribute combinations; duplicates and invalid MOQs are flagged inline.
+ * Search covers the SKU and attribute values; facets narrow by status, by what needs fixing and by each
+ * category attribute. Filters apply live, so a row fixed while "To fix" is chosen leaves the view.
+ */
 export function VariantMatrixEditor({ attributes, rows: initialRows, layout: initialLayout = 'table' }: {
   attributes: readonly { key: string; label: string; options: readonly string[] }[]; rows: readonly VariantRow[]; layout?: 'table' | 'cards'
 }) {
@@ -123,6 +131,18 @@ export function VariantMatrixEditor({ attributes, rows: initialRows, layout: ini
   const problem = (r: VariantRow) => (dupes.has(combo(r)) ? 'Same attributes as another variant' : !/^\d+(\.\d+)?$/.test(r.moq) || Number(r.moq) < 1 ? 'Minimum order must be at least 1' : null)
   const update = (id: string, patch: Partial<VariantRow>) => setRows(rs => rs.map(r => (r.id === id ? { ...r, ...patch } : r)))
   const invalid = rows.filter(problem).length
+  // Reads the current rows (the duplicate check depends on all of them), so the result follows every edit.
+  const access: Accessors<VariantRow> = {
+    text: r => [r.sku, r.packagingUnit, ...Object.values(r.attributes)],
+    value: (r, key) => key === 'status' ? (r.active ? 'active' : 'inactive') : key === 'check' ? (problem(r) ? 'fix' : 'ok') : key.startsWith('attr:') ? r.attributes[key.slice(5)] : undefined,
+  }
+  const t = useTableQuery(rows, access, { pageSize: 10 })
+  const facet = (key: string, label: string, options: readonly { value: string; label: string }[]) => {
+    const counts = t.counts(key)
+    return <FacetChips key={key} label={label} options={options.map(o => ({ ...o, count: counts[o.value] ?? 0 }))} value={asStringList(t.query.filters[key]?.value)}
+      onChange={next => t.setFilter(key, next.length ? ({ op: 'in', value: next } satisfies FilterValue) : undefined)} />
+  }
+  const shown = t.result.rows
   return (
     <section className="flex flex-col gap-3" aria-label="Variants">
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -139,13 +159,24 @@ export function VariantMatrixEditor({ attributes, rows: initialRows, layout: ini
           <Button size="md" variant="primary" onClick={() => setRows(rs => rs.map(r => ({ ...r, ...(fill.moq ? { moq: fill.moq } : {}), ...(fill.packagingUnit ? { packagingUnit: fill.packagingUnit } : {}) })))}>Apply to all {rows.length}</Button>
         </div>
       ) : null}
-      {layout === 'table' ? (
+      <TableToolbar active={t.active} onClear={t.clear}
+        search={<TableSearch label="Search variants" placeholder="SKU or attribute…" value={t.query.q} onChange={t.setSearch} />}
+        facets={<>
+          {facet('status', 'Status', [{ value: 'active', label: 'Active' }, { value: 'inactive', label: 'Inactive' }])}
+          {facet('check', 'Check', [{ value: 'fix', label: 'To fix' }, { value: 'ok', label: 'OK' }])}
+          {attributes.map(a => facet(`attr:${a.key}`, a.label, a.options.map(o => ({ value: o, label: o }))))}
+        </>} />
+      {t.result.total === 0 ? (
+        <div className="rounded-md border border-border bg-surface">
+          <EmptyState kind="no-results" title="No variants match" description="Try another SKU or remove a filter." action={<Button variant="secondary" onClick={t.clear}>Clear search and filters</Button>} />
+        </div>
+      ) : layout === 'table' ? (
         <div className="overflow-hidden rounded-md border border-border bg-surface" data-density="compact">
           <ScrollArea label="Variants table, scrolls sideways">
             <Table caption="Variants">
               <THead><tr><Th>Active</Th><Th>SKU</Th>{attributes.map(a => <Th key={a.key}>{a.label}</Th>)}<Th>Pack</Th><Th numeric>Units/pack</Th><Th numeric>MOQ</Th><Th>Check</Th></tr></THead>
               <TBody>
-                {rows.map(r => {
+                {shown.map(r => {
                   const p = problem(r)
                   return (
                     <Tr key={r.id} className={cn(p && 'bg-tone-danger-bg/30')}>
@@ -171,7 +202,7 @@ export function VariantMatrixEditor({ attributes, rows: initialRows, layout: ini
         </div>
       ) : (
         <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          {rows.map(r => {
+          {shown.map(r => {
             const p = problem(r)
             return (
               <li key={r.id} className={cn('flex flex-col gap-2 rounded-md border bg-surface p-3', p ? 'border-tone-danger' : 'border-border')}>
@@ -184,6 +215,9 @@ export function VariantMatrixEditor({ attributes, rows: initialRows, layout: ini
           })}
         </ul>
       )}
+      <div className="rounded-md border border-border bg-surface">
+        <TablePager result={t.result} onPage={t.setPage} onPageSize={t.setPageSize} noun={{ one: 'variant', other: 'variants' }} unfiltered={rows.length} />
+      </div>
     </section>
   )
 }
@@ -239,4 +273,33 @@ export function FacetFilterPanel({ meta, layout, counts, search }: { meta: Model
   const [values, setValues] = useState<FilterValues>({})
   const [q, setQ] = useState(search ?? '')
   return <FiltersBlock meta={meta} values={values} onChange={setValues} search={q} onSearchChange={setQ} layout={layout === 'sidebar' ? 'expanded' : 'sheet'} counts={counts} />
+}
+
+type HeroScene = { src: string; alt: string; width: number; height: number; blurDataURL?: string }
+
+/**
+ * A category's landing header (after the Bélanger and Tanini Home catalogues): the name set large, what the
+ * category holds and how much of it there is, beside a scene photograph. Counts are passed in from the
+ * listing, never computed here.
+ */
+export function CategoryHero({ title, description, count, sellers, breadcrumbs, scene }: {
+  title: string; description: string; count: number; sellers?: number; breadcrumbs?: ReactNode; scene?: HeroScene
+}) {
+  return (
+    <header className="@container">
+      <div className="grid grid-cols-1 items-end gap-6 @3xl:grid-cols-2 @3xl:gap-10">
+        <div className="flex flex-col gap-4 pb-1">
+          {breadcrumbs}
+          <h1 className="text-4xl font-extrabold tracking-display @5xl:text-5xl">{title}</h1>
+          <p className="max-w-[46ch] text-lg text-muted">{description}</p>
+          <p className="text-md tabular"><span className="font-semibold">{count.toLocaleString('en-KE')} products</span>{sellers ? <span className="text-muted"> from {sellers} wholesalers</span> : null}</p>
+        </div>
+        {scene ? (
+          <div className="relative aspect-[3/2] overflow-hidden bg-well">
+            <Image src={scene.src} alt={scene.alt} fill sizes="(min-width: 768px) 50vw, 100vw" preload placeholder={scene.blurDataURL ? 'blur' : 'empty'} blurDataURL={scene.blurDataURL} className="object-cover" />
+          </div>
+        ) : null}
+      </div>
+    </header>
+  )
 }

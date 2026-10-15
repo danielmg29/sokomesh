@@ -69,13 +69,13 @@ Wholesale trade in Kenya still runs on phone orders, spreadsheet price lists and
 SokoMesh follows the **Adaptive Convergence** method: the backend owns every business fact, publishes it once as a versioned machine-readable contract, and the web client derives its types, validation and interface from that contract instead of restating it.
 
 ```text
-backend models / policies / limits / locales
+backend models / policies / limits / locales / rich-text allow-list
         │  python manage.py contract export   (enforces the semantic version bump)
         ▼
-contract/ac-contract.json   ◀── committed, reviewed, versioned (0.2.0)
+contract/ac-contract.json   ◀── committed, reviewed, versioned (0.3.0)
         │  pnpm contract:gen
         ▼
-web/lib/contract/generated.ts   (types, Zod schemas, limits, roles, locales)
+web/lib/contract/generated.ts   (types, Zod schemas, limits, roles, locales, rich-text policy)
         │
         ▼
 Projection kernel: recipes × slots × field registry → every list, card, form and detail view
@@ -91,8 +91,8 @@ design/tokens/*.json (DTCG) ── pnpm tokens:gen ──▶ app/tokens.generate
 
 | Layer | Technology |
 |---|---|
-| Backend | Python 3.13, Django 6.1 (ASGI), Channels, PostgreSQL 17, Redis 7, uv |
-| Web | Next.js 16 (App Router, Cache Components, React Compiler), React 19, TypeScript, Tailwind CSS 4, Radix primitives, Zod 4, TanStack Query, pnpm |
+| Backend | Python 3.13, Django 6.1 (ASGI), Channels, PostgreSQL 17, Redis 7, nh3 (HTML sanitising), uv |
+| Web | Next.js 16 (App Router, Cache Components, React Compiler), React 19, TypeScript, Tailwind CSS 4, Radix primitives, Tiptap (rich text), Zod 4, TanStack Query, pnpm |
 | Tests | pytest, pytest-django, Hypothesis; Vitest, Testing Library, Playwright |
 | Delivery | Docker Compose, GitHub Actions, pre-commit, just |
 
@@ -111,10 +111,10 @@ The visual language is **WOVEN TRADE**: a wholesale market drawn as one connecte
 | **Type** | Archivo in two widths: normal for interface text, SemiExpanded for headings and prices so quantities read like trade signage. JetBrains Mono for SKUs and IDs |
 | **Shape** | Containers and images are square; what you press or what labels a state has a 2px corner |
 | **Depth** | Borders over shadows; joined grid cells instead of floating cards |
-| **Photography** | Real product photographs cut out of their backgrounds and set on a theme-aware ground, so one file works in light and dark |
+| **Photography** | Real product photographs cut out of their backgrounds and set on a theme-aware ground, so one file works in light and dark; scene photographs of shops, warehouses, roads and fields, graded as one set, lead every MARKET page |
 | **Modes** | MARKET (buyers, photography-led), LEDGER (sellers and admins, dense and numeric), FLOW (checkout and warehouse, state-heavy) |
 
-The live inventory at **`/design-system`** renders all 150 catalogued pieces from the real components: 11 foundations, 18 primitives, 26 field widgets, 18 kernel pieces, 10 blocks, 28 commerce extensions, 3 divergent surfaces, 11 marketing sections and 25 page templates, each in every state the specification names, in both themes. The binding rules are in the [design constitution](docs/design/constitution.md); how they landed in code is in [DESIGN.md](DESIGN.md).
+The live inventory at **`/design-system`** renders all 155 catalogued pieces from the real components: 11 foundations, 19 primitives, 26 field widgets, 19 kernel pieces, 10 blocks, 29 commerce extensions, 3 divergent surfaces, 13 marketing sections and 25 page templates, each in every state the specification names, in both themes. The binding rules are in the [design constitution](docs/design/constitution.md); how they landed in code is in [DESIGN.md](DESIGN.md).
 
 ## Progress
 
@@ -145,8 +145,11 @@ Requirement IDs (`SM-F-xx`) come from the SokoMesh Feature Build Order and Field
 - [x] Dark mode for every component, with the reader's choice applied before first paint
 - [x] Trade-infrastructure remodel: warm neutral grounds, square containers, joined grids, Archivo type system, ribbon motif, three-tier public header
 - [x] Product photography: eight open-licence photographs cut out by a reproducible script, with generated credits
+- [x] Storefront layouts after the reference sites: two-door photographic hero, photographic category tiles, product rows of square wells, an oversized statement, photographic stories, a catalogue page with one filter and sort bar, and a two-column product page with a sticky buying column; eleven graded Unsplash scene photographs
+- [x] Every table searches, filters and pages live through one tested query engine (word search ignoring case and accents, facet chips with live counts, contract-bounded page sizes)
 - [x] Notification language preference driven by the contract's locales
 - [x] SellaPay confirmation rule reflected in the payment interface
+- [x] Rich-text document editor (CKEditor 5 style): headings, emphasis, links, lists with indent, quotes, captioned images, YouTube and Vimeo video, tables, undo and word count, on an allow-list the backend owns and sanitises
 - [ ] Accessibility test pass (axe) on every projected page
 - [ ] Visual regression captures of the design-system page
 
@@ -315,4 +318,4 @@ docs/           project context, design constitution, brand assets, architecture
 
 ## Credits
 
-Demo product photographs are open-licence images from Wikimedia Commons, cut out for the interface; authors and licences are listed in [`web/public/images/products/README.md`](web/public/images/products/README.md). CC BY-SA cut-outs are shared under the same licence as their source.
+Demo product photographs are open-licence images from Wikimedia Commons, cut out for the interface; authors and licences are listed in [`web/public/images/products/README.md`](web/public/images/products/README.md). CC BY-SA cut-outs are shared under the same licence as their source. Scene photographs are from Unsplash (Unsplash Licence), credited in [`web/public/images/scenes/README.md`](web/public/images/scenes/README.md).

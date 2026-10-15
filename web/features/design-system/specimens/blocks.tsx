@@ -11,7 +11,7 @@ import { PageBlocks } from '@/components/kernel/blocks/PageBlocks'
 import { Button } from '@/components/ui/button'
 import { Segmented } from '@/components/ui/choice'
 import { Stamp } from '@/components/ui/stamp'
-import { DEMO_NOW, orderMeta, orders, people, productMeta, products } from '../fixtures'
+import { DEMO_NOW, orderHistory, orderMeta, orders, people, productMeta, products } from '../fixtures'
 import { Plate, Plates, useDemoRun } from '../kit'
 
 function Headers() {
@@ -51,7 +51,7 @@ function Lists() {
           <Segmented label="State" size="sm" value={state} onValueChange={setState} items={(['ready', 'loading', 'empty', 'error', 'stale'] as const).map(v => ({ value: v, label: v }))} />
           <Segmented label="Narrow strategy" size="sm" value={narrow} onValueChange={setNarrow} items={(['scroll', 'collapse', 'priority'] as const).map(v => ({ value: v, label: v }))} />
         </div>
-        <ListBlock meta={orderMeta} records={orders} state={state} narrow={narrow} density="compact" selectable selected={selected} onSelectedChange={setSelected} onRun={run} href={() => '#order'}
+        <ListBlock meta={orderMeta} records={orderHistory} state={state} narrow={narrow} density="compact" selectable selected={selected} onSelectedChange={setSelected} onRun={run} href={() => '#order'}
           sort={sort} onSortChange={setSort} hasMore onRetry={() => setState('ready')} onRefresh={() => setState('ready')} staleSince="Last updated 9 min ago." now={DEMO_NOW}
           live={state === 'ready' ? { changed: 2, onApply: () => undefined } : undefined}
           empty={{ kind: 'no-results', title: 'No orders match', description: 'Clear the status filter to see all 27 orders.' }} />

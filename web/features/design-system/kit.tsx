@@ -11,7 +11,7 @@ import { cn } from '@/lib/cn'
 export function Plates({ children, cols = 2, className }: { children: ReactNode; cols?: 1 | 2 | 3 | 4 | 5; className?: string }) {
   return (
     <div className={cn(
-      'grid grid-cols-1 gap-px overflow-hidden rounded-md border border-border bg-border',
+      'grid grid-cols-1 gap-px overflow-clip rounded-md border border-border bg-border',
       cols === 2 && '@2xl:grid-cols-2', cols === 3 && '@2xl:grid-cols-2 @5xl:grid-cols-3', cols === 4 && '@xl:grid-cols-2 @4xl:grid-cols-4', cols === 5 && '@xl:grid-cols-2 @3xl:grid-cols-3 @5xl:grid-cols-5',
       className,
     )}>

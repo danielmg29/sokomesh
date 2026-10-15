@@ -35,7 +35,7 @@ Category contracts define product attributes, validation, facets, comparison fie
 ## Capabilities and Constraints
 
 - 24 requirements (SM-F-01 to SM-F-24), built in the order in `docs/project-context.md`. Requirement IDs are traceability keys.
-- Rich text is allowed only for seller profile description, category seller/buyer guidance and product description. All other long text is plain.
+- Rich text is allowed only for seller profile description, category seller/buyer guidance and product description. All other long text is plain. Those fields may carry headings, emphasis, underline, strikethrough, inline code, lists, quotes, rules, links, captioned images, YouTube or Vimeo video and simple tables; the backend's allow-list (published in the contract as `richText`) is the authority.
 - Stock reservations have a bounded TTL; concurrent checkout must never produce negative availability.
 - **Payment confirmation rule** (product owner, 2026-10-13). A payment is confirmed only after the buyer has acted on the M-Pesa prompt on their own phone and the result is a success. A cancelled prompt, a wrong PIN, insufficient funds, an expired prompt or no result at all leaves the payment unconfirmed and the order unpaid; the buyer may send the prompt again while the reservation holds.
 - **Open: how the result arrives.** SellaPay v1 still documents no callback, webhook or transaction-status endpoint (checked 2026-10-13) and lists webhook signature verification as planned for v2.0. How SokoMesh receives the phone result and verifies it (SM-F-14) is undecided. Interfaces show "awaiting approval on phone" and "not confirmed yet" honestly rather than assume a result.

@@ -4,6 +4,12 @@
 
 Versioning: **major**: breaking (removed or renamed keys, narrowed constraints, new required fields without a default). **minor**: additive. **patch**: presentational (labels, help text, tones, widgets, messages).
 
+## 0.3.0 — 2026-10-14
+
+Additive.
+
+- `richText`: the rich-text allow-list, now owned by the backend (`AC_RICH_TEXT`, sanitised on write by `backend/core/richtext.py` with nh3). `tags` maps each allowed tag to its attributes: paragraphs, `h3`/`h4`, strong, em, underline, strikethrough, inline code, lists, block quotes, rules, links (`href`), captioned images (`figure.image` > `img[src, alt]` + `figcaption`), video embeds (`figure.media` > `oembed[url]`) and simple tables. `classes` limits `figure` to `image` and `media`. `linkSchemes` (https, http, mailto), `imageSchemes` (https) and `sameOriginImages` govern URLs. `embeds` lists the video providers (YouTube, Vimeo): `url` is the canonical stored-URL pattern and `player` the privacy-enhanced player address the client builds from it. Widened from the spec p.5 list (headings, emphasis, lists, links) at the product owner's request.
+
 ## 0.2.0 — 2026-10-13
 
 Additive.

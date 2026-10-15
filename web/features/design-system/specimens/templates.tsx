@@ -4,7 +4,7 @@ import { ArrowRight, Bell, Building2, LayoutDashboard, Package, ReceiptText, Scr
 import { useState, type ReactNode } from 'react'
 import { IntegrationPanel, ReconciliationTraceBlock, SellerAnalyticsGrid } from '@/components/commerce/admin'
 import { ApprovalFlowBlock, CartBlock, QuoteDecisionPanel } from '@/components/commerce/cart'
-import { FacetFilterPanel, MediaManager, ProductEditorBlock, SellerOnboardingReviewBlock, VariantMatrixEditor } from '@/components/commerce/catalog'
+import { CategoryHero, FacetFilterPanel, MediaManager, ProductEditorBlock, SellerOnboardingReviewBlock, VariantMatrixEditor } from '@/components/commerce/catalog'
 import { CheckoutSummaryBlock, PaymentStatusPanel } from '@/components/commerce/checkout'
 import { NotificationBell, NotificationPreferencesBlock, NotificationsBlock } from '@/components/commerce/notifications'
 import { DeliveryTrackingBlock, OrderTimelineBlock, ReturnDisputeCaseBlock } from '@/components/commerce/orders'
@@ -13,7 +13,7 @@ import { InventoryLedgerBlock, ReservationCountdown, ReservationIndicator, Stock
 import { ActionBar } from '@/components/kernel/actions/ActionBar'
 import { ChatBlock } from '@/components/kernel/blocks/ChatBlock'
 import { ActivityBlock, DetailBlock, RelatedBlock, StatsBlock, type ActivityEvent, type Metric } from '@/components/kernel/blocks/DataBlocks'
-import { FiltersBlock, type FilterValues } from '@/components/kernel/blocks/FiltersBlock'
+import { FiltersBlock, SortSelect, type FilterValues } from '@/components/kernel/blocks/FiltersBlock'
 import { HeaderBlock } from '@/components/kernel/blocks/HeaderBlock'
 import { ListBlock } from '@/components/kernel/blocks/ListBlock'
 import { PageBlocks, withBlocks, type BlockSpec } from '@/components/kernel/blocks/PageBlocks'
@@ -28,27 +28,29 @@ import { AppShell } from '@/components/layout/shell'
 import { Grid, Split } from '@/components/layout/primitives'
 import { BrandLogo } from '@/components/ui/BrandLogo'
 import { Button } from '@/components/ui/button'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/disclosure'
+import { Accordion, Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/disclosure'
 import { Icon } from '@/components/ui/icon'
 import { Stamp } from '@/components/ui/stamp'
 import { Thread } from '@/components/ui/thread'
 import type { ModelMeta } from '@/lib/contract/types'
+import { cn } from '@/lib/cn'
 import { formatMoney } from '@/lib/money'
-import { CategoryShowcase, MarketingCTA, MarketingFooter, MercantileHero, WholesaleMetricsStrip } from '@/features/marketing/Marketing'
+import Image from 'next/image'
+import { CategoryShowcase, MarketingCTA, MarketingFooter, MercantileHero, TradeStatement, WholesaleMetricsStrip, cta } from '@/features/marketing/Marketing'
 import { BuyerSellerValueSplit, InventoryTrustProof, MarketingHeader, MarketMeshVisualization, TradeFlowStory } from '@/features/marketing/MarketingInteractive'
 import { CategoryContractBuilder } from '@/features/categories/CategoryContractBuilder'
 import { ProductComparisonBlock } from '@/features/comparison/ProductComparisonBlock'
 import { FulfillmentPickPackBlock } from '@/features/fulfillment/FulfillmentPickPackBlock'
 import { catalogue, chainOf, rowFor } from '../catalogue'
-import { DEMO_NOW, buyers, images, orderMeta, orders, organizationMeta, organizationValues, people, productMeta, products, sellers, stockFor } from '../fixtures'
+import { DEMO_NOW, buyers, images, orderHistory, orderMeta, scenes, orders, organizationMeta, organizationValues, people, productMeta, products, sellers, stockFor } from '../fixtures'
 import { Plate, Plates, useJump } from '../kit'
 import { messages, orderEvents, sellerMetrics } from './blocks'
 import {
-  apiTokens, approvalSteps, checkoutGroups, deliveryEvents, editorMeta, mediaItems, movements, mwangazaGroup, naivasha, notifications,
+  apiTokens, approvalSteps, checkoutGroups, deliveryEvents, editorMeta, ledgerMonth, mediaItems, mwangazaGroup, naivasha, notifications,
   onboardingHistory, orderTransitions, period, preferences, priceRules, pwaniGroup, quoteLines, reorderLines, returnClaim, returnEvidence, riftGroup,
   sellerDocuments, tiers, traceEvents, variantAttributes, variantRows, webhookEndpoints,
 } from './commerce'
-import { MarketShelf, buyerValue, categories, compareProducts, comparisonFields, flowSteps, maizeContract, pickLines, sellerValue, trustProofs, tradeTerms } from './divergent'
+import { ProductRail, heroPanels, statement, buyerValue, categories, compareProducts, comparisonFields, flowSteps, maizeContract, meshRecord, pickLines, sellerValue, trustProofs, tradeTerms } from './divergent'
 import { navItems } from './kernel'
 
 /** Block chain as ordered data, each step linked to its inventory row. */
@@ -118,18 +120,21 @@ function Shell({ nav, current, children, density }: { nav: NavItem[]; current: s
 
 function Landing() {
   return (
-    <div className="overflow-hidden border border-border bg-background">
+    <div className="overflow-clip border border-border bg-background">
       <MarketingHeader categories={categories} />
-      {/* Commerce first (category discovery straight after the hero), then the mechanisms; every section
-          sits between full-width rules on one 12-column measure, not in its own card. */}
-      <div className="@container flex flex-col divide-y divide-border px-4 @xl:px-8 [&>*]:py-12 [&>*:first-child]:pt-0">
-        <MercantileHero board={<MarketShelf />} />
-        <CategoryShowcase categories={categories} />
-        <BuyerSellerValueSplit buyer={buyerValue} seller={sellerValue} />
-        <MarketMeshVisualization mode="animated" />
-        <TradeFlowStory steps={flowSteps()} />
-        <InventoryTrustProof proofs={trustProofs()} />
-        <div className="!border-t-0"><MarketingCTA /></div>
+      {/* Photography first, then commerce (categories, a product row), one statement, the two stories, and
+          the mechanisms last. Sections are held apart by generous space, not boxes or rules, as on the
+          storefronts this follows; each rises into place once as it enters the viewport. */}
+      <MercantileHero panels={heroPanels} />
+      <div className="@container flex flex-col gap-20 px-4 py-14 @xl:px-8 @5xl:gap-28 @5xl:py-20">
+        <CategoryShowcase categories={categories} layout="photo" />
+        <ProductRail />
+        <TradeStatement {...statement} link={cta.flow} />
+        <BuyerSellerValueSplit layout="stories" buyer={buyerValue} seller={sellerValue} scenes={{ buyer: scenes['story-delivery'], seller: scenes['story-stock'] }} />
+        <div className="scroll-reveal"><MarketMeshVisualization record={meshRecord} mode="animated" /></div>
+        <div className="scroll-reveal"><TradeFlowStory steps={flowSteps()} /></div>
+        <div className="scroll-reveal"><InventoryTrustProof proofs={trustProofs()} /></div>
+        <MarketingCTA scene={scenes['story-road']} />
       </div>
       <MarketingFooter />
     </div>
@@ -138,38 +143,67 @@ function Landing() {
 
 const facetMeta: ModelMeta = { ...productMeta, fields: [...productMeta.fields.filter(f => ['stock_status', 'unit_price', 'seller'].includes(f.name))] }
 
+/**
+ * The catalogue as the storefronts this follows lay it out (Bélanger, Tanini Home): the category named large
+ * beside its photograph, one bar for filters and sort, then the full width given to the product grid.
+ */
 function CategoryResults() {
+  const [sort, setSort] = useState('-updated_at')
   return (
     <Page>
-      <HeaderBlock source="explicit" title="Flour & grains" description="Maize flour, wheat flour and rice from approved Kenyan wholesalers." count={64} breadcrumbs={[{ label: 'Catalogue', href: '#' }, { label: 'Flour & grains' }]} />
-      <Split ratio="aside-first">
-        <FacetFilterPanel meta={facetMeta} layout="sidebar" counts={{ stock_status: { available: 52, low: 9, reserved: 3, out_of_stock: 4 } }} />
-        <div className="flex min-w-0 flex-col gap-4">
-          <ListBlock meta={productMeta} records={products.slice(0, 6)} intent="card" href={() => '#product'} now={DEMO_NOW} />
-          <Pagination from={1} to={24} total={64} noun={{ one: 'product', other: 'products' }} nextHref="?cursor=eyJpZCI6MjR9" />
-        </div>
-      </Split>
+      <CategoryHero title="Flour & grains" description="Maize flour, wheat flour and rice from approved Kenyan wholesalers." count={64} sellers={3}
+        breadcrumbs={<Breadcrumbs items={[{ label: 'Catalogue', href: '#' }, { label: 'Flour & grains' }]} />} scene={scenes['category-grains']} />
+      <div className="flex flex-wrap items-center justify-between gap-3 border-y border-border py-3">
+        <FacetFilterPanel meta={facetMeta} layout="sheet" counts={{ stock_status: { available: 52, low: 9, reserved: 3, out_of_stock: 4 } }} />
+        <SortSelect meta={productMeta} value={sort} onChange={setSort} />
+      </div>
+      <ListBlock meta={productMeta} records={products} intent="card" href={() => '#product'} now={DEMO_NOW} />
+      <Pagination from={1} to={24} total={64} noun={{ one: 'product', other: 'products' }} nextHref="?cursor=eyJpZCI6MjR9" />
     </Page>
   )
 }
 
+/**
+ * Product page in two columns (after Not Another Bill): the photographs scroll on the left while the buying
+ * column stays in view on the right, so price, stock and the action never leave the screen.
+ */
 function ProductDetail() {
   const p = products[0]!
+  const photo = (src: string, alt: string, blur: string | undefined, contain: boolean, ratio: string) => (
+    <div className={cn('relative overflow-hidden bg-well', ratio)}>
+      <Image src={src} alt={alt} fill sizes="(min-width: 1024px) 40vw, 100vw" placeholder={blur ? 'blur' : 'empty'} blurDataURL={blur} className={contain ? 'object-contain p-[12%]' : 'object-cover'} />
+    </div>
+  )
   return (
     <Page>
       <Breadcrumbs items={[{ label: 'Catalogue', href: '#' }, { label: 'Flour & grains', href: '#' }, { label: String(p.name) }]} />
-      <Split ratio="media-first">
-        <div className="overflow-hidden rounded-md border border-border bg-surface"><FieldView field={productMeta.fields.find(f => f.name === 'image')!} value={images.maize} context="media" /></div>
-        <div className="flex flex-col gap-4">
-          <h2 className="font-display text-2xl font-bold">{String(p.name)}</h2>
-          <p className="text-md text-muted">Bale of 12 × 2 kg, sold by <b className="font-semibold text-foreground">{sellers.mwangaza.label}</b>, Nakuru</p>
-          <span className="font-display text-4xl font-extrabold tabular">{formatMoney('1740.00')} <span className="font-sans text-md font-normal text-muted">per bale</span></span>
+      <div className="grid grid-cols-1 items-start gap-8 @4xl:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] @4xl:gap-12">
+        <div className="grid grid-cols-2 gap-px border border-border bg-border">
+          <div className="col-span-2">{photo(images.maize.url, images.maize.alt, undefined, true, 'aspect-square')}</div>
+          {photo(scenes['category-grains'].src, scenes['category-grains'].alt, scenes['category-grains'].blurDataURL, false, 'aspect-[4/5]')}
+          {photo(scenes['story-stock'].src, scenes['story-stock'].alt, scenes['story-stock'].blurDataURL, false, 'aspect-[4/5]')}
+        </div>
+        <aside className="flex flex-col gap-5 @4xl:sticky @4xl:top-6" aria-label="Buy">
+          <div className="flex flex-col gap-2">
+            <a href="#seller" className="self-start text-sm text-muted hover:text-foreground hover:underline">{sellers.mwangaza.label}, Nakuru</a>
+            <h2 className="text-3xl font-extrabold tracking-display @5xl:text-4xl">{String(p.name)}</h2>
+            <p className="text-md text-muted">Bale of 12 × 2 kg</p>
+          </div>
+          <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 border-y border-border py-4">
+            <span className="font-display text-4xl font-extrabold tabular">{formatMoney('1740.00')}</span>
+            <span className="text-md text-muted">per bale, from 5 bales</span>
+          </div>
           <StockAvailabilityIndicator stock={stockFor['p-mvn-2k']!} variant="full" />
           <PriceTierTable tiers={tiers} unit="bale" quantity={5} density="compact" />
-          <div className="flex flex-wrap gap-2"><Button variant="primary" size="lg">Add 5 bales to cart</Button><Button variant="secondary" size="lg">Request quote</Button></div>
-        </div>
-      </Split>
-      <RelatedBlock title="More from Mwangaza" meta={productMeta} records={[products[4]!]} intent="card" density="compact" now={DEMO_NOW} />
+          <div className="flex flex-col gap-2"><Button variant="primary" size="lg" block>Add 5 bales to cart</Button><Button variant="secondary" size="lg" block>Request quote</Button></div>
+          <Accordion defaultValue={['details']} items={[
+            { value: 'details', title: 'Product details', content: <p className="text-md text-muted">Sifted, fortified maize flour in 2 kg packets, twelve to a shrink-wrapped bale. Store dry and off the floor.</p> },
+            { value: 'delivery', title: 'Dispatch and delivery', content: <p className="text-md text-muted">Dispatched by Mwangaza within 24 hours on its own fleet to Nakuru, Kericho and Narok. The fee is shown at checkout.</p> },
+            { value: 'codes', title: 'Codes', meta: <code className="font-mono text-sm">{String(p.sku)}</code>, content: <p className="text-md text-muted">Quote the SKU when you call the seller.</p> },
+          ]} />
+        </aside>
+      </div>
+      <RelatedBlock title="More from Mwangaza" meta={productMeta} records={[products[4]!, products[6]!]} intent="card" density="compact" now={DEMO_NOW} />
     </Page>
   )
 }
@@ -222,12 +256,14 @@ const buyerMetrics: Metric[] = [
 ]
 const quoteMeta: ModelMeta = {
   key: 'quote', label: 'Quote', labelPlural: 'Quotes', displayField: 'reference',
+  ordering: ['expires_at', '-total'],
   list: { fields: ['reference', 'seller', 'status', 'total', 'expires_at'], defaultPageSize: 25, maxPageSize: 100 },
+  search: ['reference'],
   fields: [
     { name: 'reference', type: 'string', widget: 'code', label: 'Quote', readOnly: true },
-    { name: 'seller', type: 'relation', widget: 'relation', label: 'Seller', relation: { model: 'organization', display: 'name' } },
-    { name: 'status', type: 'enum', widget: 'status', label: 'Status', readOnly: true, choices: [{ value: 'requested', label: 'Requested', tone: 'info' }, { value: 'responded', label: 'Responded', tone: 'signal' }, { value: 'accepted', label: 'Accepted', tone: 'success' }, { value: 'expired', label: 'Expired', tone: 'neutral' }] },
-    { name: 'total', type: 'decimal', widget: 'currency', label: 'Total', currency: 'KES', decimalPlaces: 2, readOnly: true },
+    { name: 'seller', type: 'relation', widget: 'relation', label: 'Seller', relation: { model: 'organization', display: 'name' }, filter: ['eq'] },
+    { name: 'status', type: 'enum', widget: 'status', label: 'Status', readOnly: true, filter: ['in'], choices: [{ value: 'requested', label: 'Requested', tone: 'info' }, { value: 'responded', label: 'Responded', tone: 'signal' }, { value: 'accepted', label: 'Accepted', tone: 'success' }, { value: 'expired', label: 'Expired', tone: 'neutral' }] },
+    { name: 'total', type: 'decimal', widget: 'currency', label: 'Total', currency: 'KES', decimalPlaces: 2, readOnly: true, filter: ['range'] },
     { name: 'expires_at', type: 'datetime', widget: 'relative-time', label: 'Expires', readOnly: true },
   ],
 }
@@ -300,7 +336,7 @@ function Inventory() {
         status={<StockAvailabilityIndicator stock={stockFor['p-mvn-2k']!} />}
         actions={<ActionBar meta={stockMeta} record={{ id: 's1', name: 'Mavuno Maize Flour 2 kg', _can: ['receive', 'adjust'] }} onRun={noop} />} />
       <StockAvailabilityIndicator stock={stockFor['p-mvn-2k']!} variant="full" />
-      <InventoryLedgerBlock movements={movements} unit="bale" now={DEMO_NOW} />
+      <InventoryLedgerBlock movements={ledgerMonth} unit="bale" now={DEMO_NOW} />
     </Shell>
   )
 }
@@ -308,8 +344,8 @@ function Inventory() {
 function Orders() {
   return (
     <Shell nav={navItems} current="orders" density="compact">
-      <HeaderBlock source="meta" meta={orderMeta} count={27} variant="compact" />
-      <ListBlock meta={orderMeta} records={orders.slice(0, 3)} density="compact" narrow="priority" selected={['o-4215']} href={() => '#order'} now={DEMO_NOW} />
+      <HeaderBlock source="meta" meta={orderMeta} count={orderHistory.length} variant="compact" />
+      <ListBlock meta={orderMeta} records={orderHistory} density="compact" narrow="priority" selected={['o-4215']} href={() => '#order'} now={DEMO_NOW} />
       <Split ratio="wide-aside">
         <div className="flex min-w-0 flex-col gap-4">
           <DetailBlock meta={orderMeta} record={orders[0]} onRun={noop} now={DEMO_NOW} />
@@ -466,12 +502,14 @@ function Auth() {
 
 const memberMeta: ModelMeta = {
   key: 'membership', label: 'Member', labelPlural: 'Members', displayField: 'name',
+  ordering: ['name'],
   list: { fields: ['name', 'email', 'role_key', 'status'], defaultPageSize: 25, maxPageSize: 100 },
+  search: ['name', 'email'],
   fields: [
     { name: 'name', type: 'string', widget: 'text', label: 'Name', readOnly: true },
     { name: 'email', type: 'email', widget: 'email', label: 'Email', readOnly: true },
-    { name: 'role_key', type: 'enum', widget: 'select', label: 'Role', choices: [{ value: 'seller_manager', label: 'Seller manager' }, { value: 'warehouse_operator', label: 'Warehouse operator' }, { value: 'buyer_owner', label: 'Buyer owner' }, { value: 'buyer_purchaser', label: 'Buyer purchaser' }] },
-    { name: 'status', type: 'enum', widget: 'status', label: 'Status', readOnly: true, choices: [{ value: 'invited', label: 'Invited', tone: 'info' }, { value: 'active', label: 'Active', tone: 'success' }, { value: 'suspended', label: 'Suspended', tone: 'warning' }, { value: 'removed', label: 'Removed', tone: 'neutral' }] },
+    { name: 'role_key', type: 'enum', widget: 'select', label: 'Role', filter: ['in'], choices: [{ value: 'seller_manager', label: 'Seller manager' }, { value: 'warehouse_operator', label: 'Warehouse operator' }, { value: 'buyer_owner', label: 'Buyer owner' }, { value: 'buyer_purchaser', label: 'Buyer purchaser' }] },
+    { name: 'status', type: 'enum', widget: 'status', label: 'Status', readOnly: true, filter: ['in'], choices: [{ value: 'invited', label: 'Invited', tone: 'info' }, { value: 'active', label: 'Active', tone: 'success' }, { value: 'suspended', label: 'Suspended', tone: 'warning' }, { value: 'removed', label: 'Removed', tone: 'neutral' }] },
   ],
 }
 const members = [

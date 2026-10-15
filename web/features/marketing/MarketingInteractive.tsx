@@ -1,20 +1,20 @@
 'use client'
 
 // Divergent marketing islands (spec p.56): header with mobile menu, the market mesh, the
-// trade-flow story and the trust proofs. Motion follows the constitution's grammar and the
-// mesh draws once (THREAD); reduced motion shows the finished drawing.
+// trade-flow story and the trust proofs. Motion follows the constitution's grammar; reduced
+// motion shows every section finished and in place.
 
-import { Menu as MenuIcon, Search } from 'lucide-react'
+import { ArrowRight, Menu as MenuIcon, Search } from 'lucide-react'
+import Image from 'next/image'
 import { useState, type ReactNode } from 'react'
 import { BrandLogo } from '@/components/ui/BrandLogo'
 import { Button, buttonStyles } from '@/components/ui/button'
-import { Segmented } from '@/components/ui/choice'
 import { Sheet } from '@/components/ui/dialog'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/disclosure'
 import { Icon } from '@/components/ui/icon'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/cn'
-import { cta } from './Marketing'
+import { StorySplit, cta, type Scene } from './Marketing'
 
 const nav = [
   { label: 'How it works', href: '#flow' }, { label: 'For sellers', href: '#value' }, { label: 'Trust', href: '#trust' },
@@ -84,65 +84,139 @@ export function MarketingHeader({ emphasis = 'buyer', sticky = false, categories
   )
 }
 
-type Node = { id: string; label: string; detail: string; x: number; y: number; tone: 'primary' | 'signal' | 'ink' }
-const nodes: Node[] = [
-  { id: 'sellers', label: 'Sellers', detail: '4 wholesalers', x: 70, y: 70, tone: 'primary' },
-  { id: 'catalogue', label: 'Catalogue', detail: '2 category contracts', x: 70, y: 230, tone: 'primary' },
-  { id: 'stock', label: 'Stock ledger', detail: 'every movement kept', x: 300, y: 150, tone: 'ink' },
-  { id: 'buyers', label: 'Buyers', detail: '2 retail shops', x: 530, y: 70, tone: 'signal' },
-  { id: 'orders', label: 'Orders', detail: 'one change per event', x: 530, y: 230, tone: 'signal' },
-  { id: 'fulfilment', label: 'Fulfilment', detail: 'pick · pack · hand over', x: 300, y: 300, tone: 'ink' },
-]
-const links: [string, string][] = [['sellers', 'catalogue'], ['catalogue', 'stock'], ['sellers', 'stock'], ['stock', 'buyers'], ['buyers', 'orders'], ['stock', 'orders'], ['orders', 'fulfilment'], ['fulfilment', 'stock']]
+/** One entry in the product's record. `change` moves availability; entries without one only describe it. */
+export type MeshEntry = { label: string; reference?: string; detail: string; at: string; change?: number; available: number }
+/** A part of the market: who it is, how many there are, and the entry it writes into the record. */
+export type MeshStation = { key: string; label: string; figure: string; role: string; entry: MeshEntry }
+/** One product's record. Stations are listed in the order their entries were written. */
+export type MeshRecord = {
+  product: { name: string; listing: string; image: { src: string; width: number; height: number } }
+  unit: string
+  stations: readonly MeshStation[]
+}
 
-/** The mesh: one record connects sellers, stock and buyers. Draws once; never loops. */
-export function MarketMeshVisualization({ mode = 'animated' }: { mode?: 'animated' | 'static' | 'reduced-motion' }) {
-  const [hover, setHover] = useState<string | null>(null)
-  const pos = (id: string) => nodes.find(n => n.id === id)!
-  const animate = mode === 'animated'
+const signed = (n: number) => (n > 0 ? `+${n}` : `−${Math.abs(n)}`)
+const pad = 'px-6 @xl:px-10'
+// Row cells meet at the seam with no padding there, so each row's rule and lit band run straight across.
+const seamRight = 'px-3 @xl:px-7 @4xl:pl-0'
+const seamRightInner = 'px-3 @4xl:pl-10'
+// Below the small width the record drops the running balance; the large figure and the sum still carry it.
+const ledgerCols = 'grid-cols-[minmax(0,1fr)_4.5rem] @xl:grid-cols-[minmax(0,1fr)_4.5rem_4.5rem]'
+
+/**
+ * The mesh: one product's record with every part of the market writing into it. The parts sit on the light
+ * ground, the record on the chrome ground, and each part shares a row with the entry it wrote, so the rules
+ * run straight across the seam: the thread is the grid itself. Availability is set large and the record
+ * closes on its own arithmetic. Choosing a part lights its row on both sides (BIND); rows rise in once as
+ * they scroll into view (REVEAL). Static and reduced motion show the finished record. Below the two-column
+ * width the record stands alone and each entry names its part.
+ */
+export function MarketMeshVisualization({ record, mode = 'animated' }: { record: MeshRecord; mode?: 'animated' | 'static' | 'reduced-motion' }) {
+  const [active, setActive] = useState<string | null>(null)
+  const bind = mode === 'reduced-motion' ? undefined : 'motion-bind transition-[background-color,color,opacity]'
+  const entries = record.stations.map(s => s.entry)
+  const available = entries.at(-1)?.available ?? 0
+  const added = entries.reduce((n, e) => n + Math.max(e.change ?? 0, 0), 0)
+  const taken = entries.reduce((n, e) => n + Math.max(-(e.change ?? 0), 0), 0)
+  const sum = 'Every entry is kept, and availability is their sum. Demo data.'
   return (
     <section className="@container" aria-labelledby="mesh-heading">
-      <div className="flex flex-col gap-6">
-        <div className="flex max-w-2xl flex-col gap-3">
-          <h2 id="mesh-heading" className="text-3xl font-semibold">One record between seller and buyer</h2>
-          <p className="text-md text-muted">Catalogue, stock and orders share one ledger, so a buyer orders against the figure the seller&apos;s store sees.</p>
+      <div className="grid grid-cols-1 border border-border @4xl:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
+        <div className={cn('flex flex-col justify-end gap-4 bg-surface pt-8 pb-8 @xl:pt-10', pad)}>
+          <h2 id="mesh-heading" className="max-w-[16ch] text-3xl font-semibold @5xl:text-4xl">One record between seller and buyer</h2>
+          <p className="max-w-[44ch] text-lg text-muted">Catalogue, stock and orders share one ledger, so a buyer orders against the figure the seller&apos;s store sees.</p>
         </div>
-    <figure className="flex min-w-0 flex-col gap-3" aria-labelledby="mesh-caption">
-      <svg viewBox="0 0 600 360" className="w-full max-w-3xl" role="img" aria-labelledby="mesh-title mesh-desc">
-        <title id="mesh-title">How SokoMesh connects trade</title>
-        <desc id="mesh-desc">Sellers publish into the catalogue; every stock movement lands in one ledger; buyers order against that ledger; orders drive fulfilment, which writes back to stock.</desc>
-        {links.map(([a, b], i) => {
-          const A = pos(a), B = pos(b)
-          const lit = hover && (hover === a || hover === b)
-          return (
-            <line key={`${a}-${b}`} x1={A.x} y1={A.y} x2={B.x} y2={B.y}
-              stroke={lit ? 'var(--primary)' : 'var(--border-strong)'} strokeWidth={lit ? 3 : 2}
-              strokeDasharray={animate ? 400 : undefined} strokeDashoffset={animate ? 400 : undefined}
-              style={animate ? { animation: `mesh-draw var(--motion-thread-duration) var(--motion-thread-ease) ${i * 60}ms forwards` } : undefined} />
-          )
-        })}
-        <g role="list" aria-label="Parts of the market">
-        {nodes.map(n => (
-          <g key={n.id} onPointerEnter={() => setHover(n.id)} onPointerLeave={() => setHover(null)} tabIndex={0} onFocus={() => setHover(n.id)} onBlur={() => setHover(null)} role="listitem" aria-label={`${n.label}: ${n.detail}`} className="cursor-default outline-none">
-            <rect x={n.x - 64} y={n.y - 26} width={128} height={52}
-              fill={n.tone === 'primary' ? 'var(--brand)' : n.tone === 'signal' ? 'var(--signal)' : 'var(--surface)'}
-              stroke={hover === n.id ? 'var(--ring-contrast)' : n.tone === 'ink' ? 'var(--foreground)' : 'none'} strokeWidth={hover === n.id ? 3 : 1.5} />
-            <text x={n.x} y={n.y - 3} textAnchor="middle" fontSize={15} className="font-display font-bold" fill={n.tone === 'primary' ? 'var(--brand-foreground)' : n.tone === 'signal' ? 'var(--signal-foreground)' : 'var(--foreground)'}>{n.label}</text>
-            <text x={n.x} y={n.y + 15} textAnchor="middle" fontSize={12} fill={n.tone === 'primary' ? 'var(--brand-foreground)' : n.tone === 'signal' ? 'var(--signal-foreground)' : 'var(--muted)'}>{n.detail}</text>
-          </g>
-        ))}
-        </g>
-      </svg>
-      <figcaption id="mesh-caption" className="text-sm text-muted">Point at or tab to a part to trace its links. Counts come from the demo data.</figcaption>
-      <style>{'@keyframes mesh-draw { to { stroke-dashoffset: 0 } } @media (prefers-reduced-motion: reduce) { figure svg line { stroke-dashoffset: 0 !important; animation: none !important } }'}</style>
-    </figure>
+        <div className={cn('on-chrome flex min-w-0 flex-col gap-6 bg-chrome pt-8 pb-6 text-chrome-foreground @xl:pt-10', pad)}>
+          <div className="flex items-center gap-4">
+            <span className="relative block size-20 shrink-0 bg-well @xl:size-24">
+              <Image src={record.product.image.src} alt="" fill sizes="96px" className="object-contain p-2" />
+            </span>
+            <span className="flex min-w-0 flex-col gap-1">
+              <span className="caps text-chrome-muted">The record</span>
+              <span id="mesh-record-title" className="text-xl font-semibold">{record.product.name}</span>
+              <span className="text-sm text-chrome-muted">{record.product.listing}</span>
+            </span>
+          </div>
+          <p className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
+            <span className="font-display text-statement font-extrabold tracking-display tabular">{available}</span>
+            <span className="text-lg">{record.unit}s available to order</span>
+          </p>
+        </div>
+
+        <div className="hidden flex-col justify-end bg-surface pl-7 @4xl:flex">
+          <p id="mesh-hint" className="border-b border-border-strong px-3 pr-10 pb-2 text-sm text-muted">Choose a part of the market to light the entry it wrote.</p>
+        </div>
+        <div aria-hidden="true" className={cn('on-chrome bg-chrome text-chrome-muted', seamRight)}>
+          <div className={cn('grid gap-x-3 border-b border-chrome-muted/40 py-2', ledgerCols, seamRightInner)}>
+            <span className="caps">Entry</span><span className="caps text-right">Change</span><span className="caps hidden text-right @xl:block">Available</span>
+          </div>
+        </div>
+
+        <ol id="mesh-record" role="list" aria-labelledby="mesh-record-title" className="contents">
+          {record.stations.map(s => {
+            const on = active === s.key
+            const e = s.entry
+            return (
+              <li key={s.key} aria-current={on ? 'true' : undefined} className={cn('grid grid-cols-1 @4xl:col-span-2 @4xl:grid-cols-subgrid', mode === 'animated' && 'scroll-reveal')}>
+                <div className="hidden bg-surface pl-7 @4xl:block">
+                  <button type="button" aria-pressed={on} aria-describedby="mesh-hint" onClick={() => setActive(on ? null : s.key)}
+                    className={cn('grid h-full w-full grid-cols-[minmax(0,1fr)_auto] content-start items-baseline gap-x-4 gap-y-0.5 border-b border-border py-3.5 pr-10 pl-3 text-left', bind, on ? 'bg-signal-soft' : 'hover:bg-sunken')}>
+                    <span className="font-display text-xl font-semibold">{s.label}</span>
+                    <span className={cn('text-sm tabular', on ? 'font-semibold text-foreground' : 'text-muted')}>{s.figure}</span>
+                    <span className="col-span-2 text-md text-muted">{s.role}</span>
+                  </button>
+                </div>
+                <div className={cn('on-chrome bg-chrome text-chrome-foreground', seamRight)}>
+                  <div className={cn('grid h-full gap-x-3 border-b border-chrome-muted/25 py-3.5', ledgerCols, seamRightInner, bind, on && 'bg-chrome-foreground/10', active && !on && 'opacity-55')}>
+                    <div className="flex min-w-0 flex-col gap-0.5">
+                      <span className={cn('caps', on ? 'text-signal' : 'text-chrome-muted')}>{s.label}</span>
+                      <span className="font-semibold">{e.label}{e.reference ? <span className="ml-2 font-mono text-sm font-normal whitespace-nowrap text-chrome-muted">{e.reference}</span> : null}</span>
+                      <span className="text-sm text-chrome-muted">{e.detail}, <time>{e.at}</time></span>
+                    </div>
+                    <p className="text-right font-display text-lg font-bold whitespace-nowrap tabular">
+                      <span className="sr-only">Change: </span>
+                      {e.change ? signed(e.change) : <><span aria-hidden="true" className="text-chrome-muted">&ndash;</span><span className="sr-only">none</span></>}
+                    </p>
+                    <p className="hidden text-right text-lg tabular @xl:block"><span className="sr-only">Available: </span>{e.available}</p>
+                  </div>
+                </div>
+              </li>
+            )
+          })}
+        </ol>
+
+        <p className={cn('hidden bg-surface pt-4 pb-8 text-sm text-muted @4xl:block @xl:pb-10', pad)}>{sum}</p>
+        <div className={cn('on-chrome flex flex-col gap-2 bg-chrome pt-4 pb-8 text-chrome-foreground @xl:pb-10', pad)}>
+          <p className="flex flex-wrap items-baseline gap-x-3 gap-y-1 font-display text-2xl font-extrabold tabular @xl:text-3xl">
+            <span>{added} <span className="font-sans text-sm font-normal text-chrome-muted">in</span></span>
+            <span aria-hidden="true" className="text-chrome-muted">&minus;</span><span className="sr-only">minus</span>
+            <span>{taken} <span className="font-sans text-sm font-normal text-chrome-muted">out</span></span>
+            <span aria-hidden="true" className="text-chrome-muted">=</span><span className="sr-only">equals</span>
+            <span className="text-signal">{available} <span className="font-sans text-sm font-normal text-chrome-muted">available</span></span>
+          </p>
+          <p className="text-sm text-chrome-muted @4xl:hidden">{sum}</p>
+        </div>
       </div>
     </section>
   )
 }
 
-/** Value for both sides of the market, as tabs (narrow) or a split (wide). */
-export function BuyerSellerValueSplit({ layout = 'split', buyer, seller }: { layout?: 'split' | 'tabs'; buyer: readonly { title: string; body: string }[]; seller: readonly { title: string; body: string }[] }) {
+/**
+ * Value for both sides of the market: tabs (narrow), a split (wide), or `stories`, two photographic story
+ * panels with the photograph left then right, so each side of the market gets its own scene.
+ */
+export function BuyerSellerValueSplit({ layout = 'split', buyer, seller, scenes }: {
+  layout?: 'split' | 'tabs' | 'stories'; buyer: readonly { title: string; body: string }[]; seller: readonly { title: string; body: string }[]
+  scenes?: { buyer: Scene; seller: Scene }
+}) {
+  if (layout === 'stories' && scenes) {
+    return (
+      <div id="value" className="flex flex-col gap-8">
+        <StorySplit scene={scenes.buyer} title="For buyers: your restock, in one order" body="Retail shops order from several wholesalers at once and see the real stock, the real price and the delivery day before they commit." items={buyer} link={cta.buy} />
+        <StorySplit scene={scenes.seller} side="right" title="For sellers: one ledger behind every sale" body="Wholesalers publish once against the category contract and sell to every approved buyer from the same stock record." items={seller} link={cta.sell} />
+      </div>
+    )
+  }
   const list = (items: readonly { title: string; body: string }[]) => (
     <ul className="flex flex-col divide-y divide-border">
       {items.map(i => <li key={i.title} className="flex flex-col gap-1 py-4 first:pt-0"><span className="text-lg font-semibold">{i.title}</span><span className="text-md text-muted">{i.body}</span></li>)}
@@ -169,46 +243,93 @@ export function BuyerSellerValueSplit({ layout = 'split', buyer, seller }: { lay
 
 export type FlowStep = { key: 'discover' | 'compare' | 'order' | 'fulfil'; title: string; body: string; example: ReactNode }
 
-/** Discover → compare → order → fulfil, each step carrying a real component as its example. */
+/**
+ * Discover → compare → order → fulfil, each step carrying a real component as its example. The steps read as
+ * one ruled thread: steps behind the current one carry the primary rule, the current one the signal rule
+ * (THREAD); the example stands on the well beside the step's argument and moves in when it changes (TRANSFER).
+ */
 export function TradeFlowStory({ steps }: { steps: readonly FlowStep[] }) {
   const [active, setActive] = useState(steps[0]!.key)
-  const current = steps.find(s => s.key === active)!
+  const index = Math.max(0, steps.findIndex(s => s.key === active))
+  const current = steps[index]!
+  const next = steps[index + 1]
   return (
-    <section id="flow" className="@container" aria-labelledby="flow-title">
-    <div className="grid grid-cols-1 gap-6 @4xl:grid-cols-[minmax(0,20rem)_minmax(0,1fr)]">
-      <div className="flex flex-col gap-4">
-        <h2 id="flow-title" className="text-3xl font-semibold">From search to delivery</h2>
-        <ol className="flex flex-col">
-          {steps.map((s, i) => (
+    <section id="flow" className="@container flex flex-col gap-8" aria-labelledby="flow-title">
+      <div className="flex flex-wrap items-end justify-between gap-x-10 gap-y-3">
+        <h2 id="flow-title" className="text-3xl font-semibold @5xl:text-4xl">From search to delivery</h2>
+        <p className="max-w-[44ch] text-lg text-muted">Four steps, each shown with the part of SokoMesh a buyer or seller uses for it.</p>
+      </div>
+      <ol className="grid grid-cols-2 gap-x-4 @3xl:grid-cols-4" aria-label="Steps">
+        {steps.map((s, i) => {
+          const on = i === index
+          return (
             <li key={s.key}>
-              <button type="button" aria-pressed={s.key === active} onClick={() => setActive(s.key)}
-                className={cn('flex w-full gap-3 rounded-sm px-3 py-3 text-left motion-bind transition-[background-color,transform] active:translate-y-px', s.key === active ? 'bg-primary-soft' : 'hover:bg-sunken')}>
-                <span className={cn('grid size-7 shrink-0 place-items-center rounded-xs border-[length:var(--border-stamp)] text-sm font-bold tabular', s.key === active ? 'border-primary bg-primary text-primary-foreground' : 'border-border-strong text-muted')}>{i + 1}</span>
-                <span className="flex flex-col"><span className="font-semibold">{s.title}</span><span className="text-sm text-muted">{s.body}</span></span>
+              <button type="button" aria-pressed={on} aria-controls="flow-panel" onClick={() => setActive(s.key)}
+                className={cn('group flex w-full flex-col gap-1 border-t-2 pt-4 pb-5 text-left motion-thread transition-[border-color,color] active:translate-y-px',
+                  on ? 'border-signal' : i < index ? 'border-primary' : 'border-border-strong hover:border-foreground')}>
+                <span className={cn('font-display text-4xl font-extrabold tabular @5xl:text-5xl', on ? 'text-foreground' : 'text-muted group-hover:text-foreground')}>{String(i + 1).padStart(2, '0')}</span>
+                <span className="text-lg font-semibold">{s.title}</span>
               </button>
             </li>
-          ))}
-        </ol>
+          )
+        })}
+      </ol>
+      <div id="flow-panel" key={current.key} aria-live="polite" className="grid min-w-0 animate-transfer grid-cols-1 border border-border @4xl:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
+        <div className="flex flex-col justify-center gap-4 bg-surface p-6 @xl:p-10">
+          <span className="caps text-muted">Step {index + 1} of {steps.length}</span>
+          <h3 className="text-2xl font-semibold @5xl:text-3xl">{current.title}</h3>
+          <p className="max-w-[38ch] text-lg text-muted">{current.body}</p>
+          {next ? (
+            <button type="button" onClick={() => setActive(next.key)} className="mt-2 inline-flex items-center gap-1 self-start text-md font-semibold text-primary hover:underline">
+              Next: {next.title}<Icon icon={ArrowRight} />
+            </button>
+          ) : null}
+        </div>
+        <div className="grid min-h-72 min-w-0 grid-cols-[minmax(0,1fr)] place-items-center bg-well p-4 @xl:p-10"><div className="w-full max-w-md">{current.example}</div></div>
       </div>
-      <div key={current.key} className="grid min-w-0 animate-transfer place-items-center border border-border bg-background p-4 @4xl:p-6" aria-live="polite"><div className="w-full max-w-md">{current.example}</div></div>
-    </div>
     </section>
   )
 }
 
-/** Proofs of the three hard guarantees: stock is derivable, holds are bounded, payment applies once. */
-export function InventoryTrustProof({ proofs }: { proofs: Record<'stock' | 'reservation' | 'payment', { title: string; body: string; example: ReactNode }> }) {
-  const [mode, setMode] = useState<'stock' | 'reservation' | 'payment'>('reservation')
-  const p = proofs[mode]
+const proofOrder = ['stock', 'reservation', 'payment'] as const
+const proofLabel = { stock: 'Stock', reservation: 'Reservation', payment: 'Payment' } as const
+
+/**
+ * Proofs of the three hard guarantees: stock is derivable, holds are bounded, payment applies once. The
+ * argument holds its place on the left while the proofs scroll past on the right (after Not Another Bill's
+ * two-column product page), each proof standing on the well with the component that enforces it.
+ */
+export function InventoryTrustProof({ proofs }: { proofs: Record<(typeof proofOrder)[number], { title: string; body: string; example: ReactNode }> }) {
   return (
-    <section id="trust" className="@container flex flex-col gap-5" aria-labelledby="trust-title">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <h2 id="trust-title" className="max-w-xl text-3xl font-semibold">Two buyers, the last 24 bales, one outcome</h2>
-        <Segmented label="Proof" value={mode} onValueChange={setMode} items={[{ value: 'stock', label: 'Stock' }, { value: 'reservation', label: 'Reservation' }, { value: 'payment', label: 'Payment' }]} />
-      </div>
-      <div className="grid grid-cols-1 gap-6 @4xl:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)]">
-        <div className="flex flex-col gap-2"><h3 className="font-display text-xl font-semibold">{p.title}</h3><p className="text-md text-muted">{p.body}</p></div>
-        <div key={mode} className="min-w-0 animate-reveal">{p.example}</div>
+    <section id="trust" className="@container" aria-labelledby="trust-title">
+      <div className="grid grid-cols-1 gap-x-14 gap-y-8 @4xl:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
+        <div className="flex flex-col gap-4 @4xl:sticky @4xl:top-8 @4xl:self-start">
+          <h2 id="trust-title" className="max-w-[16ch] text-3xl font-semibold @5xl:text-4xl">Two buyers, the last 24 bales, one outcome</h2>
+          <p className="max-w-[40ch] text-lg text-muted">Three guarantees keep the record true. Each is shown working, in the part of SokoMesh that enforces it.</p>
+          <nav aria-label="Guarantees" className="hidden @4xl:block">
+            <ul className="mt-4 flex flex-col border-t border-border">
+              {proofOrder.map(k => (
+                <li key={k} className="border-b border-border">
+                  <a href={`#trust-${k}`} className="flex flex-col gap-0.5 py-3 hover:text-primary">
+                    <span className="font-semibold">{proofLabel[k]}</span><span className="text-sm text-muted">{proofs[k].title}</span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </nav>
+        </div>
+        <ol className="flex flex-col">
+          {proofOrder.map(k => (
+            <li key={k} id={`trust-${k}`} className="flex scroll-mt-8 flex-col gap-5 border-t border-foreground pt-5 pb-12 last:pb-0">
+              <div className="flex flex-col gap-2">
+                <span className="caps text-primary">{proofLabel[k]}</span>
+                <h3 className="max-w-[28ch] text-2xl font-semibold">{proofs[k].title}</h3>
+                <p className="max-w-[52ch] text-md text-muted">{proofs[k].body}</p>
+              </div>
+              <div className="min-w-0 bg-well p-4 @xl:p-6">{proofs[k].example}</div>
+            </li>
+          ))}
+        </ol>
       </div>
     </section>
   )

@@ -4,6 +4,8 @@ import { Search, SlidersHorizontal, X } from 'lucide-react'
 import { useState } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { FormField } from '@/components/ui/form-field'
+import { Select } from '@/components/ui/select'
 import { Sheet } from '@/components/ui/dialog'
 import { Icon } from '@/components/ui/icon'
 import { Input } from '@/components/ui/input'
@@ -117,5 +119,30 @@ export function FiltersBlock({ meta, values, onChange, search, onSearchChange, l
       {chips}
       {layout === 'collapsed' && open ? <div className="rounded-md border border-border bg-surface p-4 animate-reveal">{controls}</div> : null}
     </div>
+  )
+}
+
+const direction = (f: FieldMeta, desc: boolean) =>
+  f.type === 'decimal' || f.type === 'integer' ? (desc ? 'high to low' : 'low to high')
+  : f.type === 'datetime' || f.type === 'date' ? (desc ? 'newest first' : 'oldest first')
+  : desc ? 'Z to A' : 'A to Z'
+
+/**
+ * "Sort by" over a model's allow-listed ordering (contract `ordering`, e.g. "-updated_at"). Labels come from
+ * each field's label and type ("Price per pack, low to high"), so no field name is written here and no sort
+ * the backend has not allowed can be chosen.
+ */
+export function SortSelect({ meta, value, onChange, label = 'Sort by' }: { meta: ModelMeta; value: string; onChange: (value: string) => void; label?: string }) {
+  const byName = new Map(meta.fields.map(f => [f.name, f]))
+  const options = (meta.ordering ?? []).flatMap(o => {
+    const desc = o.startsWith('-')
+    const f = byName.get(o.replace(/^-/, ''))
+    return f ? [{ value: o, label: `${f.label}, ${direction(f, desc)}` }] : []
+  })
+  if (!options.length) return null
+  return (
+    <FormField label={label} className="flex-row items-center gap-2">
+      <Select options={options} value={value} onValueChange={onChange} className="w-60" />
+    </FormField>
   )
 }

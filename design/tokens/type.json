@@ -24,5 +24,7 @@
   "type-5xl": { "$type": "dimension", "$value": "52px" },
   "type-5xl-leading": { "$type": "dimension", "$value": "56px" },
   "type-6xl": { "$type": "dimension", "$value": "64px", "$description": "MARKET hero headline on wide containers only." },
-  "type-6xl-leading": { "$type": "dimension", "$value": "68px" }
+  "type-6xl-leading": { "$type": "dimension", "$value": "68px" },
+  "type-statement": { "$type": "dimension", "$value": "clamp(3rem, 13cqw, 10.5rem)", "$description": "One oversized statement per MARKET page (after Bélanger): sized by its container (cqw), so it fills a section at any width." },
+  "type-statement-leading": { "$type": "number", "$value": 0.9 }
 }

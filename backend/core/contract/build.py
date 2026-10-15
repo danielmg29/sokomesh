@@ -14,7 +14,7 @@ def _camel(name: str) -> str:
 
 
 def build_contract() -> dict:
-    contract, auth, locales = settings.AC_CONTRACT, settings.AC_AUTH, settings.AC_LOCALES
+    contract, auth, locales, rich = settings.AC_CONTRACT, settings.AC_AUTH, settings.AC_LOCALES, settings.AC_RICH_TEXT
     return {
         "meta": {
             "contractVersion": contract["version"],
@@ -27,6 +27,7 @@ def build_contract() -> dict:
             "default": locales["default"],
             "supported": [{"value": code, "label": label} for code, label in locales["supported"]],
         },
+        "richText": {_camel(k): v for k, v in rich.items()},
         "errors": {
             code.value: {"status": spec.status, "retryable": spec.retryable, "message": spec.message}
             for code, spec in ERRORS.items()

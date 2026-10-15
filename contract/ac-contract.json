@@ -72,7 +72,7 @@
   },
   "meta": {
     "apiBase": "/api/v1/",
-    "contractVersion": "0.2.0",
+    "contractVersion": "0.3.0",
     "generatedBy": "backend/core/contract"
   },
   "models": {},
@@ -83,6 +83,71 @@
       "marketplace_admin": [],
       "seller_manager": [],
       "warehouse_operator": []
+    }
+  },
+  "richText": {
+    "classes": {
+      "figure": [
+        "image",
+        "media"
+      ]
+    },
+    "embeds": [
+      {
+        "name": "YouTube",
+        "player": "https://www.youtube-nocookie.com/embed/{id}",
+        "url": "^https://www\\.youtube\\.com/watch\\?v=([A-Za-z0-9_-]{11})$"
+      },
+      {
+        "name": "Vimeo",
+        "player": "https://player.vimeo.com/video/{id}?dnt=1",
+        "url": "^https://vimeo\\.com/(\\d{6,12})$"
+      }
+    ],
+    "imageSchemes": [
+      "https"
+    ],
+    "linkSchemes": [
+      "https",
+      "http",
+      "mailto"
+    ],
+    "sameOriginImages": true,
+    "tags": {
+      "a": [
+        "href"
+      ],
+      "blockquote": [],
+      "br": [],
+      "code": [],
+      "em": [],
+      "figcaption": [],
+      "figure": [
+        "class"
+      ],
+      "h3": [],
+      "h4": [],
+      "hr": [],
+      "img": [
+        "src",
+        "alt"
+      ],
+      "li": [],
+      "oembed": [
+        "url"
+      ],
+      "ol": [],
+      "p": [],
+      "s": [],
+      "strong": [],
+      "table": [],
+      "tbody": [],
+      "td": [],
+      "th": [],
+      "thead": [],
+      "tr": [],
+      "u": [],
+      "ul": []
     }
   }
 }

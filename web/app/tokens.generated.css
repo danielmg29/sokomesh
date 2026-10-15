@@ -77,6 +77,8 @@
   --type-5xl-leading: 3.5rem;
   --type-6xl: 4rem;
   --type-6xl-leading: 4.25rem;
+  --type-statement: clamp(3rem, 13cqw, 10.5rem);
+  --type-statement-leading: 0.9;
   --motion-reveal-duration: 200ms;
   --motion-reveal-ease: cubic-bezier(0.16, 1, 0.3, 1);
   --motion-bind-duration: 140ms;

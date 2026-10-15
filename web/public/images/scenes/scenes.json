@@ -1,0 +1,211 @@
+{
+  "hero-retail": {
+    "key": "hero-retail",
+    "src": "/images/scenes/hero-retail.cbd1df2b.webp",
+    "file": "hero-retail.cbd1df2b.webp",
+    "width": 1200,
+    "height": 1501,
+    "alt": "A shopkeeper at the counter of a general store, shelves of packaged goods behind her",
+    "blurDataURL": "data:image/webp;base64,UklGRkIAAABXRUJQVlA4IDYAAACwAQCdASoNABAAA4BaJQBOgBe2nrgAAP7sx7WOsM7BeNLu7yqLzaACYLHzILRJOk8iLDYEAAA=",
+    "focus": [
+      0.5,
+      0.3
+    ],
+    "credit": {
+      "author": "Ali Mkumbwa",
+      "title": "A woman sitting at a counter in a store",
+      "page": "https://unsplash.com/photos/a-woman-sitting-at-a-counter-in-a-store-EOkN2pRjFsg",
+      "license": "Unsplash License"
+    }
+  },
+  "hero-warehouse": {
+    "key": "hero-warehouse",
+    "src": "/images/scenes/hero-warehouse.0a0ec7c6.webp",
+    "file": "hero-warehouse.0a0ec7c6.webp",
+    "width": 1200,
+    "height": 1500,
+    "alt": "A pallet jack between stacked plastic crates and burlap sacks against a pale warehouse wall",
+    "blurDataURL": "data:image/webp;base64,UklGRkAAAABXRUJQVlA4IDQAAADQAQCdASoNABAAA4BaJYgC7AEOlU1suAD+0xo90dl733TOGPgwUgWicGfj/tshpDAtNIAA",
+    "focus": [
+      0.5,
+      0.2
+    ],
+    "credit": {
+      "author": "Jason Don",
+      "title": "Pallet jack with stacked crates and burlap sacks",
+      "page": "https://unsplash.com/photos/pallet-jack-with-stacked-crates-and-burlap-sacks-pf93fbXctCg",
+      "license": "Unsplash License"
+    }
+  },
+  "story-delivery": {
+    "key": "story-delivery",
+    "src": "/images/scenes/story-delivery.8150174f.webp",
+    "file": "story-delivery.8150174f.webp",
+    "width": 1800,
+    "height": 1200,
+    "alt": "A man resting on the tailgate of a lorry loaded with stacked white sacks",
+    "blurDataURL": "data:image/webp;base64,UklGRlAAAABXRUJQVlA4IEQAAAAQAgCdASoQAAsAA4BaJQBdgCHgWCGQ5UkAAP7xrU2PyaBCVBYhRAhOPCbsK9aKtKWX3SzOPFpfuMhktcZJLP7hMAAAAA==",
+    "focus": [
+      0.84,
+      0.55
+    ],
+    "credit": {
+      "author": "Thilina Alagiyawanna",
+      "title": "Man sitting on truck tailgate with stacked white bags",
+      "page": "https://unsplash.com/photos/man-sitting-on-truck-tailgate-with-stacked-white-bags-dPmiICJ219A",
+      "license": "Unsplash License"
+    }
+  },
+  "story-road": {
+    "key": "story-road",
+    "src": "/images/scenes/story-road.bee90b8a.webp",
+    "file": "story-road.bee90b8a.webp",
+    "width": 1800,
+    "height": 1012,
+    "alt": "Two lorries driving towards the camera on a straight road at dusk",
+    "blurDataURL": "data:image/webp;base64,UklGRjgAAABXRUJQVlA4ICwAAADQAQCdASoQAAkAA4BaJQBOgCIjXbzVwAD+x+DTCdhWgXToSRFRRcqQrQJyAA==",
+    "focus": [
+      0.5,
+      0.55
+    ],
+    "credit": {
+      "author": "Sweder Breet",
+      "title": "A couple of trucks on a road",
+      "page": "https://unsplash.com/photos/a-couple-of-trucks-that-are-on-a-road-5k68xh2BS3g",
+      "license": "Unsplash License"
+    }
+  },
+  "story-stock": {
+    "key": "story-stock",
+    "src": "/images/scenes/story-stock.21129dd6.webp",
+    "file": "story-stock.21129dd6.webp",
+    "width": 1800,
+    "height": 1200,
+    "alt": "Stacks of filled sacks beside a conveyor belt inside a warehouse",
+    "blurDataURL": "data:image/webp;base64,UklGRkwAAABXRUJQVlA4IEAAAADwAQCdASoQAAsAA4BaJQBOgCB+cvJEvwAA/KpHhAavmgomuFxd5vE12wioI0DTiUaZEDGOlQvy/uc7yfo56wAA",
+    "focus": [
+      0.32,
+      0.5
+    ],
+    "credit": {
+      "author": "motomoto sc",
+      "title": "A conveyor belt in a warehouse filled with bags",
+      "page": "https://unsplash.com/photos/a-conveyor-belt-in-a-warehouse-filled-with-bags-Ru9Uf4G0Gx0",
+      "license": "Unsplash License"
+    }
+  },
+  "category-grains": {
+    "key": "category-grains",
+    "src": "/images/scenes/category-grains.ec3fca4e.webp",
+    "file": "category-grains.ec3fca4e.webp",
+    "width": 900,
+    "height": 1126,
+    "alt": "Basins of grains, beans and spices on a market floor, seen from above",
+    "blurDataURL": "data:image/webp;base64,UklGRkwAAABXRUJQVlA4IEAAAADwAQCdASoNABAAA4BaJZQAAvqN3JedQ4AA/tmF+8cmveqhdrDNDRPp2ohgF8zCMnI3U51Acl3l9wbw7x28XAAA",
+    "focus": [
+      0.5,
+      0.5
+    ],
+    "credit": {
+      "author": "Ingeborg Korme",
+      "title": "A group of people standing around a market",
+      "page": "https://unsplash.com/photos/a-group-of-people-standing-around-a-market-WWRgheXEAg0",
+      "license": "Unsplash License"
+    }
+  },
+  "category-sugar": {
+    "key": "category-sugar",
+    "src": "/images/scenes/category-sugar.dbe002ba.webp",
+    "file": "category-sugar.dbe002ba.webp",
+    "width": 748,
+    "height": 933,
+    "alt": "Tall sugarcane growing under a blue sky",
+    "blurDataURL": "data:image/webp;base64,UklGRkIAAABXRUJQVlA4IDYAAADQAQCdASoNABAAA4BaJZACsADcH0+XwAD94g0dSbJJS4jlAKLsdI9EFutJYTRvXGSbx0wEAAA=",
+    "focus": [
+      0.5,
+      0.5
+    ],
+    "credit": {
+      "author": "Shuxin Wu",
+      "title": "A field of tall green grass with trees in the background",
+      "page": "https://unsplash.com/photos/a-field-of-tall-green-grass-with-trees-in-the-background-njW2zvLRw7Q",
+      "license": "Unsplash License"
+    }
+  },
+  "category-oil": {
+    "key": "category-oil",
+    "src": "/images/scenes/category-oil.d2f2b8fd.webp",
+    "file": "category-oil.d2f2b8fd.webp",
+    "width": 900,
+    "height": 1120,
+    "alt": "Sunflowers in a field at sunset",
+    "blurDataURL": "data:image/webp;base64,UklGRlYAAABXRUJQVlA4IEoAAADwAQCdASoNABAAA4BaJagCdADz22RIUoAA/tUWmTcWfiVOf+munAho8mh49FaPU5R3DvXLIqq3FqteSVk8XbbP7zAwyQa1WEAAAA==",
+    "focus": [
+      0.5,
+      0.5
+    ],
+    "credit": {
+      "author": "Pana K",
+      "title": "Field of sunflowers at sunset with trees in background",
+      "page": "https://unsplash.com/photos/field-of-sunflowers-at-sunset-with-trees-in-background-s0lvwKX-p0I",
+      "license": "Unsplash License"
+    }
+  },
+  "category-tea": {
+    "key": "category-tea",
+    "src": "/images/scenes/category-tea.087a7250.webp",
+    "file": "category-tea.087a7250.webp",
+    "width": 746,
+    "height": 933,
+    "alt": "Green hillside fields and trees under a cloudy sky",
+    "blurDataURL": "data:image/webp;base64,UklGRkgAAABXRUJQVlA4IDwAAAAQAgCdASoNABAAA4BaJQBdgCPuBt9d7uoAAP7tf64jODLTvWqvKBEXRZPMLw2GR/SUXRYnD6e8YSWgAAA=",
+    "focus": [
+      0.5,
+      0.5
+    ],
+    "credit": {
+      "author": "Mario Klassen",
+      "title": "Aerial photo of grass field",
+      "page": "https://unsplash.com/photos/aerial-photo-of-grass-field-npfM9SbyuKc",
+      "license": "Unsplash License"
+    }
+  },
+  "category-household": {
+    "key": "category-household",
+    "src": "/images/scenes/category-household.6035a926.webp",
+    "file": "category-household.6035a926.webp",
+    "width": 900,
+    "height": 1126,
+    "alt": "A stack of white soap bars in soft light",
+    "blurDataURL": "data:image/webp;base64,UklGRjYAAABXRUJQVlA4ICoAAAAQAgCdASoNABAAA4BaJZQCdAEPAogM4g2QAP7qgzzEBdpXn3f061gAAAA=",
+    "focus": [
+      0.5,
+      0.5
+    ],
+    "credit": {
+      "author": "Sincerely Media",
+      "title": "White soap on white table",
+      "page": "https://unsplash.com/photos/white-soap-on-white-table-i75xzmj7Vb0",
+      "license": "Unsplash License"
+    }
+  },
+  "category-dairy": {
+    "key": "category-dairy",
+    "src": "/images/scenes/category-dairy.b39985a3.webp",
+    "file": "category-dairy.b39985a3.webp",
+    "width": 746,
+    "height": 933,
+    "alt": "Cattle drinking at a watering hole on dry grassland",
+    "blurDataURL": "data:image/webp;base64,UklGRmQAAABXRUJQVlA4IFgAAAAwAgCdASoNABAAA4BaJbACdAD0OY6UDV14AAD+7Y07Q21kY/bYe4fuG4Z+T9ddP86M4oxC1/pmn47PCdaLWsBXu/klteNtHVIbgApB9PnfpoXoOidMAAAA",
+    "focus": [
+      0.5,
+      0.5
+    ],
+    "credit": {
+      "author": "Sweder Breet",
+      "title": "A herd of cattle standing next to a body of water",
+      "page": "https://unsplash.com/photos/a-herd-of-cattle-standing-next-to-a-body-of-water-Cjbb9aeHeD8",
+      "license": "Unsplash License"
+    }
+  }
+}

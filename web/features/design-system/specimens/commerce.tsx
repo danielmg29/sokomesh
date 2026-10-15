@@ -3,7 +3,7 @@
 import { useState, type ReactNode } from 'react'
 import { IntegrationPanel, ReconciliationTraceBlock, SellerAnalyticsGrid, type AnalyticsPeriod, type ApiToken, type WebhookEndpoint } from '@/components/commerce/admin'
 import { ApprovalFlowBlock, CartBlock, QuoteDecisionPanel, QuoteRequestSheet, SellerCartGroup, type CartState, type QuoteStatus } from '@/components/commerce/cart'
-import { FacetFilterPanel, MediaManager, ProductEditorBlock, SellerOnboardingReviewBlock, VariantMatrixEditor } from '@/components/commerce/catalog'
+import { CategoryHero, FacetFilterPanel, MediaManager, ProductEditorBlock, SellerOnboardingReviewBlock, VariantMatrixEditor } from '@/components/commerce/catalog'
 import { CheckoutSummaryBlock, PaymentStatusPanel, type PaymentState } from '@/components/commerce/checkout'
 import { DeliveryTrackingBlock, OrderTimelineBlock, ReturnDisputeCaseBlock } from '@/components/commerce/orders'
 import { PriceBookEditor, PriceTierTable, ReorderDiffBlock, type ReorderLine } from '@/components/commerce/pricing'
@@ -17,7 +17,8 @@ import { Segmented } from '@/components/ui/choice'
 import { locales } from '@/lib/contract/generated'
 import type { FieldMeta, ModelMeta } from '@/lib/contract/types'
 import { formatMoney } from '@/lib/money'
-import { DEMO_NOW, buyers, images, people, productMeta, sellers, stockFor } from '../fixtures'
+import { Breadcrumbs } from '@/components/kernel/nav/Breadcrumbs'
+import { DEMO_NOW, buyers, images, people, productMeta, scenes, sellers, stockFor } from '../fixtures'
 import { Plate, Plates } from '../kit'
 import { sellerMetrics } from './blocks'
 
@@ -127,8 +128,41 @@ export const movements: InventoryMovement[] = [
   { id: 'm4', type: 'receipt', quantity: 120, unit: 'bale', balanceAfter: 191, at: '2026-10-10T07:40:00+03:00', actor: people.peter, reference: 'GRN-3302', reason: 'Mill delivery, delivery note 55102' },
 ]
 
+/**
+ * A month of one product's ledger, oldest first in the making and newest first when shown, so the search,
+ * movement chips and pages have rows to work through. Fixed tables, no randomness; the balance never goes
+ * below zero because a movement that would empty the store becomes a receipt.
+ */
+const cycle = [
+  { type: 'receipt', quantity: 120 }, { type: 'reservation', quantity: -24 }, { type: 'allocation', quantity: -24 }, { type: 'shipment', quantity: -40 },
+  { type: 'release', quantity: 12 }, { type: 'reservation', quantity: -12 }, { type: 'adjustment', quantity: -2 }, { type: 'shipment', quantity: -36 },
+] as const
+const actorFor: Record<string, string> = { receipt: people.peter, reservation: 'Checkout', allocation: 'Order', shipment: people.peter, release: 'Expiry worker', adjustment: people.faith }
+export const ledgerMonth: InventoryMovement[] = (() => {
+  let balance = 40
+  const rows: InventoryMovement[] = []
+  for (let i = 0; i < 34; i++) {
+    const step = balance + cycle[i % cycle.length]!.quantity < 0 ? cycle[0] : cycle[i % cycle.length]!
+    balance += step.quantity
+    const day = 12 + Math.floor(i * 30 / 34)
+    const at = new Date(Date.UTC(2026, 8, day, 5 + ((i * 3) % 10), (i * 17) % 60)).toISOString().replace('.000Z', 'Z')
+    const ref = { receipt: `GRN-${3200 + i}`, reservation: `RSV-${87900 + i * 7}`, allocation: `SM-ORD-00${4100 + i}`, shipment: `SHP-${20300 + i}`, release: `RSV-${87900 + i * 7 - 7}`, adjustment: `ADJ-0${100 + i}` }[step.type]
+    rows.push({
+      id: `lm-${i}`, type: step.type, quantity: step.quantity, unit: 'bale', balanceAfter: balance, at, reference: ref,
+      actor: step.type === 'allocation' ? `Order ${ref}` : actorFor[step.type]!,
+      reason: step.type === 'adjustment' ? 'Torn bales found at the count' : step.type === 'release' ? 'Hold expired after 15 minutes' : undefined,
+    })
+  }
+  return rows.reverse()
+})()
+
 function Ledger() {
-  return <Plates cols={1}><Plate label="compact · filter by movement type"><InventoryLedgerBlock movements={movements} unit="bale" now={DEMO_NOW} /></Plate></Plates>
+  return (
+    <Plates cols={1}>
+      <Plate label="compact · search, movement chips, pages" note="34 demo movements"><InventoryLedgerBlock movements={ledgerMonth} unit="bale" now={DEMO_NOW} /></Plate>
+      <Plate label="one page"><InventoryLedgerBlock movements={movements} unit="bale" now={DEMO_NOW} /></Plate>
+    </Plates>
+  )
 }
 
 /** Spec order (SM-F-07): one cell per state, each fed by a fixture in that state. */
@@ -425,11 +459,20 @@ function Preferences() {
   )
 }
 
+function CategoryHeroSpecimen() {
+  return (
+    <Plates cols={1}>
+      <Plate label="with photograph" tone="canvas"><CategoryHero title="Flour & grains" description="Maize flour, wheat flour and rice from approved Kenyan wholesalers." count={64} sellers={3} breadcrumbs={<Breadcrumbs items={[{ label: 'Catalogue', href: '#' }, { label: 'Flour & grains' }]} />} scene={scenes['category-grains']} /></Plate>
+      <Plate label="text only" tone="canvas"><CategoryHero title="Dairy" description="Milk powder and long-life milk." count={9} /></Plate>
+    </Plates>
+  )
+}
+
 const map: Record<string, () => ReactNode> = {
   'X-01': Onboarding, 'X-02': ProductEditor, 'X-03': Variants, 'X-04': Media, 'X-05': PriceBook, 'X-06': Tiers, 'X-07': Ledger, 'X-08': Stock,
   'X-09': Facets, 'X-10': Cart, 'X-11': CartGroup, 'X-12': QuoteSheet, 'X-13': QuoteDecision, 'X-14': Approvals, 'X-15': Reservations,
   'X-16': Countdown, 'X-17': Checkout, 'X-18': Payment, 'X-19': OrderTimeline, 'X-20': Delivery, 'X-21': Returns, 'X-22': Reorder,
-  'X-23': Analytics, 'X-24': Integrations, 'X-25': Trace, 'X-26': Notifications, 'X-27': Bell, 'X-28': Preferences,
+  'X-23': Analytics, 'X-24': Integrations, 'X-25': Trace, 'X-26': Notifications, 'X-27': Bell, 'X-28': Preferences, 'X-29': CategoryHeroSpecimen,
 }
 
 export default function CommerceSpecimens({ code }: { code: string }) {
