@@ -1,9 +1,10 @@
 // Table query engine: search, filters, sorting and pages over rows already held in memory. Pure and
 // framework-free, so every table (kernel lists, commerce tables, the chart's table view) runs the same
-// algorithm and the tests pin it. Page sizes are bounded by the contract's limits. A server-paged list
-// sends the same query to the API instead; nothing here invents a filter the contract has not declared.
+// algorithm and the tests pin it. Page sizes and search bounds come from the contract. A server-paged
+// list sends the same query to the API as `listQuery` parameters (`toListParams`); nothing here invents
+// a filter the contract has not declared.
 
-import { limits } from './contract/generated'
+import { limits, listQuery } from './contract/generated'
 import type { FieldMeta, ModelMeta, Rec } from './contract/types'
 
 export type FilterOp = 'eq' | 'in' | 'contains' | 'gte' | 'lte' | 'range' | 'isnull' | 'near'
@@ -32,9 +33,10 @@ export type QueryResult<Row> = {
   to: number
 }
 
-// Bounds on a typed query, so one keystroke never costs more than a fixed amount of work per row.
-const MAX_QUERY = 200
-const MAX_TOKENS = 8
+// Bounds on a typed query, shared with the server through the contract, so one keystroke never costs
+// more than a fixed amount of work per row and both sides cut a search the same way.
+const MAX_QUERY = listQuery.maxSearchLength
+const MAX_TOKENS = listQuery.maxSearchTerms
 
 /** Case- and accent-insensitive form used on both sides of a match ("Kiambu" finds "kiambú"). */
 export const fold = (s: string) => s.normalize('NFKD').replace(/\p{M}/gu, '').toLowerCase().replace(/\s+/g, ' ').trim()
@@ -205,4 +207,85 @@ export const clientFilterable = (meta: ModelMeta): FieldMeta[] => meta.fields.fi
 export function recordAccess(meta: ModelMeta): Accessors<Rec> {
   const searchable = meta.search ?? []
   return { text: r => searchable.map(name => r[name]), value: (r, key) => r[key] }
+}
+
+// --- the same query as API parameters (contract `listQuery`) ---------------------------------------
+
+type Range = { min?: unknown; max?: unknown }
+const declared = (field: FieldMeta | undefined, op: string) => Boolean(field?.filter?.includes(op))
+const truth = (v: unknown) => (v === true || v === 'true' ? 'true' : 'false')
+
+/**
+ * A table query as list parameters for a server-paged list. Only operators the field declares are sent,
+ * a range travels as its two bounds, `in` lists are cut to the contract's maximum, ordering is sent only
+ * for allow-listed fields, and distance is never sent (the server's own search handles it).
+ */
+export function toListParams(meta: ModelMeta, query: Pick<TableQuery, 'q' | 'filters' | 'sort' | 'pageSize'>, cursor?: string | null): URLSearchParams {
+  const g = listQuery
+  const params = new URLSearchParams()
+  const words = tokens(query.q)
+  if (words.length) params.set(g.search, words.join(' '))
+  const byName = new Map(meta.fields.map(f => [f.name, f]))
+  const key = (name: string, op: string) => `${name}${g.operatorSeparator}${op}`
+  for (const [name, f] of Object.entries(query.filters)) {
+    const field = byName.get(name)
+    if (!f || !declared(field, f.op)) continue
+    if (f.op === 'in') {
+      const list = (Array.isArray(f.value) ? f.value : []).map(keyOf).filter((v): v is string => v !== null).slice(0, g.maxListValues)
+      if (list.length) params.set(key(name, 'in'), list.join(g.listSeparator))
+    } else if (f.op === 'range') {
+      const { min, max } = (f.value ?? {}) as Range
+      if (min !== undefined && min !== '') params.set(key(name, 'gte'), String(min))
+      if (max !== undefined && max !== '') params.set(key(name, 'lte'), String(max))
+    } else if (f.op === 'eq') {
+      params.set(key(name, 'eq'), typeof f.value === 'boolean' ? truth(f.value) : keyOf(f.value) ?? '')
+    } else if (f.op === 'isnull') {
+      params.set(key(name, 'isnull'), truth(f.value))
+    } else if (f.op !== 'near') {
+      params.set(key(name, f.op), String(f.value ?? ''))
+    }
+  }
+  const orderable = new Set((meta.ordering ?? []).map(o => o.replace(/^-/, '')))
+  if (query.sort && orderable.has(query.sort.key)) params.set(g.ordering, `${query.sort.dir === 'desc' ? '-' : ''}${query.sort.key}`)
+  params.set(g.pageSize, String(clampPageSize(query.pageSize)))
+  if (cursor) params.set(g.cursor, cursor)
+  return params
+}
+
+/**
+ * List parameters back into a table query: for state kept in a page's URL, and for the design system's
+ * stand-in endpoint. Undeclared parameters are dropped, as the server would refuse them.
+ */
+export function fromListParams(meta: ModelMeta, params: URLSearchParams): Pick<TableQuery, 'q' | 'filters' | 'sort' | 'pageSize'> & { cursor: string | null } {
+  const g = listQuery
+  const byName = new Map(meta.fields.map(f => [f.name, f]))
+  const filters: Record<string, FilterValue> = {}
+  for (const [k, raw] of params) {
+    const at = k.lastIndexOf(g.operatorSeparator)
+    if (at < 1) continue
+    const name = k.slice(0, at), op = k.slice(at + g.operatorSeparator.length)
+    const field = byName.get(name)
+    if ((op === 'gte' || op === 'lte') && declared(field, 'range')) {
+      const prev = (filters[name]?.value ?? {}) as Range
+      filters[name] = { op: 'range', value: { ...prev, [op === 'gte' ? 'min' : 'max']: raw } }
+    } else if (op === 'in' && declared(field, 'in')) {
+      filters[name] = { op: 'in', value: raw.split(g.listSeparator).filter(Boolean).slice(0, g.maxListValues) }
+    } else if (op === 'eq' && declared(field, 'eq')) {
+      filters[name] = { op: 'eq', value: field?.type === 'boolean' ? raw === 'true' : raw }
+    } else if (op === 'isnull' && declared(field, 'isnull')) {
+      filters[name] = { op: 'isnull', value: raw === 'true' }
+    } else if ((op === 'contains' || op === 'gte' || op === 'lte') && declared(field, op)) {
+      filters[name] = { op, value: raw }
+    }
+  }
+  const ordering = params.get(g.ordering) ?? ''
+  const orderable = new Set((meta.ordering ?? []).map(o => o.replace(/^-/, '')))
+  const sortKey = ordering.replace(/^-/, '')
+  return {
+    q: params.get(g.search) ?? '',
+    filters,
+    sort: orderable.has(sortKey) ? { key: sortKey, dir: ordering.startsWith('-') ? 'desc' : 'asc' } : undefined,
+    pageSize: clampPageSize(Number(params.get(g.pageSize)) || meta.list.defaultPageSize),
+    cursor: params.get(g.cursor),
+  }
 }

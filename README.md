@@ -131,7 +131,8 @@ Requirement IDs (`SM-F-xx`) come from the SokoMesh Feature Build Order and Field
 - [x] Import-tier lint rules (`lib` ← `ui` ← `layout` ← `kernel` ← `commerce` ← `features` ← `app`)
 - [x] Docker Compose development stack (Postgres, Redis, Mailpit), Dockerfiles, pre-commit hooks and a GitHub Actions workflow
 - [x] Brand kit integrated, with an approved reversed logo and mark for dark grounds
-- [ ] Operation registry, keyset pagination, changesets and idempotency keys in the backend kernel (lands with `SM-F-01`)
+- [x] List-query grammar in the backend kernel and the contract: declared search, filters and ordering, bounded keyset pages with signed cursors, and a web client that sends the same table state
+- [ ] Operation registry, changesets and idempotency keys in the backend kernel, and the first list endpoint (lands with `SM-F-01`)
 - [ ] Outbox, event relay and WebSocket gateway (lands with the first real-time topic, `SM-F-15`)
 - [ ] Object storage and upload policy (lands with `SM-F-02` and `SM-F-05`)
 - [ ] Production deployment target, images and deploy workflow

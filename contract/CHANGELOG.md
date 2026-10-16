@@ -4,6 +4,12 @@
 
 Versioning: **major**: breaking (removed or renamed keys, narrowed constraints, new required fields without a default). **minor**: additive. **patch**: presentational (labels, help text, tones, widgets, messages).
 
+## 0.4.0 — 2026-10-16
+
+Additive.
+
+- `listQuery`: the one parameter grammar every list endpoint accepts, owned by the backend (`AC_LIST_QUERY`, validated by `backend/core/operations/listing.py`). Search is `q` (at most `maxSearchLength` characters and `maxSearchTerms` words, every word must match a declared search field). A filter is one parameter per field and operator, `<field><operatorSeparator><op>`, for the `operators` a field declares; `in` takes a `listSeparator`-separated list of at most `maxListValues` values, and a range travels as `__gte` plus `__lte`. A date-only bound on a datetime field covers the whole calendar day in `dateTimezone`. `ordering` names a field from the model's `ordering` (prefix `-` for descending), `page_size` stays within `limits.maxPageSize`, and `cursor` is the signed keyset cursor from the previous page's `next`. Responses carry `results`, `next`, `total` (counted up to `countCap`), `totalCapped` and `pageSize`. Undeclared parameters are refused with `VALIDATION`. `maxSearchLength`, `maxSearchTerms`, `maxListValues` and `countCap` are bounds: narrowing them is breaking.
+
 ## 0.3.0 — 2026-10-14
 
 Additive.

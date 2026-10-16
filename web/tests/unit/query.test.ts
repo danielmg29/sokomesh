@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest'
-import { limits } from '@/lib/contract/generated'
+import { limits, listQuery } from '@/lib/contract/generated'
 import type { ModelMeta } from '@/lib/contract/types'
-import { clampPageSize, clientFilterable, compare, facetCounts, fold, matches, pageSizes, pageWindow, recordAccess, runQuery, tokens, type Accessors, type TableQuery } from '@/lib/query'
+import { clampPageSize, clientFilterable, compare, facetCounts, fold, fromListParams, matches, pageSizes, pageWindow, recordAccess, runQuery, toListParams, tokens, type Accessors, type TableQuery } from '@/lib/query'
 
 type Row = { id: string; name: string; seller: { id: string; label: string }; status: string; total: string; at: string; tags?: string[]; note?: string }
 
@@ -125,5 +125,71 @@ describe('contract records', () => {
   })
   test('only fields with operators the client can evaluate are offered as filters', () => {
     expect(clientFilterable(meta).map(f => f.name)).toEqual(['status'])
+  })
+})
+
+describe('list parameters (contract listQuery)', () => {
+  const meta: ModelMeta = {
+    key: 'order', label: 'Order', ordering: ['-submitted_at', 'total'], search: ['number'],
+    list: { fields: ['number'], defaultPageSize: 25, maxPageSize: 100 },
+    fields: [
+      { name: 'number', type: 'string', widget: 'code' },
+      { name: 'status', type: 'enum', widget: 'status', filter: ['in'] },
+      { name: 'buyer', type: 'relation', widget: 'relation', filter: ['eq'] },
+      { name: 'total', type: 'decimal', widget: 'currency', filter: ['range'] },
+      { name: 'paid', type: 'boolean', widget: 'boolean', filter: ['eq'] },
+      { name: 'place', type: 'location', widget: 'location', filter: ['near'] },
+      { name: 'note', type: 'text', widget: 'textarea' },
+    ],
+  }
+  const query = (patch: Partial<TableQuery> = {}) => ({ q: '', filters: {}, pageSize: 25, ...patch })
+
+  test('every declared filter travels in the contract grammar', () => {
+    const p = toListParams(meta, query({
+      q: '  Mavuno  mavuno flour ',
+      filters: {
+        status: { op: 'in', value: ['submitted', 'delivered'] },
+        buyer: { op: 'eq', value: { id: 'org-wgs', label: 'Wanjiru General Stores' } },
+        total: { op: 'range', value: { min: '1000', max: '' } },
+        paid: { op: 'eq', value: true },
+      },
+      sort: { key: 'total', dir: 'desc' },
+      pageSize: 10,
+    }), 'abc')
+    expect(Object.fromEntries(p)).toEqual({
+      [listQuery.search]: 'mavuno flour',
+      'status__in': 'submitted,delivered', 'buyer__eq': 'org-wgs', 'total__gte': '1000', 'paid__eq': 'true',
+      [listQuery.ordering]: '-total', [listQuery.pageSize]: '10', [listQuery.cursor]: 'abc',
+    })
+  })
+  test('undeclared operators, distance and unlisted orderings are never sent', () => {
+    const p = toListParams(meta, query({
+      filters: { note: { op: 'contains', value: 'x' }, place: { op: 'near', value: '10' }, status: { op: 'eq', value: 'submitted' } },
+      sort: { key: 'note', dir: 'asc' }, pageSize: 10_000,
+    }))
+    expect(Object.fromEntries(p)).toEqual({ [listQuery.pageSize]: String(limits.maxPageSize) })
+  })
+  test('in lists are cut to the contract maximum', () => {
+    const many = Array.from({ length: listQuery.maxListValues + 5 }, (_, i) => `s${i}`)
+    const sent = toListParams(meta, query({ filters: { status: { op: 'in', value: many } } })).get('status__in')!
+    expect(sent.split(listQuery.listSeparator)).toHaveLength(listQuery.maxListValues)
+  })
+  test('parameters read back into the same query', () => {
+    const q = query({
+      q: 'mavuno flour',
+      filters: { status: { op: 'in', value: ['submitted'] }, buyer: { op: 'eq', value: 'org-wgs' }, total: { op: 'range', value: { min: '1000', max: '5000' } }, paid: { op: 'eq', value: false } },
+      sort: { key: 'submitted_at', dir: 'desc' }, pageSize: 50,
+    })
+    expect(fromListParams(meta, toListParams(meta, q, 'next'))).toEqual({ ...q, cursor: 'next' })
+  })
+  test('reading drops what the server would refuse', () => {
+    const back = fromListParams(meta, new URLSearchParams('colour__eq=red&note__contains=x&ordering=note&page_size=999'))
+    expect(back.filters).toEqual({})
+    expect(back.sort).toBeUndefined()
+    expect(back.pageSize).toBe(limits.maxPageSize)
+  })
+  test('search bounds come from the contract', () => {
+    expect(tokens(Array.from({ length: 30 }, (_, i) => `w${i}`).join(' ')).length).toBe(listQuery.maxSearchTerms)
+    expect(tokens('x'.repeat(500))[0]!.length).toBe(listQuery.maxSearchLength)
   })
 })

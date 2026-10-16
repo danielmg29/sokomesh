@@ -497,7 +497,11 @@ Every table searches, filters and pages, live, through one engine (`web/lib/quer
 - **Pages** are numbered (first, last and a window around the current page, with gaps), "Showing 1 to 10 of 27, from 34" when filtered, rows per page from 10, 25, 50, 100 up to `limits.maxPageSize`. Changing what matches returns to page 1; changing the page size keeps the first visible row. Narrow containers keep previous and next with "Page 2 of 3".
 - No match shows the no-results empty state with one "Clear search and filters" action, inside the table's own frame.
 
-Crawlable public lists keep the cursor `Pagination` links; a server-paged list sends the same query to the API instead of filtering in memory. The price tier ladder, the product comparison matrix and tables inside rich-text content are not record lists and have no controls.
+**Server lists.** `ListBlock query="server"` keeps the same controls but sends them to a `source` as the contract's `listQuery` parameters (`toListParams`): `q`, one `<field>__<op>` per declared filter (a range as `__gte` and `__lte`), `ordering`, `page_size` and the server's `cursor`. Typing waits for a 250ms pause, a superseded request is aborted, and the rows on screen stay (dimmed, `aria-busy`) until the next ones arrive. Keyset pages have no numbers: the pager shows previous and next with "Page 2 of 5", and a total the server stopped counting reads "10,000+". The backend validates the same grammar against the model's metadata and refuses anything undeclared (`backend/core/operations/listing.py`).
+
+**Page-owned controls.** A page with its own bar passes `controls` (from `useTableQuery` or `useServerList`) and the list renders no toolbar or pager of its own. The category page does this: `FacetFilterPanel` (controlled, with live counts), `SortSelect` and the crawlable `Pagination`, whose links keep their addresses while a click turns the page in place (`onNavigate`).
+
+The price tier ladder, the product comparison matrix and tables inside rich-text content are not record lists and have no controls.
 
 ### Product cells (Projection, media intent)
 The photo sits in its well at 4:3 with the stock STAMP pinned top left; below it the title, the seller (subtitle), the meta list (pack, minimum order) and, closing the cell at the same height across a row, the **figure** with its label. Actions follow. In row intent the figure sits right-aligned beside the timestamp; in detail it sits under the title at 38/44.

@@ -84,10 +84,33 @@ export type RichTextPolicy = {
   embeds: readonly { name: string; url: string; player: string }[]
 }
 
+/**
+ * The parameter grammar every list endpoint accepts (backend/core/operations/listing.py). Names are the
+ * query-string keys; a filter is `<field><operatorSeparator><op>`, `in` lists are `listSeparator`-joined.
+ */
+export type ListQueryPolicy = {
+  search: string
+  ordering: string
+  pageSize: string
+  cursor: string
+  operatorSeparator: string
+  listSeparator: string
+  operators: readonly string[]
+  maxSearchLength: number
+  maxSearchTerms: number
+  maxListValues: number
+  countCap: number
+  dateTimezone: string
+}
+
+/** One keyset page as every list endpoint returns it. `total` is counted up to `listQuery.countCap`. */
+export type ListPage<Row = Rec> = { results: Row[]; next: string | null; total: number; totalCapped: boolean; pageSize: number }
+
 export type Contract = {
   meta: { contractVersion: string; apiBase: string; generatedBy: string }
   auth: { mode: 'single' | 'multi'; verification: string[]; session: 'cookie' }
   limits: Record<string, number>
+  listQuery: ListQueryPolicy
   /** Languages the backend writes to people in (notifications, documents); `value` is a BCP 47 tag. */
   locales: { default: string; supported: readonly Choice[] }
   /** The rich-text allow-list the backend sanitises against (backend/core/richtext.py). */

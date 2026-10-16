@@ -15,6 +15,7 @@ def _camel(name: str) -> str:
 
 def build_contract() -> dict:
     contract, auth, locales, rich = settings.AC_CONTRACT, settings.AC_AUTH, settings.AC_LOCALES, settings.AC_RICH_TEXT
+    listing = settings.AC_LIST_QUERY
     return {
         "meta": {
             "contractVersion": contract["version"],
@@ -23,6 +24,7 @@ def build_contract() -> dict:
         },
         "auth": {"mode": auth["mode"], "verification": list(auth["verification"]), "session": auth["session"]},
         "limits": {_camel(k): v for k, v in settings.AC_LIMITS.items()},
+        "listQuery": {_camel(k): v for k, v in listing.items()},
         "locales": {
             "default": locales["default"],
             "supported": [{"value": code, "label": label} for code, label in locales["supported"]],

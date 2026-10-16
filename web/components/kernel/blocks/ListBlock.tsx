@@ -8,7 +8,8 @@ import type { ComboOption } from '@/components/ui/combobox'
 import { Icon } from '@/components/ui/icon'
 import { ScrollArea, TBody, THead, Table, Td, Th, Tr } from '@/components/ui/table'
 import { TablePager } from '@/components/ui/table-controls'
-import { useTableQuery } from '@/lib/client/use-table-query'
+import { useServerList, type ListSource } from '@/lib/client/use-server-list'
+import { useTableQuery, type TableControls } from '@/lib/client/use-table-query'
 import { cn } from '@/lib/cn'
 import { limits } from '@/lib/contract/generated'
 import type { FieldMeta, ModelMeta, Rec } from '@/lib/contract/types'
@@ -58,10 +59,19 @@ type Props = {
   caption?: string
   /**
    * `client` (default for tables): search over `meta.search`, filters for every field declaring filter
-   * operators, sorting over `meta.ordering` and numbered pages, all live over the records given. `none`
-   * renders the records as given, for callers that query the server themselves.
+   * operators, sorting over `meta.ordering` and numbered pages, all live over the records given.
+   * `server`: the same controls, sent to `source` as the contract's list parameters and paged by its
+   * cursors; `records` is ignored. `none` renders the records as given.
    */
-  query?: 'client' | 'none'
+  query?: 'client' | 'server' | 'none'
+  source?: ListSource<Rec>
+  /** Relation filter choices for `server` lists, which cannot read them from the rows they have not loaded. */
+  filterOptions?: Record<string, readonly ComboOption[]>
+  /**
+   * Drive the list from controls the page owns (its own filter bar, sort select or pager): the list shows
+   * `controls.result` and renders no toolbar of its own.
+   */
+  controls?: TableControls<Rec>
 }
 
 /** Widgets whose filter is a finite choice list, so live facet counts make sense. */
@@ -74,12 +84,17 @@ export function ListBlock(props: Props) {
   const {
     meta, records, intent = 'row', density = 'comfortable', narrow = 'scroll', state = 'ready', live, staleSince, onRefresh,
     selectable, selected = [], onSelectedChange, onRun, href, sort, onSortChange, empty, errorCode, onRetry, hasMore, onLoadMore, loadingMore, now, extra, caption,
-    query = intent === 'row' ? 'client' : 'none',
+    query = intent === 'row' ? 'client' : 'none', source, filterOptions, controls,
   } = props
-  const client = query === 'client'
+  const server = query === 'server'
+  const client = Boolean(controls) || query === 'client' || server
   const access = useMemo(() => recordAccess(meta), [meta])
-  const t = useTableQuery(records, access, { pageSize: Math.min(meta.list.defaultPageSize, meta.list.maxPageSize), sort: sort ? { key: sort.field, dir: sort.dir } : undefined })
+  const initial = { pageSize: Math.min(meta.list.defaultPageSize, meta.list.maxPageSize), sort: sort ? { key: sort.field, dir: sort.dir } : undefined }
+  const local = useTableQuery(records, access, initial)
+  const remote = useServerList(server && !controls ? source : undefined, meta, initial)
+  const t: TableControls<Rec> = controls ?? (server ? remote : local)
   const shown = client ? t.result.rows : records
+  const busy = server && !controls && remote.status === 'loading'
   const filterable = clientFilterable(meta)
   const activeSort = client ? t.query.sort : sort ? { key: sort.field, dir: sort.dir } : undefined
   const byName = new Map(meta.fields.map(f => [f.name, f]))
@@ -97,9 +112,12 @@ export function ListBlock(props: Props) {
     onSortChange?.({ field, dir })
   }
 
-  if (state === 'loading') return <LoadingState variant="skeleton" shape={intent === 'card' ? 'cards' : 'list'} rows={intent === 'card' ? 8 : 5} label={`Loading ${label}`} />
+  const firstLoad = busy && remote.result.rows.length === 0 && remote.result.total === 0
+  if (state === 'loading' || firstLoad) return <LoadingState variant="skeleton" shape={intent === 'card' ? 'cards' : 'list'} rows={intent === 'card' ? 8 : 5} label={`Loading ${label}`} />
   if (state === 'error') return <ErrorState code={errorCode ?? 'UNAVAILABLE'} onRetry={onRetry} />
-  if (state === 'empty' || records.length === 0) {
+  if (server && !controls && remote.status === 'error') return <ErrorState code={remote.error?.code ?? 'UNAVAILABLE'} onRetry={remote.retry} />
+  const unfiltered = server ? undefined : records.length
+  if (state === 'empty' || (!server && records.length === 0) || (server && remote.status === 'ready' && !t.active && t.result.total === 0)) {
     return <div className="rounded-md border border-border bg-surface"><EmptyState kind={empty?.kind ?? 'no-data'} title={empty?.title ?? `No ${label} yet`} description={empty?.description} action={empty?.action} /></div>
   }
 
@@ -110,14 +128,18 @@ export function ListBlock(props: Props) {
     if (f.widget === 'relation') {
       const seen = new Map<string, string>()
       for (const r of records) { const v = asRelation(r[f.name]); if (v) seen.set(v.id, v.label) }
-      relationOptions[f.name] = [...seen].map(([value, l]) => ({ value, label: l })).sort((a, b) => a.label.localeCompare(b.label))
-    } else if (CHOICE_WIDGETS.has(f.widget)) counts[f.name] = t.counts(f.name)
+      relationOptions[f.name] = filterOptions?.[f.name] ? [...filterOptions[f.name]!]
+        : [...seen].map(([value, l]) => ({ value, label: l })).sort((a, b) => a.label.localeCompare(b.label))
+    } else if (CHOICE_WIDGETS.has(f.widget)) {
+      const c = t.counts(f.name)
+      if (c) counts[f.name] = c
+    }
   }
-  const toolbar = client && (meta.search?.length || filterable.length) ? (
+  const toolbar = client && !controls && (meta.search?.length || filterable.length) ? (
     <FiltersBlock meta={meta} layout="collapsed" fields={filterable.map(f => f.name)} values={t.query.filters} onChange={t.setFilters}
       search={t.query.q} onSearchChange={t.setSearch} counts={counts} options={relationOptions} />
   ) : null
-  const noMatch = client && t.result.total === 0 ? (
+  const noMatch = client && !t.pending && t.result.total === 0 ? (
     <EmptyState kind="no-results" title={`No ${label} match`} description="Try fewer words or remove a filter."
       action={<Button variant="secondary" onClick={t.clear}>Clear search and filters</Button>} />
   ) : null
@@ -146,9 +168,11 @@ export function ListBlock(props: Props) {
       <Button variant="secondary" size="sm" loading={loadingMore} loadingLabel="Loading…" onClick={onLoadMore}>Load {Math.min(meta.list.defaultPageSize, meta.list.maxPageSize)} more</Button>
     </div>
   ) : null
-  const more = client ? (
+  // A page that owns the controls owns the pager too.
+  const more = controls ? null : client ? (
     <>
-      <TablePager result={t.result} onPage={t.setPage} onPageSize={t.setPageSize} noun={noun} unfiltered={records.length} className="border-t border-border" />
+      <TablePager result={t.result} onPage={t.setPage} onPageSize={t.setPageSize} noun={noun} unfiltered={unfiltered} className="border-t border-border"
+        numbered={!server} hasNext={server ? remote.hasNext : undefined} totalCapped={server ? remote.totalCapped : undefined} busy={busy} />
       {loadMore}
     </>
   ) : loadMore ?? <p className="border-t border-border px-3 py-3 text-md text-muted tabular">All {records.length.toLocaleString('en-KE')} {label} shown</p>
@@ -159,7 +183,7 @@ export function ListBlock(props: Props) {
         {notices}
         {toolbar}
         {noMatch ? <div className="rounded-md border border-border bg-surface">{noMatch}</div> : (
-        <div className="@container">
+        <div aria-busy={busy || undefined} className={cn('@container motion-reflow transition-opacity', busy && 'opacity-60')}>
           {/* One container, not floating cards: cells share a rule, and a short last row leaves open ground. */}
           <ul className="grid grid-cols-1 border-t border-l border-border @sm:grid-cols-2 @3xl:grid-cols-3 @6xl:grid-cols-4">
             {shown.map(r => (
@@ -170,7 +194,7 @@ export function ListBlock(props: Props) {
           </ul>
         </div>
         )}
-        <div className="rounded-md border border-border bg-surface [&>:first-child]:border-t-0">{more}</div>
+        {more ? <div className="rounded-md border border-border bg-surface [&>:first-child]:border-t-0">{more}</div> : null}
       </div>
     )
   }
@@ -220,7 +244,7 @@ export function ListBlock(props: Props) {
     <div data-density={density} className="flex min-w-0 flex-col gap-3">
       {notices}
       {toolbar}
-      <div className="@container overflow-hidden rounded-md border border-border bg-surface">
+      <div aria-busy={busy || undefined} className={cn('@container overflow-hidden rounded-md border border-border bg-surface motion-reflow transition-opacity', busy && '[&_tbody]:opacity-60')}>
         {noMatch ?? <>
         {narrow === 'scroll' ? <ScrollArea label={`${meta.labelPlural} table, scrolls sideways`}>{table}</ScrollArea> : null}
         {/* Priority drops low-rank columns first; if the primary ones still do not fit, it scrolls. */}

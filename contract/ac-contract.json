@@ -57,6 +57,27 @@
     "maxUploadBytes": 26214400,
     "streamChunk": 500
   },
+  "listQuery": {
+    "countCap": 10000,
+    "cursor": "cursor",
+    "dateTimezone": "Africa/Nairobi",
+    "listSeparator": ",",
+    "maxListValues": 50,
+    "maxSearchLength": 200,
+    "maxSearchTerms": 8,
+    "operatorSeparator": "__",
+    "operators": [
+      "eq",
+      "in",
+      "contains",
+      "gte",
+      "lte",
+      "isnull"
+    ],
+    "ordering": "ordering",
+    "pageSize": "page_size",
+    "search": "q"
+  },
   "locales": {
     "default": "en-KE",
     "supported": [
@@ -72,7 +93,7 @@
   },
   "meta": {
     "apiBase": "/api/v1/",
-    "contractVersion": "0.3.0",
+    "contractVersion": "0.4.0",
     "generatedBy": "backend/core/contract"
   },
   "models": {},

@@ -1,8 +1,24 @@
 import { useDeferredValue, useMemo, useState } from 'react'
 import { limits } from '../contract/generated'
-import { clampPageSize, facetCounts, runQuery, type Accessors, type FilterValue, type Filters, type Sort, type TableQuery } from '../query'
+import { clampPageSize, facetCounts, runQuery, type Accessors, type FilterValue, type Filters, type QueryResult, type Sort, type TableQuery } from '../query'
 
-export type TableQueryControls<Row> = ReturnType<typeof useTableQuery<Row>>
+/** What a table's controls need from any source of rows: memory (`useTableQuery`) or a server (`useServerList`). */
+export type TableControls<Row> = {
+  query: TableQuery
+  result: QueryResult<Row>
+  /** True while the shown rows have not caught up with the query (typing, or a request in flight). */
+  pending: boolean
+  active: boolean
+  setSearch: (q: string) => void
+  setFilter: (key: string, value: FilterValue | undefined) => void
+  setFilters: (filters: Filters) => void
+  clear: () => void
+  setSort: (sort: Sort | undefined) => void
+  setPage: (page: number) => void
+  setPageSize: (size: number) => void
+  /** Facet counts for one key, or undefined where the source cannot count (one server page). */
+  counts: (key: string) => Record<string, number> | undefined
+}
 
 /**
  * A table's query state (search, filters, sort, page, page size) and its live result. Typing is deferred,
@@ -10,7 +26,7 @@ export type TableQueryControls<Row> = ReturnType<typeof useTableQuery<Row>>
  * returns to the first page, and a page-size change keeps the first visible row on screen. `access` should
  * be stable (module scope or memoised), because the result is recomputed when it changes.
  */
-export function useTableQuery<Row>(rows: readonly Row[], access: Accessors<Row>, initial?: Partial<TableQuery>) {
+export function useTableQuery<Row>(rows: readonly Row[], access: Accessors<Row>, initial?: Partial<TableQuery>): Omit<TableControls<Row>, 'counts'> & { counts: (key: string) => Record<string, number> } {
   const [query, setQuery] = useState<TableQuery>(() => ({ q: '', filters: {}, page: 1, pageSize: limits.defaultPageSize, ...initial }))
   const q = useDeferredValue(query.q)
   const result = useMemo(() => runQuery(rows, { ...query, q }, access), [rows, query, q, access])

@@ -32,9 +32,11 @@ import { Accordion, Tabs, TabsContent, TabsList, TabsTrigger } from '@/component
 import { Icon } from '@/components/ui/icon'
 import { Stamp } from '@/components/ui/stamp'
 import { Thread } from '@/components/ui/thread'
+import { useTableQuery } from '@/lib/client/use-table-query'
 import type { ModelMeta } from '@/lib/contract/types'
 import { cn } from '@/lib/cn'
 import { formatMoney } from '@/lib/money'
+import { recordAccess } from '@/lib/query'
 import Image from 'next/image'
 import { CategoryShowcase, MarketingCTA, MarketingFooter, MercantileHero, TradeStatement, WholesaleMetricsStrip, cta } from '@/features/marketing/Marketing'
 import { BuyerSellerValueSplit, InventoryTrustProof, MarketingHeader, MarketMeshVisualization, TradeFlowStory } from '@/features/marketing/MarketingInteractive'
@@ -142,23 +144,34 @@ function Landing() {
 }
 
 const facetMeta: ModelMeta = { ...productMeta, fields: [...productMeta.fields.filter(f => ['stock_status', 'unit_price', 'seller'].includes(f.name))] }
+const productAccess = recordAccess(productMeta)
+const sellerOptions = Object.values(sellers).map(s => ({ value: s.id, label: s.label }))
 
 /**
  * The catalogue as the storefronts this follows lay it out (Bélanger, Tanini Home): the category named large
- * beside its photograph, one bar for filters and sort, then the full width given to the product grid.
+ * beside its photograph, one bar for filters and sort, then the full width given to the product grid. The
+ * bar is live: search, facets (with counts), sort and pages narrow the grid as they change. On the real
+ * route the same query lives in the URL as `listQuery` parameters and the pager links carry the cursor.
  */
 function CategoryResults() {
-  const [sort, setSort] = useState('-updated_at')
+  const t = useTableQuery(products, productAccess, { pageSize: productMeta.list.defaultPageSize, sort: { key: 'updated_at', dir: 'desc' } })
+  const sort = t.query.sort ? `${t.query.sort.dir === 'desc' ? '-' : ''}${t.query.sort.key}` : '-updated_at'
+  const { page, pageCount, from, to, total } = t.result
   return (
     <Page>
-      <CategoryHero title="Flour & grains" description="Maize flour, wheat flour and rice from approved Kenyan wholesalers." count={64} sellers={3}
+      <CategoryHero title="Flour & grains" description="Maize flour, wheat flour and rice from approved Kenyan wholesalers." count={products.length} sellers={new Set(products.map(p => (p.seller as { id: string }).id)).size}
         breadcrumbs={<Breadcrumbs items={[{ label: 'Catalogue', href: '#' }, { label: 'Flour & grains' }]} />} scene={scenes['category-grains']} />
       <div className="flex flex-wrap items-center justify-between gap-3 border-y border-border py-3">
-        <FacetFilterPanel meta={facetMeta} layout="sheet" counts={{ stock_status: { available: 52, low: 9, reserved: 3, out_of_stock: 4 } }} />
-        <SortSelect meta={productMeta} value={sort} onChange={setSort} />
+        <FacetFilterPanel meta={facetMeta} layout="sheet" values={t.query.filters} onChange={t.setFilters} search={t.query.q} onSearchChange={t.setSearch}
+          counts={{ stock_status: t.counts('stock_status') }} options={{ seller: sellerOptions }} />
+        <SortSelect meta={productMeta} value={sort} onChange={v => t.setSort({ key: v.replace(/^-/, ''), dir: v.startsWith('-') ? 'desc' : 'asc' })} />
       </div>
-      <ListBlock meta={productMeta} records={products} intent="card" href={() => '#product'} now={DEMO_NOW} />
-      <Pagination from={1} to={24} total={64} noun={{ one: 'product', other: 'products' }} nextHref="?cursor=eyJpZCI6MjR9" />
+      <ListBlock meta={productMeta} records={products} intent="card" controls={t} href={() => '#product'} now={DEMO_NOW} />
+      {total ? (
+        <Pagination from={from} to={to} total={total} noun={{ one: 'product', other: 'products' }}
+          prevHref={page > 1 ? `#page-${page - 1}` : undefined} nextHref={page < pageCount ? `#page-${page + 1}` : undefined}
+          onNavigate={dir => t.setPage(dir === 'next' ? page + 1 : page - 1)} />
+      ) : null}
     </Page>
   )
 }

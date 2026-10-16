@@ -1,5 +1,5 @@
-// AUTO-GENERATED from contract/ac-contract.json (contract 0.3.0) by tools/gen-contract.mts — do not edit.
-export const CONTRACT_VERSION = "0.3.0"
+// AUTO-GENERATED from contract/ac-contract.json (contract 0.4.0) by tools/gen-contract.mts — do not edit.
+export const CONTRACT_VERSION = "0.4.0"
 export const API_BASE = "/api/v1/"
 export const auth = {
   "mode": "multi",
@@ -15,6 +15,27 @@ export const limits = {
   "maxRequestBytes": 1048576,
   "maxUploadBytes": 26214400,
   "streamChunk": 500
+} as const
+export const listQuery = {
+  "countCap": 10000,
+  "cursor": "cursor",
+  "dateTimezone": "Africa/Nairobi",
+  "listSeparator": ",",
+  "maxListValues": 50,
+  "maxSearchLength": 200,
+  "maxSearchTerms": 8,
+  "operatorSeparator": "__",
+  "operators": [
+    "eq",
+    "in",
+    "contains",
+    "gte",
+    "lte",
+    "isnull"
+  ],
+  "ordering": "ordering",
+  "pageSize": "page_size",
+  "search": "q"
 } as const
 export const locales = {
   "default": "en-KE",

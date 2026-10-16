@@ -11,6 +11,7 @@ import { asStringList, formatBytes, type FileValue } from '@/components/kernel/f
 import { ProjectedForm, type FormRecipe, type SubmitResult } from '@/components/kernel/forms/ProjectedForm'
 import { Button, IconButton } from '@/components/ui/button'
 import { Checkbox, Segmented } from '@/components/ui/choice'
+import type { ComboOption } from '@/components/ui/combobox'
 import { Sheet } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Progress } from '@/components/ui/progress'
@@ -268,11 +269,23 @@ export function MediaManager({ items: initial, layout: initialLayout = 'grid', m
   )
 }
 
-/** Configured FiltersBlock whose controls are derived from the active category contract's facets. */
-export function FacetFilterPanel({ meta, layout, counts, search }: { meta: ModelMeta; layout: 'sidebar' | 'sheet'; counts?: Record<string, Record<string, number>>; search?: string }) {
-  const [values, setValues] = useState<FilterValues>({})
-  const [q, setQ] = useState(search ?? '')
-  return <FiltersBlock meta={meta} values={values} onChange={setValues} search={q} onSearchChange={setQ} layout={layout === 'sidebar' ? 'expanded' : 'sheet'} counts={counts} />
+/**
+ * Configured FiltersBlock whose controls are derived from the active category contract's facets. Pass
+ * `values` and `onChange` (and `onSearchChange`) so the page applies them to its listing as they change;
+ * without them the panel keeps its own state, as a standalone preview.
+ */
+export function FacetFilterPanel({ meta, layout, counts, search, values, onChange, onSearchChange, options }: {
+  meta: ModelMeta; layout: 'sidebar' | 'sheet'; counts?: Record<string, Record<string, number>>; search?: string
+  values?: FilterValues; onChange?: (values: FilterValues) => void; onSearchChange?: (q: string) => void
+  /** Choices for relation facets (sellers), keyed by field. */
+  options?: Record<string, readonly ComboOption[]>
+}) {
+  const [own, setOwn] = useState<FilterValues>({})
+  const [ownQ, setOwnQ] = useState(search ?? '')
+  return (
+    <FiltersBlock meta={meta} values={values ?? own} onChange={onChange ?? setOwn} search={onSearchChange ? search : ownQ} onSearchChange={onSearchChange ?? setOwnQ}
+      layout={layout === 'sidebar' ? 'expanded' : 'sheet'} counts={counts} options={options} />
+  )
 }
 
 type HeroScene = { src: string; alt: string; width: number; height: number; blurDataURL?: string }

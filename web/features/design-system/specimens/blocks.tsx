@@ -1,7 +1,7 @@
 'use client'
 
 import { Plus } from 'lucide-react'
-import { useState, type ReactNode } from 'react'
+import { useMemo, useState, type ReactNode } from 'react'
 import { ChatBlock, type ChatMessage } from '@/components/kernel/blocks/ChatBlock'
 import { ActivityBlock, DetailBlock, RelatedBlock, StatsBlock, type ActivityEvent, type Metric } from '@/components/kernel/blocks/DataBlocks'
 import { FiltersBlock, type FilterValues } from '@/components/kernel/blocks/FiltersBlock'
@@ -11,7 +11,8 @@ import { PageBlocks } from '@/components/kernel/blocks/PageBlocks'
 import { Button } from '@/components/ui/button'
 import { Segmented } from '@/components/ui/choice'
 import { Stamp } from '@/components/ui/stamp'
-import { DEMO_NOW, orderHistory, orderMeta, orders, people, productMeta, products } from '../fixtures'
+import { demoListSource } from '../demo-list'
+import { DEMO_NOW, buyers, orderHistory, orderMeta, orders, people, productMeta, products } from '../fixtures'
 import { Plate, Plates, useDemoRun } from '../kit'
 
 function Headers() {
@@ -38,6 +39,23 @@ function Filters() {
   )
 }
 
+const buyerOptions = Object.values(buyers).map(b => ({ value: b.id, label: b.label }))
+
+/** The same table against a stand-in endpoint, with the parameters of the last request shown under it. */
+function ServerList() {
+  const [sent, setSent] = useState('')
+  const source = useMemo(() => {
+    const answer = demoListSource(orderMeta, orderHistory)
+    return (params: URLSearchParams, signal: AbortSignal) => answer(params, signal).then(page => { setSent(params.toString()); return page })
+  }, [])
+  return (
+    <div className="flex flex-col gap-2">
+      <ListBlock meta={orderMeta} records={[]} query="server" source={source} filterOptions={{ buyer: buyerOptions }} density="compact" narrow="priority" href={() => '#order'} now={DEMO_NOW} />
+      <p className="text-sm text-muted"><span className="caps mr-2">Parameters sent</span><code className="font-mono text-xs break-all text-foreground">{sent ? `?${sent}` : 'none yet'}</code></p>
+    </div>
+  )
+}
+
 function Lists() {
   const { run } = useDemoRun()
   const [state, setState] = useState<ListState>('ready')
@@ -56,6 +74,7 @@ function Lists() {
           live={state === 'ready' ? { changed: 2, onApply: () => undefined } : undefined}
           empty={{ kind: 'no-results', title: 'No orders match', description: 'Clear the status filter to see all 27 orders.' }} />
       </Plate>
+      <Plate label="query=server · stand-in endpoint, 450 ms" note="contract list parameters, keyset pages, previous and next only"><ServerList /></Plate>
       <Plate label="intent=card (MARKET media grid)" tone="canvas">
         <div data-density="comfortable"><ListBlock meta={productMeta} records={products.slice(0, 4)} intent="card" onRun={run} href={() => '#product'} now={DEMO_NOW} /></div>
       </Plate>

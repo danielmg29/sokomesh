@@ -22,6 +22,10 @@ UPPER_BOUNDS = {
     "maxRequestBytes",
     "maxUploadBytes",
     "maxBulk",
+    "maxSearchLength",
+    "maxSearchTerms",
+    "maxListValues",
+    "countCap",
 }
 LOWER_BOUNDS = {"min", "minLength"}
 IDENTITY_KEYS = ("name", "value")  # list items are matched by these, not by position

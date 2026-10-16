@@ -44,6 +44,7 @@ export function renderContract(contract: Contract): string {
     `export const API_BASE = ${JSON.stringify(contract.meta.apiBase)}`,
     constant('auth', contract.auth),
     constant('limits', contract.limits),
+    constant('listQuery', contract.listQuery),
     constant('locales', contract.locales),
     constant('richText', contract.richText),
     `export type Locale = (typeof locales)['supported'][number]['value']`,

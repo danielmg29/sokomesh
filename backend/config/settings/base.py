@@ -162,7 +162,7 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 
 AC_CONTRACT = {
     # Bump with every contract change: major = breaking, minor = additive, patch = presentational.
-    "version": "0.3.0",
+    "version": "0.4.0",
     "api_base": "/api/v1/",
     "path": Path(env("AC_CONTRACT_PATH", default=str(REPO_DIR / "contract" / "ac-contract.json"))),
 }
@@ -180,6 +180,25 @@ AC_LIMITS = {
     "max_upload_bytes": 26_214_400,
     "stream_chunk": 500,
     "max_bulk": 500,
+}
+
+# One parameter grammar for every list endpoint (core/operations/listing.py), exported as `listQuery` so
+# clients build the same parameters. A filter is one parameter per field and operator, `<field>__<op>`;
+# `in` takes a comma-separated list and a range is sent as `__gte` plus `__lte`. A date-only bound on a
+# datetime field is a whole calendar day in `date_timezone` (prices and times are shown in EAT).
+AC_LIST_QUERY = {
+    "search": "q",
+    "ordering": "ordering",
+    "page_size": "page_size",
+    "cursor": "cursor",
+    "operator_separator": "__",
+    "list_separator": ",",
+    "operators": ["eq", "in", "contains", "gte", "lte", "isnull"],
+    "max_search_length": 200,
+    "max_search_terms": 8,
+    "max_list_values": 50,
+    "count_cap": 10_000,
+    "date_timezone": "Africa/Nairobi",
 }
 
 DATA_UPLOAD_MAX_MEMORY_SIZE = AC_LIMITS["max_request_bytes"]

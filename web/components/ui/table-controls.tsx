@@ -71,6 +71,16 @@ type PagerProps = {
   noun: { one: string; other: string }
   /** Rows before search and filters, so a filtered count can say what it was taken from. */
   unfiltered?: number
+  /**
+   * False for keyset pages (a server list): no page numbers, because a page opens only from the cursor
+   * of the one before it. `hasNext` then says whether the server returned that cursor.
+   */
+  numbered?: boolean
+  hasNext?: boolean
+  /** The server stopped counting at the contract's cap: the total reads "10,000+". */
+  totalCapped?: boolean
+  /** Rows are loading: the controls stay put and the region says it is busy. */
+  busy?: boolean
   className?: string
 }
 
@@ -79,13 +89,14 @@ type PagerProps = {
  * contract's maximum, and previous, numbered and next buttons. Narrow containers keep previous and next
  * with "Page 2 of 7". Crawlable public lists use the cursor `Pagination` links instead.
  */
-export function TablePager({ result, onPage, onPageSize, noun, unfiltered, className }: PagerProps) {
+export function TablePager({ result, onPage, onPageSize, noun, unfiltered, numbered = true, hasNext, totalCapped, busy, className }: PagerProps) {
   const { page, pageCount, pageSize, total, from, to } = result
   const word = total === 1 ? noun.one : noun.other
+  const nextOff = hasNext === undefined ? page >= pageCount : !hasNext
   return (
-    <nav aria-label={`${noun.other[0]!.toUpperCase()}${noun.other.slice(1)} pages`} className={cn('@container flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-3 py-2.5 text-sm', className)}>
+    <nav aria-label={`${noun.other[0]!.toUpperCase()}${noun.other.slice(1)} pages`} aria-busy={busy || undefined} className={cn('@container flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-3 py-2.5 text-sm', className)}>
       <p className="text-muted tabular" aria-live="polite">
-        {total ? <>Showing <b className="font-semibold text-foreground">{n(from)}</b> to <b className="font-semibold text-foreground">{n(to)}</b> of <b className="font-semibold text-foreground">{n(total)}</b> {word}</> : `No ${noun.other} match`}
+        {busy && !total ? 'Loading…' : total ? <>Showing <b className="font-semibold text-foreground">{n(from)}</b> to <b className="font-semibold text-foreground">{n(to)}</b> of <b className="font-semibold text-foreground">{n(total)}{totalCapped ? '+' : ''}</b> {word}</> : `No ${noun.other} match`}
         {unfiltered !== undefined && unfiltered !== total ? <>, from {n(unfiltered)}</> : null}
       </p>
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
@@ -96,7 +107,7 @@ export function TablePager({ result, onPage, onPageSize, noun, unfiltered, class
         ) : null}
         <div className="flex items-center gap-1">
           <IconButton icon={ChevronLeft} label="Previous page" size="icon-sm" variant="secondary" disabled={page <= 1} onClick={() => onPage(page - 1)} />
-          <ol className="hidden items-center gap-1 @lg:flex">
+          {numbered ? <ol className="hidden items-center gap-1 @lg:flex">
             {pageWindow(page, pageCount).map((p, i) => (
               <li key={p === 'gap' ? `gap-${i}` : p}>
                 {p === 'gap' ? <span className="px-1 text-muted" aria-hidden="true">…</span> : (
@@ -107,9 +118,9 @@ export function TablePager({ result, onPage, onPageSize, noun, unfiltered, class
                 )}
               </li>
             ))}
-          </ol>
-          <span className="px-1 text-muted tabular @lg:hidden">Page {page} of {pageCount}</span>
-          <IconButton icon={ChevronRight} label="Next page" size="icon-sm" variant="secondary" disabled={page >= pageCount} onClick={() => onPage(page + 1)} />
+          </ol> : null}
+          <span className={cn('px-1 text-muted tabular', numbered && '@lg:hidden')}>Page {page}{numbered || !totalCapped ? ` of ${n(pageCount)}` : ''}</span>
+          <IconButton icon={ChevronRight} label="Next page" size="icon-sm" variant="secondary" disabled={nextOff} onClick={() => onPage(page + 1)} />
         </div>
       </div>
     </nav>
