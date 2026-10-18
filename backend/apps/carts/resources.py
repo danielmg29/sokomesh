@@ -1,4 +1,7 @@
-"""SM-F-10 resources: the buyer's carts (read, accept new prices, empty) and their lines (add, change, remove).
+"""SM-F-10 resources: the buyer's carts (read, accept new prices, empty, check out) and their lines.
+
+Checking out (SM-F-15) places one order per seller at the prices the buyer accepted, under the buyer's
+approval policy (SM-F-12); see apps.orders.checkout.
 
 A person has at most one active cart per buyer organization; adding the first line opens it. Lines are
 validated on the server against the variant's minimum order, reported stock and whether it is still on
@@ -16,7 +19,7 @@ from apps.catalog.models import Variant
 from apps.catalog.resources import relation_ref
 from apps.organizations.tenancy import active_membership
 from core.api import fail, invalid
-from core.operations.registry import Action, Resource, derive, register
+from core.operations.registry import Action, Field, Resource, action_input, derive, register
 from core.result import ErrorCode
 
 CART_TONES = {"active": "info", "submitted": "success", "abandoned": "neutral", "converted": "success"}
@@ -33,13 +36,27 @@ def _accept(request: HttpRequest, cart: Cart, data: dict[str, Any]) -> None:
     cart.refresh_from_db()
 
 
+def _checkout(request: HttpRequest, cart: Cart, data: dict[str, Any]) -> dict[str, Any]:
+    from apps.orders.checkout import checkout
+
+    action = next(a for a in carts.actions if a.name == "checkout")
+    values = action_input(carts, action, data, ("delivery_address",))
+    orders = checkout(request, cart, values["delivery_address"], values.get("special_instructions") or "")
+    return {
+        "orders": [
+            {"id": str(o.pk), "order_number": o.order_number, "status": o.status, "total": format(o.total, "f")}
+            for o in orders
+        ]
+    }
+
+
 def _empty(request: HttpRequest, cart: Cart, data: dict[str, Any]) -> None:
     for line in cart.lines.all():  # pyright: ignore[reportAttributeAccessIssue]
         line.delete()
     cart.refresh_from_db()
 
 
-cart = register(
+carts = cart = register(
     Resource(
         key="cart",
         path="carts",
@@ -55,6 +72,23 @@ cart = register(
             derive(Cart, "status", widget="status", tones=CART_TONES, read_only=True, filter=("in",)),
             derive(Cart, "currency", read_only=True),
             derive(Cart, "updated_at", read_only=True, widget="relative-time"),
+            Field(
+                "delivery_address",
+                "relation",
+                "relation",
+                label="Deliver to",
+                relation={"model": "address", "display": "label"},
+                input_only=True,
+            ),
+            Field(
+                "special_instructions",
+                "text",
+                "textarea",
+                label="Delivery notes",
+                help="Gate, opening hours, who receives the goods.",
+                max_length=1000,
+                input_only=True,
+            ),
         ),
         list_fields=("status", "updated_at"),
         ordering=("-updated_at",),
@@ -63,6 +97,15 @@ cart = register(
         actions=(
             Action(
                 "accept_prices", "Accept new prices", "cart.update", _accept, icon="check", when={"status": ["active"]}
+            ),
+            Action(
+                "checkout",
+                "Place orders",
+                "cart.checkout",
+                _checkout,
+                input=("delivery_address", "special_instructions"),
+                icon="check",
+                when={"status": ["active"]},
             ),
             Action(
                 "empty",
@@ -105,6 +148,7 @@ def _add(request: HttpRequest, data: dict[str, Any]) -> CartLine:
     existing = CartLine.objects.filter(cart=current, variant=variant).first()
     if existing is not None:
         existing.quantity += quantity
+        existing.quoted_unit_price = None  # the buyer chose a new quantity: quote its tier now
         return existing
     return CartLine(cart=current, variant=variant, quantity=quantity)
 
@@ -116,6 +160,7 @@ def _change(request: HttpRequest, line: CartLine, changes: dict[str, Any]) -> No
         if changes["quantity"] is None:
             invalid({"quantity": ["Enter how many packs you need."]})
         line.quantity = changes["quantity"]
+        line.quoted_unit_price = None  # the buyer chose a new quantity: quote its tier now
 
 
 def _remove(request: HttpRequest, line: CartLine, data: dict[str, Any]) -> dict[str, Any]:

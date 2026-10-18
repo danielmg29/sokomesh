@@ -536,6 +536,18 @@ Uppercase 12px semibold at `tracking-caps`, 2px corner, 1.5px border, tone pair,
 ### Payment status
 `PaymentStatusPanel` shows the amount in the figure style, a stamp, and from the moment the prompt is sent a three-step thread: prompt sent, your approval on the phone, confirmed by M-Pesa. Pending is "Awaiting approval on phone"; failed is "Not paid"; cancelled is "Cancelled on phone"; stale is "Not confirmed yet". Only a successful phone result reaches "Paid".
 
+### Orders, approvals and delivery
+An order page is one FLOW surface for both sides: the header's action bar carries the commands the record's `_can` allows (confirm, start picking, short-ship, ship, mark delivered, cancel, report a problem), and approval, reorder and delivery each have a block of their own. Order status labels and tones come from the contract's choices, never a second table in the client. `ApprovalFlowBlock` lists each decision, then the approvals still needed, and tells someone who cannot decide who can; rejecting needs a reason. `DeliveryTrackingBlock` degrades in two named ways: **delayed** (the window passed or the carrier reported a delay, warning tone) and **stale** (no news for the backend's limit, muted, "this is the last known state"); a window on one day reads "Tue, 13 Oct, 12:00 to 14:00 EAT", across days "between … and …", and no window says so. Proof of delivery is a private document both sides can open. The order history (`OrderTimelineBlock`) sits beside the summary under one rule, with its own heading.
+
+### Checkout and quotes
+`CheckoutSummaryBlock` runs delivery, review and done until payments open (`steps`); delivery fees read "Confirmed by each seller" and the total "Goods total" until a seller prices them. A blocked step stays current, and the reason is stated in the summary. Each seller's part of the cart offers its own quote request (`groupActions`): the sheet's fields are the quote model's from the contract, and sending it moves those lines into the quote. `QuoteDecisionPanel` offers list prices, a counter-offer per line or a decline (which needs the seller's note); an accepted quote shows as a locked snapshot.
+
+### Price books and media
+`PriceTierTable` shows the ladder the API resolves (quantity tiers, and a signed-in buyer's own group prices) with "Your price" on the active row and the reason under it. `PriceBookEditor` tabs rules by base, buyer group and quantity tier; the list price leads the base tab, locked ("change it with the pack"), and every rule carries its state (active, starts later, expired, switched off, conflict) and its commands. `MediaManager` uploads to the media pipeline, shows checking, ready and rejected (with the pipeline's reason once, under the stamp), saves alt text on blur and reorders by buttons; the cover is the first ready photograph.
+
+### Analytics
+`SellerAnalyticsGrid` keeps its period in the URL. A card's change against the period before is coloured by the metric definition's `better` (a rise in cancellations is bad news), and metrics of the present (stock at risk) or a previous period with nothing in it show no comparison. The footnote names the definitions version and what revenue counts, from the backend's own description.
+
 ### Chips and Segmented
 `chipStyles` is the one on/off recipe: 32px rectangles, 2px corners, on is inverse. Segmented items take the same on-state. Applied filter tokens are signal soft with the signal border.
 

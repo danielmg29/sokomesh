@@ -16,7 +16,7 @@ from apps.accounts.models import User
 from apps.accounts.resources import account
 from apps.media.services import store
 from apps.organizations.models import Membership
-from apps.organizations.tenancy import active_memberships
+from apps.organizations.tenancy import active_memberships, forget
 from core.api import Created, body, endpoint, fail, invalid, text, throttle
 from core.operations.registry import clean_input
 from core.result import ErrorCode
@@ -165,6 +165,7 @@ def invitation(request: HttpRequest, token: str):
     user.save()
     membership.status = Membership.Status.ACTIVE
     membership.save(update_fields=["status", "updated_at"])
+    forget(user)
     from apps.notifications.services import ensure_preferences, notify
 
     ensure_preferences(user)

@@ -13,6 +13,7 @@ from django.utils import timezone
 from apps.carts.models import Cart, CartLine, on_sale
 from apps.carts.services import active_cart, buyer_org
 from apps.catalog import contracts
+from apps.catalog.pricing import resolve
 from apps.catalog.resources import stock_of
 from apps.orders.models import Order, OrderLine
 from core.api import fail
@@ -46,8 +47,9 @@ def difference(line: OrderLine) -> dict[str, Any]:
     quantity = max(line.quantity_ordered, v.minimum_order_quantity)
     if v.stock_on_hand is not None:
         quantity = min(quantity, v.stock_on_hand)
+    now_price = resolve(v, line.order.buyer_organization, quantity).unit_price
     kinds = []
-    if v.unit_price != line.unit_price:
+    if now_price != line.unit_price:
         kinds.append("price")
     if v.minimum_order_quantity > line.quantity_ordered:
         kinds.append("moq")
@@ -59,7 +61,7 @@ def difference(line: OrderLine) -> dict[str, Any]:
         addable=addable,
         product_slug=p.slug,
         now={
-            "unit_price": format(v.unit_price, "f"),
+            "unit_price": format(now_price, "f"),
             "quantity": quantity if addable else 0,
             "pack_label": contracts.pack_label(p.category_contract, p.attributes or {}, v),
             "moq": v.minimum_order_quantity,
@@ -72,8 +74,12 @@ def difference(line: OrderLine) -> dict[str, Any]:
 def lines_of(order: Order) -> list[OrderLine]:
     return list(
         order.lines.select_related(  # pyright: ignore[reportAttributeAccessIssue]
-            "variant", "variant__product", "variant__product__search", "variant__product__category_contract"
-        )
+            "order__buyer_organization",
+            "variant",
+            "variant__product",
+            "variant__product__search",
+            "variant__product__category_contract",
+        ).prefetch_related("variant__price_rules")
     )
 
 

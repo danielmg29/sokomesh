@@ -4,6 +4,24 @@
 
 Versioning: **major**: breaking (removed or renamed keys, narrowed constraints, new required fields without a default). **minor**: additive. **patch**: presentational (labels, help text, tones, widgets, messages).
 
+## 0.6.0 — 2026-10-18
+
+Additive (the Integrated features).
+
+- `uploads`: what each upload accepts, `document`, `avatar` and `productImage`, as `types` (media types) and `maxBytes`, read from `AC_UPLOADS`. The server checks every file again by its own bytes.
+- Field metadata: `inputOnly`. A field marked `inputOnly` is a command input (a reason, a carrier reference, a proof file); records never carry it, so clients render it in command forms only.
+- `media_asset` (SM-F-05, path `catalog/media`): a product's photographs, with `scan_status`, `processing_status`, `rejection_reason`, measured `width` and `height`, writable `alt_text`, `sort_order` and `variant`, and the `remove` command. Uploads go to `POST catalog/products/<id>/media` (multipart `file`, optional `alt_text`; JPEG, PNG or WebP up to `uploads.productImage.maxBytes`). The public display copy (metadata stripped) is `GET media/<id>`, cacheable once the product is public; the original is reachable only through the signed, short-lived `original_url`. Ready photographs become the product's `primary_image` and `gallery`, each carrying `widths`, the bounded responsive widths.
+- `price_rule` (SM-F-06, path `catalog/price-rules`): quantity tiers, buyer-group prices and dated promotions per variant, with `priority`, `effective_from`/`effective_until`, a derived `state` (`active`, `future`, `expired`, `off`, `conflict`) and `conflict_note`; commands `switch_off` and `switch_on`. `buyer_group_member` (path `catalog/buyer-groups`) puts a buyer organization in one of the seller's groups. `GET prices?variant=&quantity=` resolves the price the signed-in buyer pays, with its `explanation`, `tiers` and `personal`; `GET catalog/buyers` lists a seller's trading partners and group options. Product detail variants carry `tiers`; cart lines carry `price_explanation` and requote when the quantity changes.
+- `cart` gains the `checkout` command (inputs `delivery_address`, `special_instructions`), which revalidates every line and places one order per seller.
+- `order` (SM-F-15): new status `pending_approval`; fields `delivery_snapshot` and `quote`; filters on status, dates, totals, seller and buyer; commands `approve`, `reject` (SM-F-12), `confirm`, `start_picking`, `mark_partial`, `ship`, `mark_delivered`, `cancel` and `dispute`, with input-only `reason`, `comment`, `carrier_name`, `carrier_reference`, `estimated_start_at` and `estimated_end_at`. Detail records add `side`, `transitions` (append-only), `approval`, `shipments`, `next_actions` and `quote`. Sellers now see an order once it is submitted.
+- `approval_policy` (SM-F-12, path `approval-policies`): threshold, approver roles and minimum approvals per buyer organization; `switch_off`/`switch_on`.
+- `quote` (SM-F-11, path `quotes`): created from the buyer's cart lines for one seller; commands `respond` (input `offers`, `seller_notes`), `decline`, `accept` (places the order at the offered prices), `decline_offer` and `cancel`. Open quotes past `expires_at` read as `expired`.
+- `shipment` (SM-F-17, path `shipments`): carrier, reference, window, status, `events`, `stale`, `delayed` and `proof_of_delivery`; commands `add_event` and `confirm_delivery` (input `proof_file`).
+- `metric_definition` (SM-F-19, path `metric-definitions`), read-only, with `better` (`higher` or `lower`: which way is good news). `GET analytics` (`date_from`, `date_to`, `dimension` `day` or `product`, `metrics`) returns each metric's value, the previous period's (`null` for a metric of the present, such as stock), and a filled daily series or a top-ten breakdown; an empty average or ratio is `""`. `GET analytics/export` returns the same as CSV.
+- `policies.roles`: sellers gain orders, fulfilment, quotes, price books, photographs and analytics; warehouse operators gain fulfilment and shipments; buyers gain checkout, quotes, approvals and disputes; buyer owners manage approval policies.
+- Commands' `when` lists boolean values as `true` and `false`, as clients write them.
+- Presentational: the order status `picking` uses the `signal` tone.
+
 ## 0.5.0 — 2026-10-17
 
 Additive.

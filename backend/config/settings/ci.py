@@ -23,3 +23,6 @@ MAILERS = {"default": {"BACKEND": "django.core.mail.backends.locmem.EmailBackend
 CACHES = {"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}}
 AC_THROTTLE = False
 AC_DEMO_ACCOUNTS = True
+
+# Photographs are processed at upload in tests, so a test sees the result at once.
+AC_MEDIA = {**AC_MEDIA, "eager": True}  # noqa: F405

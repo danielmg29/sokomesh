@@ -210,7 +210,7 @@ class Variant(models.Model):
         "Units per pack", max_digits=10, decimal_places=2, help_text="Packets, bottles or pieces in one pack."
     )
     minimum_order_quantity = models.PositiveIntegerField("Minimum order", default=1, help_text="In packs.")
-    # Until price books (SM-F-06): the seller's one price per pack.
+    # The list price per pack; price rules (SM-F-06) refine it for quantity tiers, buyer groups and periods.
     unit_price = models.DecimalField("Price per pack", max_digits=12, decimal_places=2)
     # Until the inventory ledger (SM-F-07): packs on hand as the seller last reported; empty = not tracked.
     stock_on_hand = models.PositiveIntegerField(
@@ -294,3 +294,129 @@ class SearchDocument(models.Model):
 
     def __str__(self) -> str:
         return self.title
+
+
+MEDIA_LIMIT = 12  # photographs per product: a bound on the gallery, the upload queue and the editor
+
+
+class MediaAsset(models.Model):
+    """SM-F-05: one product photograph. The original is private (signed links only); after verification
+    and metadata stripping a display copy is public, and the web image optimizer makes responsive sizes."""
+
+    class Scan(models.TextChoices):
+        PENDING = "pending", "Checking"
+        CLEAN = "clean", "Clean"
+        REJECTED = "rejected", "Rejected"
+        FAILED = "failed", "Could not check"
+
+    class Processing(models.TextChoices):
+        QUEUED = "queued", "Queued"
+        PROCESSING = "processing", "Processing"
+        READY = "ready", "Ready"
+        FAILED = "failed", "Failed"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    seller = models.ForeignKey("organizations.Organization", on_delete=models.CASCADE, related_name="+")
+    product = models.ForeignKey(
+        Product, null=True, on_delete=models.CASCADE, related_name="media", verbose_name="Product"
+    )
+    variant = models.ForeignKey(
+        Variant, null=True, blank=True, on_delete=models.SET_NULL, related_name="media", verbose_name="Variant"
+    )
+    original_name = models.CharField("File", max_length=160)
+    object_key = models.CharField(max_length=255, editable=False)  # the private original in storage
+    mime_type = models.CharField("Type", max_length=40, editable=False)
+    size_bytes = models.PositiveBigIntegerField("Size", editable=False)
+    sha256 = models.CharField(max_length=64, editable=False)
+    width_px = models.PositiveIntegerField("Width", null=True, blank=True, editable=False)
+    height_px = models.PositiveIntegerField("Height", null=True, blank=True, editable=False)
+    scan_status = models.CharField("Check", max_length=12, choices=Scan.choices, default=Scan.PENDING, editable=False)
+    processing_status = models.CharField(
+        "Processing", max_length=12, choices=Processing.choices, default=Processing.QUEUED, editable=False
+    )
+    # {"display": {"key", "format", "width", "height", "bytes"}, "widths": [responsive widths, bounded]}
+    derivatives = models.JSONField("Sizes", default=dict, blank=True, editable=False)
+    alt_text = models.CharField(
+        "Description", max_length=200, help_text="What the photograph shows, for people who cannot see it."
+    )
+    sort_order = models.PositiveSmallIntegerField("Order", default=0)
+    rejection_reason = models.CharField("Why it was rejected", max_length=200, blank=True, editable=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    processed_at = models.DateTimeField(null=True, blank=True, editable=False)
+
+    class Meta:
+        ordering = ("product", "sort_order", "created_at")
+        constraints = (models.UniqueConstraint(fields=["product", "sha256"], name="one_copy_per_product"),)
+
+    def __str__(self) -> str:
+        return self.original_name
+
+    @property
+    def public(self) -> bool:
+        return self.scan_status == self.Scan.CLEAN and self.processing_status == self.Processing.READY
+
+
+class BuyerGroupMember(models.Model):
+    """SM-F-06 buyer groups: a seller places a buyer organization in a named group its price rules target."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    seller = models.ForeignKey("organizations.Organization", on_delete=models.CASCADE, related_name="+", blank=True)
+    buyer = models.ForeignKey(
+        "organizations.Organization", on_delete=models.CASCADE, related_name="price_groups", verbose_name="Buyer"
+    )
+    group_key = models.SlugField(
+        "Group",
+        max_length=40,
+        help_text="A short name your price rules use, such as key_accounts.",
+        allow_unicode=False,
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ("group_key", "buyer__name")
+        constraints = (models.UniqueConstraint(fields=["seller", "buyer", "group_key"], name="buyer_once_per_group"),)
+
+    def __str__(self) -> str:
+        return f"{self.buyer} in {self.group_key}"
+
+
+class PriceRule(models.Model):
+    """SM-F-06: one rule of a seller's price book. The variant's own price is the list price; rules refine it
+    for quantity tiers, buyer groups and periods, and apps.catalog.pricing picks one deterministically."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    seller = models.ForeignKey("organizations.Organization", on_delete=models.CASCADE, related_name="+", blank=True)
+    variant = models.ForeignKey(Variant, on_delete=models.CASCADE, related_name="price_rules", verbose_name="Variant")
+    label = models.CharField("Name", max_length=80, blank=True, help_text="For you, such as October promotion.")
+    buyer_group_key = models.SlugField(
+        "Buyer group", max_length=40, blank=True, help_text="Leave empty for every buyer."
+    )
+    minimum_quantity = models.PositiveIntegerField("From quantity", default=1, help_text="In packs.")
+    unit = models.CharField("Unit", max_length=20, blank=True, editable=False)
+    unit_price = models.DecimalField("Price per pack", max_digits=12, decimal_places=2)
+    currency = models.CharField("Currency", max_length=3, default="KES")
+    priority = models.SmallIntegerField("Priority", default=0, help_text="Where rules overlap, the higher one wins.")
+    effective_from = models.DateTimeField("Starts", default=timezone.now)
+    effective_until = models.DateTimeField("Ends", null=True, blank=True)
+    is_active = models.BooleanField("On", default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField("Updated", auto_now=True)
+
+    class Meta:
+        ordering = ("variant", "buyer_group_key", "minimum_quantity", "-priority")
+
+    def __str__(self) -> str:
+        return self.label or f"{self.variant} from {self.minimum_quantity}"
+
+    def clean(self) -> None:
+        errors: dict[str, list[str]] = {}
+        self.seller_id = self.variant.seller_id  # pyright: ignore[reportAttributeAccessIssue]
+        self.unit = self.variant.packaging_unit
+        if self.unit_price is not None and self.unit_price < 0:
+            errors["unit_price"] = ["A price cannot be negative."]
+        if self.minimum_quantity < 1:
+            errors["minimum_quantity"] = ["Start from at least one pack."]
+        if self.effective_until and self.effective_from and self.effective_until <= self.effective_from:
+            errors["effective_until"] = ["The rule must end after it starts."]
+        if errors:
+            raise ValidationError(errors)

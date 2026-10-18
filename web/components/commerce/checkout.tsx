@@ -20,16 +20,23 @@ export type CheckoutStep = 'address' | 'review' | 'payment' | 'result'
 const stepOrder: CheckoutStep[] = ['address', 'review', 'payment', 'result']
 const stepLabel: Record<CheckoutStep, string> = { address: 'Delivery', review: 'Review', payment: 'Payment', result: 'Done' }
 
-export type CheckoutGroup = { seller: string; lines: number; subtotal: Money; deliveryFee: Money; dispatch: string }
+/** `deliveryFee` and `dispatch` are absent while each seller confirms them after the order. */
+export type CheckoutGroup = { seller: string; lines: number; subtotal: Money; deliveryFee?: Money; dispatch?: string }
 
-/** Buyer checkout frame: steps, per-seller summary and why it may be blocked. */
-export function CheckoutSummaryBlock({ step, state, groups, address, blockedReason, children, onContinue, onBack }: {
-  step: CheckoutStep; state: 'valid' | 'blocked' | 'submitting'; groups: readonly CheckoutGroup[]; address?: AddressValue; blockedReason?: string; children?: ReactNode; onContinue?: () => void; onBack?: () => void
+/**
+ * Buyer checkout frame: steps, per-seller summary and why it may be blocked. `steps` narrows the flow
+ * (no payment step until payments open); `continueLabel` names what the button does on this step.
+ */
+export function CheckoutSummaryBlock({ step, state, groups, address, blockedReason, children, onContinue, onBack, steps: flow = stepOrder, continueLabel }: {
+  step: CheckoutStep; state: 'valid' | 'blocked' | 'submitting'; groups: readonly CheckoutGroup[]; address?: AddressValue; blockedReason?: string; children?: ReactNode
+  onContinue?: () => void; onBack?: () => void; steps?: readonly CheckoutStep[]; continueLabel?: string
 }) {
-  const at = stepOrder.indexOf(step)
-  const steps: ThreadStep[] = stepOrder.map((s, i) => ({ key: s, label: stepLabel[s], state: i < at ? 'done' : i === at ? (state === 'blocked' ? 'stale' : 'current') : 'upcoming' }))
+  const at = flow.indexOf(step)
+  const steps: ThreadStep[] = flow.map((s, i) => ({ key: s, label: stepLabel[s], state: i < at ? 'done' : i === at ? 'current' : 'upcoming' }))
   const subtotal = addMoney(...groups.map(g => g.subtotal), '0')
-  const delivery = addMoney(...groups.map(g => g.deliveryFee), '0')
+  const fees = groups.flatMap(g => (g.deliveryFee ? [g.deliveryFee] : []))
+  const priced = fees.length === groups.length
+  const delivery = addMoney(...fees, '0')
   return (
     <div className="flex flex-col gap-5">
       <Thread label="Checkout progress" steps={steps} />
@@ -42,20 +49,20 @@ export function CheckoutSummaryBlock({ step, state, groups, address, blockedReas
             {groups.map(g => (
               <li key={g.seller} className="flex flex-col gap-0.5 border-b border-border pb-2">
                 <div className="flex justify-between gap-3"><span className="font-semibold">{g.seller}</span><span className="tabular">{formatMoney(g.subtotal)}</span></div>
-                <span className="text-sm text-muted">{g.lines} lines · delivery {formatMoney(g.deliveryFee)} · dispatches {g.dispatch}</span>
+                <span className="text-sm text-muted">{g.lines} {g.lines === 1 ? 'line' : 'lines'}{g.deliveryFee ? ` · delivery ${formatMoney(g.deliveryFee)}` : ''}{g.dispatch ? ` · dispatches ${g.dispatch}` : ''}</span>
               </li>
             ))}
           </ul>
           <dl className="flex flex-col gap-1 text-md">
             <div className="flex justify-between"><dt className="text-muted">Goods</dt><dd className="tabular">{formatMoney(subtotal)}</dd></div>
-            <div className="flex justify-between"><dt className="text-muted">Delivery</dt><dd className="tabular">{formatMoney(delivery)}</dd></div>
-            <div className="flex items-baseline justify-between border-t border-border pt-2"><dt className="font-semibold">To pay</dt><dd className="font-display text-2xl font-extrabold tabular">{formatMoney(addMoney(subtotal, delivery))}</dd></div>
+            <div className="flex justify-between"><dt className="text-muted">Delivery</dt><dd className="tabular">{priced ? formatMoney(delivery) : <span className="text-muted">Confirmed by each seller</span>}</dd></div>
+            <div className="flex items-baseline justify-between border-t border-border pt-2"><dt className="font-semibold">{priced ? 'To pay' : 'Goods total'}</dt><dd className="font-display text-2xl font-extrabold tabular">{formatMoney(addMoney(subtotal, delivery))}</dd></div>
           </dl>
           {state === 'blocked' && blockedReason ? <p role="alert" className="flex items-start gap-1.5 rounded-sm border border-tone-warning bg-tone-warning-bg/60 p-2.5 text-sm"><Icon icon={TriangleAlert} className="mt-0.5 text-tone-warning" />{blockedReason}</p> : null}
           {step !== 'result' ? (
             <div className="flex flex-col gap-2">
               <Button variant="primary" size="lg" block disabled={state === 'blocked'} loading={state === 'submitting'} loadingLabel="Submitting…" onClick={onContinue}>
-                {step === 'review' ? 'Continue to payment' : step === 'payment' ? 'Send M-Pesa prompt' : 'Continue'}
+                {continueLabel ?? (step === 'review' ? 'Continue to payment' : step === 'payment' ? 'Send M-Pesa prompt' : 'Continue')}
               </Button>
               {at > 0 ? <Button variant="ghost" block onClick={onBack}>Back</Button> : null}
             </div>

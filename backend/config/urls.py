@@ -3,6 +3,7 @@ from django.contrib import admin
 from django.urls import include, path
 
 from apps.accounts import views as accounts
+from apps.analytics import views as analytics
 from apps.catalog import views as catalog
 from apps.demo import views as demo
 from apps.media import views as media
@@ -32,6 +33,13 @@ api = [
     path("notification-preferences/locale", notifications.set_locale, name="notification-locale"),
     path("demo/accounts", demo.accounts, name="demo-accounts"),
     path("compare", catalog.compare, name="compare"),
+    path("prices", catalog.prices, name="prices"),
+    path("media/<str:asset_id>", catalog.media_display, name="media-display"),
+    path("media/<str:asset_id>/original", catalog.media_original, name="media-original"),
+    path("catalog/products/<str:ref>/media", catalog.upload_media, name="media-upload"),
+    path("catalog/buyers", catalog.buyers, name="catalog-buyers"),
+    path("analytics", analytics.analytics, name="analytics"),
+    path("analytics/export", analytics.export, name="analytics-export"),
     *registry.urls(),
 ]
 

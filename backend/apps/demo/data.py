@@ -74,6 +74,24 @@ ORGANIZATIONS = [
         "approval": "pending",
         "legal": "Baraka Mini-Mart Enterprises",
     },
+    # Buyers without demo logins: they have traded with Mwangaza for months, so the seller's analytics,
+    # trading partners and price groups have a history to show (SM-F-06, SM-F-19).
+    {
+        "key": "kilimo",
+        "name": "Kilimo Fresh Grocers",
+        "type": "buyer",
+        "approval": "approved",
+        "legal": "Kilimo Fresh Grocers Limited",
+        "pin": "P052334411T",
+    },
+    {
+        "key": "njeri",
+        "name": "Mama Njeri Kiosk Supplies",
+        "type": "buyer",
+        "approval": "approved",
+        "legal": "Mama Njeri Kiosk Supplies",
+        "pin": "A009112233B",
+    },
 ]
 
 # Shown on the sign-in page in this order. `avatar` names the prepared portrait in apps/demo/avatars.
@@ -135,6 +153,24 @@ ACCOUNTS = [
 ]
 
 ADDRESSES = {
+    "kilimo": [
+        {
+            "label": "Shop",
+            "line1": "Kenyatta Avenue, next to the post office",
+            "city": "Nakuru",
+            "region": "Nakuru",
+            "postal_code": "20100",
+        }
+    ],
+    "njeri": [
+        {
+            "label": "Kiosk",
+            "line1": "Market Road, stall 12",
+            "city": "Gilgil",
+            "region": "Nakuru",
+            "postal_code": "20116",
+        }
+    ],
     "mwangaza": [
         {
             "label": "Warehouse",

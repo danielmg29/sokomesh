@@ -31,7 +31,7 @@ export type Reservation = { id: string; quantity: number; unit: string; status: 
 export type MovementType = 'receipt' | 'reservation' | 'release' | 'allocation' | 'adjustment' | 'shipment'
 export type InventoryMovement = { id: string; type: MovementType; quantity: number; unit: string; balanceAfter: number; at: string; actor: string; reference: string; reason?: string }
 
-export type PriceTier = { minQuantity: number; maxQuantity?: number; unitPrice: Money }
+export type PriceTier = { minQuantity: number; maxQuantity?: number; unitPrice: Money; note?: string }
 
 export type LineState = 'valid' | 'changed' | 'unavailable'
 export type CartLine = {
@@ -50,6 +50,8 @@ export type CartLine = {
   stock: Stock
   state: LineState
   reason?: string
+  /** Why this price (the backend's explanation), such as a buyer-group or quantity price. */
+  priceNote?: string
 }
 
 /** `deliveryFee` is absent until delivery is priced (it is confirmed at checkout). */

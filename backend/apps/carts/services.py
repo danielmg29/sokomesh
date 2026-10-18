@@ -7,6 +7,7 @@ from django.http import HttpRequest
 from django.utils import timezone
 
 from apps.carts.models import Cart, CartLine, on_sale
+from apps.catalog.pricing import resolve
 from apps.catalog.resources import stock_of, variant_view
 from apps.organizations.models import Organization
 from apps.organizations.tenancy import active_membership
@@ -40,7 +41,8 @@ def lines_of(cart: Cart) -> list[CartLine]:
             "variant__product__search",
             "variant__product__category_contract",
             "variant__product__seller__seller_profile",
-        )
+            "cart__buyer_organization",
+        ).prefetch_related("variant__price_rules")
     )
 
 
@@ -48,7 +50,8 @@ def line_view(line: CartLine) -> dict[str, Any]:
     """One line as the cart shows it: the quote, today's price, stock, and what (if anything) is wrong."""
     v, p = line.variant, line.variant.product
     view = variant_view(v, p)
-    price = format(v.unit_price, "f")
+    current = resolve(v, line.cart.buyer_organization, line.quantity)
+    price = format(current.unit_price, "f")
     available = on_sale(v)
     stock = stock_of(v)
     reason = None
@@ -57,7 +60,7 @@ def line_view(line: CartLine) -> dict[str, Any]:
     elif stock["state"] == "unavailable":
         state, reason = "unavailable", "Out of stock."
     else:
-        state = "changed" if v.unit_price != line.quoted_unit_price else "valid"
+        state = "changed" if current.unit_price != line.quoted_unit_price else "valid"
         if line.quantity < v.minimum_order_quantity:
             reason = f"The minimum order is now {v.minimum_order_quantity} packs."
         elif v.stock_on_hand is not None and line.quantity > v.stock_on_hand:
@@ -70,6 +73,7 @@ def line_view(line: CartLine) -> dict[str, Any]:
         "unit": line.unit,
         "quoted_unit_price": format(line.quoted_unit_price, "f"),
         "unit_price": price,
+        "price_explanation": current.explanation,
         "price_validated_at": line.price_validated_at.isoformat(),
         "stock": stock,
         "state": state,
@@ -124,8 +128,11 @@ def accept_prices(cart: Cart) -> int:
     now, n = timezone.now(), 0
     for line in lines_of(cart):
         v = line.variant
-        if on_sale(v) and line.quoted_unit_price != v.unit_price:
-            CartLine.objects.filter(pk=line.pk).update(quoted_unit_price=v.unit_price, price_validated_at=now)
+        current = resolve(v, cart.buyer_organization, line.quantity, now)
+        if on_sale(v) and line.quoted_unit_price != current.unit_price:
+            CartLine.objects.filter(pk=line.pk).update(
+                quoted_unit_price=current.unit_price, price_rule_id=current.rule_id, price_validated_at=now
+            )
             n += 1
     if n:
         Cart.objects.filter(pk=cart.pk).update(version=cart.version + 1, updated_at=now)

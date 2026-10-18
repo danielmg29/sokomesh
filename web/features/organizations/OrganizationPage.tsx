@@ -1,11 +1,11 @@
 'use client'
 
 // SM-F-01 organization management: the organization's details, its team (invitations, roles, suspension,
-// removal) and its addresses. Everything projects from the contract's organization, membership and
-// address models; which controls appear follows the role table, and the API decides every write.
+// removal) and its addresses; for buyers, the purchase-approval policies (SM-F-12). Everything projects
+// from the contract's models; which controls appear follows the role table, and the API decides every write.
 
 import type { Route } from 'next'
-import { Building2, MapPinPlus, UserPlus, Users } from 'lucide-react'
+import { Building2, MapPinPlus, ShieldCheck, UserPlus, Users } from 'lucide-react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { useMemo } from 'react'
 import { DetailBlock } from '@/components/kernel/blocks/DataBlocks'
@@ -22,11 +22,11 @@ import { Icon } from '@/components/ui/icon'
 import { attempt } from '@/lib/client/api'
 import { useCommand, useRecord, useSave, useSource } from '@/lib/client/resources'
 import { activeMembership, may, useSession, type SessionOrganization } from '@/lib/client/session'
-import { AddressMeta, MembershipMeta, OrganizationMeta } from '@/lib/contract/generated'
+import { AddressMeta, ApprovalPolicyMeta, MembershipMeta, OrganizationMeta } from '@/lib/contract/generated'
 import type { FieldMeta, ModelMeta, Rec } from '@/lib/contract/types'
 import { KENYA_TOWNS } from '@/lib/kenya'
 
-const TABS = ['details', 'team', 'addresses'] as const
+const TABS = ['details', 'team', 'addresses', 'approvals'] as const
 type Tab = (typeof TABS)[number]
 
 const DETAIL_FIELDS = ['name', 'legal_name', 'tax_identifier', 'default_currency', 'timezone'] as const
@@ -99,6 +99,24 @@ function Addresses({ canManage }: { canManage: boolean }) {
   )
 }
 
+function Approvals({ canManage }: { canManage: boolean }) {
+  const source = useSource(ApprovalPolicyMeta)
+  const command = useCommand(ApprovalPolicyMeta)
+  const save = useSave(ApprovalPolicyMeta)
+  const add = canManage ? (
+    <ProjectedForm meta={ApprovalPolicyMeta} mode="create" recipe="sheet" submitLabel="Save policy" initial={{ minimum_approvals: 1, approver_role_keys: ['buyer_owner'] }}
+      title="New approval policy" description="Orders of this total or more wait for approval before they reach the seller. The person who placed an order never approves it."
+      trigger={<Button variant="primary" leadingIcon={ShieldCheck}>Add a policy</Button>}
+      onSubmit={values => attempt(() => save.mutateAsync({ body: values }), 'Policy saved')} />
+  ) : null
+  return (
+    <PageSection title="Purchase approvals" description="When an order needs a second person. With several policies, the highest threshold an order reaches applies." actions={add}>
+      <ListBlock meta={ApprovalPolicyMeta} records={[]} query="server" source={source} onRun={command.run}
+        empty={{ kind: 'no-data', title: 'No approval policies', description: canManage ? 'Every order goes straight to the seller. Add a policy to have large orders checked first.' : 'Every order goes straight to the seller. An owner can add a policy.' }} />
+    </PageSection>
+  )
+}
+
 export function OrganizationPage() {
   const { data: session } = useSession()
   const router = useRouter()
@@ -111,6 +129,7 @@ export function OrganizationPage() {
   }
   const org = active.organization
   const approvalField = OrganizationMeta.fields.find(f => f.name === 'approval_state')!
+  const approvals = org.organization_type === 'buyer' && may(session, 'approval_policy.list')
   return (
     <>
       <HeaderBlock level={1} source="explicit" title={org.name} status={<StatusBadge field={approvalField} value={org.approval_state} />}
@@ -120,10 +139,12 @@ export function OrganizationPage() {
           <TabsTrigger value="details"><Icon icon={Building2} />Details</TabsTrigger>
           <TabsTrigger value="team"><Icon icon={Users} />Team</TabsTrigger>
           <TabsTrigger value="addresses"><Icon icon={MapPinPlus} />Addresses</TabsTrigger>
+          {approvals ? <TabsTrigger value="approvals"><Icon icon={ShieldCheck} />Approvals</TabsTrigger> : null}
         </TabsList>
         <TabsContent value="details" className="flex flex-col gap-8"><Details id={org.id} canEdit={may(session, 'organization.update')} /></TabsContent>
         <TabsContent value="team"><Team org={org} canInvite={may(session, 'membership.invite')} /></TabsContent>
         <TabsContent value="addresses"><Addresses canManage={may(session, 'address.create')} /></TabsContent>
+        {approvals ? <TabsContent value="approvals"><Approvals canManage={may(session, 'approval_policy.create')} /></TabsContent> : null}
       </Tabs>
     </>
   )

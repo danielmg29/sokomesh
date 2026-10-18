@@ -8,9 +8,11 @@ Who holds which role in which organization is answered by the organizations app 
 
 from collections.abc import Callable
 
-# SM-F-01 organizations, members, addresses; SM-F-02 seller onboarding; SM-F-04 a seller's catalogue;
-# SM-F-10 carts and SM-F-20 reorder for buyers. Administration (organization.list/review,
-# seller_profile.list/review, seller_document.verify, category_contract.* for SM-F-03) is admin-only.
+# SM-F-01 organizations, members, addresses; SM-F-02 seller onboarding; SM-F-04 a seller's catalogue with
+# SM-F-05 photographs and SM-F-06 price books; SM-F-10 carts, SM-F-11 quotes, SM-F-12 approvals, SM-F-15
+# orders, SM-F-17 delivery and SM-F-20 reorder on both sides; SM-F-19 analytics for sellers. Administration
+# (organization.list/review, seller_profile.list/review, seller_document.verify, category_contract.* for SM-F-03)
+# is admin-only.
 _OWN_ORG = {"organization.get", "membership.list", "address.list"}
 _MANAGE_ORG = _OWN_ORG | {
     "organization.update",
@@ -28,7 +30,16 @@ _SELLER = {
     "seller_document.create",
     "seller_document.delete",
 }
-_CATALOG_READ = {"catalog_product.list", "catalog_product.get", "variant.list", "variant.get"}
+_CATALOG_READ = {
+    "catalog_product.list",
+    "catalog_product.get",
+    "variant.list",
+    "variant.get",
+    "media_asset.list",
+    "media_asset.get",
+    "price_rule.list",
+    "price_rule.get",
+}
 _CATALOG = _CATALOG_READ | {
     "catalog_product.create",
     "catalog_product.update",
@@ -36,6 +47,24 @@ _CATALOG = _CATALOG_READ | {
     "catalog_product.archive",
     "variant.create",
     "variant.update",
+    "media_asset.create",
+    "media_asset.update",
+    "media_asset.remove",
+    "price_rule.create",
+    "price_rule.update",
+    "buyer_group.list",
+    "buyer_group.create",
+    "buyer_group.remove",
+}
+# The seller's side of orders, quotes and shipments; warehouse staff fulfil and update deliveries.
+_FULFIL = {"order.list", "order.get", "order.fulfil", "shipment.list", "shipment.get", "shipment.update"}
+_SELL = _FULFIL | {
+    "order.cancel",
+    "quote.list",
+    "quote.get",
+    "quote.respond",
+    "analytics.view",
+    "metric_definition.list",
 }
 _BUY = {
     "cart.list",
@@ -49,13 +78,25 @@ _BUY = {
     "order.list",
     "order.get",
     "order.reorder",
+    "order.cancel",
+    "order.dispute",
+    "order.approve",
+    "cart.checkout",
+    "quote.list",
+    "quote.get",
+    "quote.create",
+    "quote.accept",
+    "shipment.list",
+    "shipment.get",
+    "approval_policy.list",
+    "approval_policy.get",
 }
 
 ROLE_PERMISSIONS: dict[str, set[str]] = {
     "marketplace_admin": {"*"},
-    "seller_manager": _MANAGE_ORG | _SELLER | _CATALOG,
-    "warehouse_operator": _OWN_ORG | _CATALOG_READ | {"seller_profile.get", "seller_document.list"},
-    "buyer_owner": _MANAGE_ORG | _BUY,
+    "seller_manager": _MANAGE_ORG | _SELLER | _CATALOG | _SELL,
+    "warehouse_operator": _OWN_ORG | _CATALOG_READ | _FULFIL | {"seller_profile.get", "seller_document.list"},
+    "buyer_owner": _MANAGE_ORG | _BUY | {"approval_policy.create", "approval_policy.update"},
     "buyer_purchaser": _OWN_ORG | _BUY,
 }
 

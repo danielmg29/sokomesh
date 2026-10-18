@@ -17,6 +17,8 @@ export type FieldMeta = {
   help?: string
   required?: boolean
   readOnly?: boolean
+  /** A command input (a reason, a carrier reference, a proof file): records never carry it. */
+  inputOnly?: boolean
   default?: unknown
   maxLength?: number
   min?: number
@@ -139,6 +141,8 @@ export type Contract = {
   locales: { default: string; supported: readonly Choice[] }
   /** The rich-text allow-list the backend sanitises against (backend/core/richtext.py). */
   richText: RichTextPolicy
+  /** What each upload endpoint accepts; the server checks the file's own bytes again. */
+  uploads: Record<string, { types: readonly string[]; maxBytes: number }>
   errors: Record<string, ErrorMeta>
   policies: { roles: Record<string, string[]> }
   events: Record<string, unknown>

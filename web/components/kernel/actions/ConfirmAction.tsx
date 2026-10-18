@@ -29,7 +29,7 @@ export function ConfirmAction({ action, meta, record, trigger, onConfirm, descri
   const inputFields = (action.input ?? []).map(n => meta.fields.find(f => f.name === n)).filter((f): f is NonNullable<typeof f> => Boolean(f))
   const [values, setValues] = useState<Record<string, unknown>>(() => Object.fromEntries(inputFields.map(f => [f.name, record[f.name] ?? f.default ?? null])))
   const destructive = action.tone === 'danger'
-  const subject = String(record[meta.displayField ?? 'id'] ?? meta.label)
+  const subject = String(record[meta.displayField ?? 'id'] || meta.label)
 
   const run = async () => {
     setPending(true)

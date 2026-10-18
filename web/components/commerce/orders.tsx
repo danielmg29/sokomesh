@@ -1,7 +1,7 @@
 'use client'
 
 import { ExternalLink, FileText, TriangleAlert } from 'lucide-react'
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { ActivityBlock, type ActivityEvent } from '@/components/kernel/blocks/DataBlocks'
 import { FieldInput } from '@/components/kernel/fields/FieldInput'
 import { FileView } from '@/components/kernel/fields/views'
@@ -11,15 +11,16 @@ import { Button } from '@/components/ui/button'
 import { Icon } from '@/components/ui/icon'
 import { Stamp } from '@/components/ui/stamp'
 import { Thread, type ThreadStep } from '@/components/ui/thread'
-import type { FieldMeta, Tone } from '@/lib/contract/types'
+import { OrderMeta } from '@/lib/contract/generated'
+import type { Choice, FieldMeta, Tone } from '@/lib/contract/types'
 import { formatDay, formatTime } from '@/lib/format'
 
-export type OrderStatus = 'submitted' | 'confirmed' | 'picking' | 'partially_fulfilled' | 'shipped' | 'delivered' | 'cancelled' | 'disputed'
-export const orderLook: Record<OrderStatus, { tone: Tone; label: string; condition?: 'partial' }> = {
-  submitted: { tone: 'info', label: 'Submitted' }, confirmed: { tone: 'success', label: 'Confirmed' }, picking: { tone: 'signal', label: 'Picking' },
-  partially_fulfilled: { tone: 'warning', label: 'Partially fulfilled', condition: 'partial' }, shipped: { tone: 'info', label: 'Shipped' },
-  delivered: { tone: 'success', label: 'Delivered' }, cancelled: { tone: 'neutral', label: 'Cancelled' }, disputed: { tone: 'danger', label: 'Disputed' },
-}
+export type OrderStatus = 'pending_approval' | 'submitted' | 'confirmed' | 'picking' | 'partially_fulfilled' | 'shipped' | 'delivered' | 'cancelled' | 'disputed'
+// Labels and tones are the backend's (Order.status choices in the contract); only the stamp condition is ours.
+const statusChoices: readonly Choice[] = OrderMeta.fields.find(f => f.name === 'status')?.choices ?? []
+export const orderLook = Object.fromEntries(
+  statusChoices.map(c => [c.value, { tone: c.tone ?? 'neutral', label: c.label, condition: c.value === 'partially_fulfilled' ? 'partial' : undefined }]),
+) as Record<OrderStatus, { tone: Tone; label: string; condition?: 'partial' }>
 
 export type OrderTransition = { id: string; to: OrderStatus; from?: OrderStatus; at: string; actor: string; reason?: string; reference?: string; certainty?: ActivityEvent['certainty'] }
 
@@ -41,10 +42,13 @@ export function OrderTimelineBlock({ transitions, variant = 'full', now, next }:
 export type ShipmentStatus = 'pending' | 'handed_over' | 'in_transit' | 'delivered' | 'exception'
 export type ShipmentEvent = { id: string; at: string; label: string; location?: string }
 
-/** Delivery tracking (SM-F-17). Late or missing events degrade to a clear last-known state. */
-export function DeliveryTrackingBlock({ status, carrier, reference, windowStart, windowEnd, events, delayed, lastEventAt, proofOfDelivery, mapHref, now }: {
-  status: ShipmentStatus; carrier: string; reference: string; windowStart: string; windowEnd: string; events: readonly ShipmentEvent[]; delayed?: boolean; lastEventAt?: string
-  proofOfDelivery?: FileValue; mapHref?: string; now?: string
+/**
+ * Delivery tracking (SM-F-17). Late or missing events degrade to a clear last-known state: `delayed` when
+ * the window passed or the carrier reported a delay, `stale` when no news arrived for the backend's limit.
+ */
+export function DeliveryTrackingBlock({ status, carrier, reference, windowStart, windowEnd, events, delayed, stale, lastEventAt, proofOfDelivery, mapHref, now, actions }: {
+  status: ShipmentStatus; carrier: string; reference: string; windowStart?: string; windowEnd?: string; events: readonly ShipmentEvent[]; delayed?: boolean; stale?: boolean; lastEventAt?: string
+  proofOfDelivery?: FileValue; mapHref?: string; now?: string; actions?: ReactNode
 }) {
   const order: ShipmentStatus[] = ['pending', 'handed_over', 'in_transit', 'delivered']
   const at = order.indexOf(status)
@@ -59,7 +63,7 @@ export function DeliveryTrackingBlock({ status, carrier, reference, windowStart,
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex flex-col gap-0.5">
           <h3 className="font-display text-lg font-bold">Delivery</h3>
-          <span className="text-sm text-muted">{carrier} · <code className="font-mono">{reference}</code></span>
+          <span className="text-sm text-muted">{carrier}{reference ? <> · <code className="font-mono">{reference}</code></> : null}</span>
         </div>
         {unknown ? <Stamp tone="neutral" condition="unknown">No tracking yet</Stamp>
           : delayed ? <Stamp tone="warning" condition="pending">Delayed</Stamp>
@@ -67,8 +71,14 @@ export function DeliveryTrackingBlock({ status, carrier, reference, windowStart,
       </div>
       <Thread label="Delivery progress" steps={steps} />
       <p className="text-md">
-        {status === 'delivered' ? 'Delivered.' : <>Expected {formatDay(windowStart)}, {formatTime(windowStart)} to {formatTime(windowEnd)}.</>}
-        {delayed && lastEventAt ? <span className="mt-1 flex items-start gap-1.5 text-tone-warning"><Icon icon={TriangleAlert} className="mt-0.5" />The delivery window has passed. Last update <RelativeTime iso={lastEventAt} now={now} />; the carrier has been asked for a new time.</span> : null}
+        {status === 'delivered' ? 'Delivered.'
+          : windowStart && windowEnd ? (formatDay(windowStart) === formatDay(windowEnd)
+            ? <>Expected {formatDay(windowStart)}, {formatTime(windowStart)} to {formatTime(windowEnd)}.</>
+            : <>Expected between {formatDay(windowStart)}, {formatTime(windowStart)} and {formatDay(windowEnd)}, {formatTime(windowEnd)}.</>)
+          : windowEnd ? <>Expected by {formatDay(windowEnd)}, {formatTime(windowEnd)}.</>
+          : 'The seller has not given a delivery time yet.'}
+        {delayed && lastEventAt ? <span className="mt-1 flex items-start gap-1.5 text-tone-warning"><Icon icon={TriangleAlert} className="mt-0.5" />Running late. Last update <RelativeTime iso={lastEventAt} now={now} />.</span> : null}
+        {stale && !delayed && lastEventAt ? <span className="mt-1 flex items-start gap-1.5 text-muted"><Icon icon={TriangleAlert} className="mt-0.5" />No news since <RelativeTime iso={lastEventAt} now={now} />; this is the last known state.</span> : null}
         {unknown ? <span className="mt-1 block text-muted">The carrier has not sent any updates. The seller confirmed hand-over; this page updates when the first scan arrives.</span> : null}
       </p>
       {events.length ? (
@@ -84,6 +94,7 @@ export function DeliveryTrackingBlock({ status, carrier, reference, windowStart,
       <div className="flex flex-wrap items-center gap-3">
         {proofOfDelivery ? <span className="flex items-center gap-2 text-md"><span className="font-semibold">Proof of delivery</span><FileView field={{ name: 'pod', type: 'file', widget: 'file' }} value={proofOfDelivery} /></span> : null}
         {mapHref ? <a href={mapHref} target="_blank" rel="noreferrer noopener" className="inline-flex items-center gap-1 text-md font-semibold text-primary hover:underline">Open carrier tracking<Icon icon={ExternalLink} /><span className="sr-only"> (opens in a new tab)</span></a> : null}
+        {actions ? <div className="ml-auto">{actions}</div> : null}
       </div>
     </section>
   )

@@ -54,13 +54,18 @@ def build_contract() -> dict:
             "supported": [{"value": code, "label": label} for code, label in locales["supported"]],
         },
         "richText": {_camel(k): v for k, v in rich.items()},
+        # What each upload endpoint accepts (checked again on the server, by the file's own bytes).
+        "uploads": {
+            _camel(kind): {"types": list(rule["types"]), "maxBytes": rule["max_bytes"]}
+            for kind, rule in settings.AC_UPLOADS.items()
+        },
         "errors": {
             code.value: {"status": spec.status, "retryable": spec.retryable, "message": spec.message}
             for code, spec in ERRORS.items()
         },
         "policies": export_policies(),
         "events": {},
-        # Every resource registered with core.operations.registry (SM-F-01, 02, 21 and 22 so far).
+        # Every resource registered with core.operations.registry.
         "models": export_models(),
     }
 

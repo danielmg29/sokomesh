@@ -19,8 +19,19 @@ from django.http import HttpRequest
 from django.utils import timezone
 from django.utils.text import slugify
 
-from apps.catalog import contracts
-from apps.catalog.models import GALLERY_LIMIT, Category, CategoryContract, Product, Variant
+from apps.catalog import contracts, pricing
+from apps.catalog.media import display_url as media_display_url
+from apps.catalog.media import image_value, original_url, remove
+from apps.catalog.models import (
+    GALLERY_LIMIT,
+    BuyerGroupMember,
+    Category,
+    CategoryContract,
+    MediaAsset,
+    PriceRule,
+    Product,
+    Variant,
+)
 from apps.catalog.search import index_many
 from apps.organizations.models import Organization
 from apps.organizations.tenancy import active_membership, is_admin
@@ -129,14 +140,25 @@ def contract_summary(c: CategoryContract) -> dict[str, Any]:
 # --- public products --------------------------------------------------------------------------
 
 
+def images_of(p: Product) -> tuple[dict[str, Any] | None, list[dict[str, Any]]]:
+    """The product's photographs: its ready media (SM-F-05) in the seller's order, or, until a seller has
+    uploaded any, the prepared images seeded with the product."""
+    ready = [m for m in p.media.all() if m.public]  # pyright: ignore[reportAttributeAccessIssue]
+    if ready:
+        values = [image_value(m) for m in ready]
+        return values[0], values[1:]
+    return p.primary_image, list(p.gallery or [])
+
+
 def product_page(p: Product) -> dict[str, Any]:
     """ProductPage (spec p. 10): canonical URL, schema.org JSON-LD, image and breadcrumbs, all derived."""
     canonical = absolute(f"/products/{p.slug}")
     seller = p.seller.seller_profile.public_name  # pyright: ignore[reportAttributeAccessIssue]
-    image = (p.primary_image or {}).get("url")
+    primary, gallery = images_of(p)
+    image = (primary or {}).get("url")
     lead = _lead(p)
     # Every photograph, main one first, as absolute URLs (gallery photos may already be absolute).
-    images = [absolute(u) for u in [image, *(g.get("url") for g in p.gallery or [])] if u]
+    images = [absolute(u) for u in [image, *(g.get("url") for g in gallery)] if u]
     offer: dict[str, Any] = {
         "@type": "Offer",
         "url": canonical,
@@ -186,7 +208,10 @@ def _product_extra(p: Product, request: HttpRequest) -> dict[str, Any]:
     profile = p.seller.seller_profile  # pyright: ignore[reportAttributeAccessIssue]
     doc = getattr(p, "search", None)
     lead = _lead(p) or {}
+    primary, gallery = images_of(p)
     return {
+        "primary_image": primary,
+        "gallery": gallery,
         # The product's headline values are its cheapest active variant's (the search document's lead).
         "sku": lead.get("sku"),
         "pack_label": lead.get("pack_label"),
@@ -207,7 +232,12 @@ def _product_extra(p: Product, request: HttpRequest) -> dict[str, Any]:
 
 def _product_detail_extra(p: Product, request: HttpRequest) -> dict[str, Any]:
     out = _product_extra(p, request)
-    out["variants"] = [variant_view(v, p) for v in p.variants.all() if v.is_active]  # pyright: ignore[reportAttributeAccessIssue]
+    # Public tiers are the prices every buyer gets; a signed-in buyer asks `prices` for their own.
+    out["variants"] = [
+        {**variant_view(v, p), "tiers": pricing.tiers(v)}
+        for v in p.variants.all()  # pyright: ignore[reportAttributeAccessIssue]
+        if v.is_active
+    ]
     out["specs"] = specs_of(p)
     contract = p.category.active_contract() or p.category_contract
     out["contract"] = {
@@ -371,7 +401,7 @@ product = register(
         default_page_size=24,
         permissions={},
         hooks={
-            "queryset": lambda request: storefront().prefetch_related("variants"),
+            "queryset": lambda request: storefront().prefetch_related("variants", "variants__price_rules", "media"),
             "organization_of": lambda p: p.seller,
             "serialize_extra": lambda p, request: (
                 _product_detail_extra(p, request)
@@ -636,7 +666,7 @@ def _seller_org(request: HttpRequest) -> Organization:
 def _own_products(request: HttpRequest) -> QuerySet[Product]:
     qs = Product.objects.select_related(
         "seller", "seller__seller_profile", "category", "category_contract", "search"
-    ).prefetch_related("variants")
+    ).prefetch_related("variants", "variants__price_rules", "media")
     return qs if is_admin(request.user) else qs.filter(seller=active_membership(request).organization)
 
 
@@ -655,10 +685,55 @@ def publish_blockers(p: Product) -> list[str]:
     return out
 
 
+def media_view(m: MediaAsset) -> dict[str, Any]:
+    return {
+        "id": str(m.pk),
+        "name": m.original_name,
+        "alt_text": m.alt_text,
+        "size": m.size_bytes,
+        "width": m.width_px,
+        "height": m.height_px,
+        "sort_order": m.sort_order,
+        "scan_status": m.scan_status,
+        "processing_status": m.processing_status,
+        "rejection_reason": m.rejection_reason or None,
+        "url": media_display_url(m) if m.public else None,
+        "original_url": original_url(m),
+    }
+
+
+def rule_view(r: PriceRule, siblings: list[PriceRule]) -> dict[str, Any]:
+    state, note = pricing.state_of(r, siblings)
+    return {
+        "id": str(r.pk),
+        "variant": str(r.variant_id),  # pyright: ignore[reportAttributeAccessIssue]
+        "label": r.label,
+        "buyer_group_key": r.buyer_group_key or None,
+        "minimum_quantity": r.minimum_quantity,
+        "unit": r.unit,
+        "unit_price": format(r.unit_price, "f"),
+        "priority": r.priority,
+        "effective_from": r.effective_from.isoformat(),
+        "effective_until": r.effective_until.isoformat() if r.effective_until else None,
+        "is_active": r.is_active,
+        "state": state,
+        "conflict_note": note,
+        "explanation": pricing.explain(r, r.variant),
+    }
+
+
 def _catalog_extra(p: Product, request: HttpRequest) -> dict[str, Any]:
     variants = list(p.variants.all())  # pyright: ignore[reportAttributeAccessIssue]
     active = p.category.active_contract()
+    rules = {v.pk: list(v.price_rules.all()) for v in variants}  # pyright: ignore[reportAttributeAccessIssue]
     return {
+        # Each with `_can`, so the editor offers only the commands this person may run on it.
+        "media": [{**media_view(m), "_can": media_asset.permitted(request, m)} for m in p.media.all()],  # pyright: ignore[reportAttributeAccessIssue]
+        "price_rules": [
+            {**rule_view(r, rules[v.pk]), "_can": price_rule.permitted(request, r)}
+            for v in variants
+            for r in rules[v.pk]
+        ],
         "variant_count": len(variants),
         "variants": [variant_view(v, p) for v in variants],
         "publish_blockers": publish_blockers(p),
@@ -932,7 +1007,7 @@ def comparable(ids: list[str]) -> dict[str, Any]:
     in `missing_value_keys` so the table shows the gap instead of shifting. Prices are the cheapest active
     variant's, also per the contract's normalised unit; stock is buyer-visible state, not warehouse counts.
     """
-    found = {str(p.pk): p for p in storefront().filter(pk__in=ids).prefetch_related("variants")}
+    found = {str(p.pk): p for p in storefront().filter(pk__in=ids).prefetch_related("variants", "media")}
     rows = [found[i] for i in ids if i in found]
     if len({p.category_id for p in rows}) > 1:  # pyright: ignore[reportAttributeAccessIssue]
         fail(ErrorCode.CONFLICT, "Compare products from one category at a time.", {"products": ["Mixed categories."]})
@@ -952,7 +1027,7 @@ def comparable(ids: list[str]) -> dict[str, Any]:
                 "slug": p.slug,
                 "name": p.name,
                 "seller": p.seller.seller_profile.public_name,  # pyright: ignore[reportAttributeAccessIssue]
-                "image": p.primary_image,
+                "image": images_of(p)[0],
                 "unit_price": view["unit_price"],
                 "unit": view["pack_label"],
                 "normalised_price": view["normalised_price"],
@@ -979,3 +1054,246 @@ def comparable(ids: list[str]) -> dict[str, Any]:
             "normalised_per": norm.get("per") if norm else None,
         },
     }
+
+
+# --- photographs (SM-F-05) ------------------------------------------------------------------------------
+
+MEDIA_TONES = {"queued": "neutral", "processing": "info", "ready": "success", "failed": "danger"}
+SCAN_TONES = {"pending": "info", "clean": "success", "rejected": "danger", "failed": "warning"}
+
+
+def _own_media(request: HttpRequest) -> QuerySet[MediaAsset]:
+    qs = MediaAsset.objects.select_related("product", "variant")
+    return qs if is_admin(request.user) else qs.filter(seller=active_membership(request).organization)
+
+
+def _update_media(request: HttpRequest, m: MediaAsset, changes: dict[str, Any]) -> None:
+    if "variant" in changes:
+        changes["variant"] = (
+            relation_ref(
+                Variant.objects.filter(product=m.product),
+                changes["variant"],
+                "variant",
+                "Choose one of this product's variants.",
+            )
+            if changes["variant"]
+            else None
+        )
+    for k, v in changes.items():
+        setattr(m, k, v)
+
+
+def _remove_media(request: HttpRequest, m: MediaAsset, data: dict[str, Any]) -> dict[str, Any]:
+    remove(m)
+    return {"deleted": True}
+
+
+media_asset = register(
+    Resource(
+        key="media_asset",
+        path="catalog/media",
+        model=MediaAsset,
+        label="Photograph",
+        label_plural="Photographs",
+        display_field="original_name",
+        fields=(
+            derive(MediaAsset, "id"),
+            derive(
+                MediaAsset,
+                "product",
+                read_only=True,
+                relation={"model": "catalog_product", "display": "name"},
+                filter=("eq",),
+            ),
+            derive(MediaAsset, "variant", relation={"model": "variant", "display": "sku"}),
+            derive(MediaAsset, "original_name", read_only=True),
+            derive(MediaAsset, "alt_text"),
+            derive(MediaAsset, "sort_order"),
+            derive(MediaAsset, "mime_type", read_only=True),
+            derive(MediaAsset, "size_bytes", read_only=True),
+            derive(MediaAsset, "width_px", read_only=True),
+            derive(MediaAsset, "height_px", read_only=True),
+            derive(MediaAsset, "scan_status", widget="status", tones=SCAN_TONES, read_only=True),
+            derive(MediaAsset, "processing_status", widget="status", tones=MEDIA_TONES, read_only=True, filter=("in",)),
+            derive(MediaAsset, "rejection_reason", read_only=True),
+            derive(MediaAsset, "created_at", read_only=True, widget="relative-time"),
+        ),
+        list_fields=("original_name", "alt_text", "processing_status", "scan_status", "sort_order"),
+        search=("original_name", "alt_text"),
+        ordering=("sort_order", "-created_at"),
+        default_page_size=50,
+        writable=("alt_text", "sort_order", "variant"),
+        permissions={"list": "media_asset.list", "get": "media_asset.get", "update": "media_asset.update"},
+        actions=(
+            Action(
+                "remove",
+                "Remove",
+                "media_asset.remove",
+                _remove_media,
+                kind="archive",
+                confirm=True,
+                tone="danger",
+                icon="trash",
+            ),
+        ),
+        hooks={
+            "queryset": _own_media,
+            "organization_of": lambda m: m.seller,
+            "serialize_extra": lambda m, request: {
+                k: v for k, v in media_view(m).items() if k in ("url", "original_url")
+            },
+            "update": _update_media,
+        },
+    )
+)
+
+
+# --- price rules and buyer groups (SM-F-06) ---------------------------------------------------------------
+
+
+def _own_rules(request: HttpRequest) -> QuerySet[PriceRule]:
+    qs = PriceRule.objects.select_related("variant", "variant__product")
+    return qs if is_admin(request.user) else qs.filter(seller=active_membership(request).organization)
+
+
+def _create_rule(request: HttpRequest, data: dict[str, Any]) -> PriceRule:
+    own = Variant.objects.all() if is_admin(request.user) else Variant.objects.filter(seller=_seller_org(request))
+    variant = relation_ref(own, data.pop("variant", None), "variant", "Choose one of your variants.")
+    return PriceRule(variant=variant, seller=variant.seller, unit=variant.packaging_unit, **data)
+
+
+def _update_rule(request: HttpRequest, r: PriceRule, changes: dict[str, Any]) -> None:
+    if "variant" in changes:
+        invalid({"variant": ["A rule stays with its variant; add a new rule for another one."]})
+    for k, v in changes.items():
+        setattr(r, k, v)
+
+
+def _switch(on: bool):
+    def run(request: HttpRequest, r: PriceRule, data: dict[str, Any]) -> None:
+        r.is_active = on
+        r.save(update_fields=["is_active", "updated_at"])
+
+    return run
+
+
+price_rule = register(
+    Resource(
+        key="price_rule",
+        path="catalog/price-rules",
+        model=PriceRule,
+        label="Price rule",
+        label_plural="Price rules",
+        display_field="label",
+        fields=(
+            derive(PriceRule, "id"),
+            derive(PriceRule, "variant", relation={"model": "variant", "display": "sku"}, filter=("eq",), weight=5),
+            derive(PriceRule, "label", weight=10),
+            derive(PriceRule, "buyer_group_key", widget="text", filter=("in",), weight=15),
+            derive(PriceRule, "minimum_quantity", weight=20),
+            derive(PriceRule, "unit_price", widget="currency", currency="KES", weight=25),
+            derive(PriceRule, "priority", weight=30),
+            derive(PriceRule, "effective_from", weight=35),
+            derive(PriceRule, "effective_until", weight=40),
+            derive(PriceRule, "is_active", filter=("eq",), weight=45),
+            derive(PriceRule, "unit", read_only=True),
+            derive(PriceRule, "currency", read_only=True),
+            derive(PriceRule, "updated_at", read_only=True, widget="relative-time"),
+        ),
+        list_fields=("label", "variant", "buyer_group_key", "minimum_quantity", "unit_price", "is_active"),
+        search=("label",),
+        ordering=("-updated_at", "minimum_quantity"),
+        default_page_size=50,
+        writable=(
+            "variant",
+            "label",
+            "buyer_group_key",
+            "minimum_quantity",
+            "unit_price",
+            "priority",
+            "effective_from",
+            "effective_until",
+            "is_active",
+        ),
+        permissions={
+            "list": "price_rule.list",
+            "get": "price_rule.get",
+            "create": "price_rule.create",
+            "update": "price_rule.update",
+        },
+        actions=(
+            Action(
+                "switch_off",
+                "Switch off",
+                "price_rule.update",
+                _switch(False),
+                confirm=True,
+                icon="pause",
+                when={"is_active": ["true"]},
+            ),
+            Action(
+                "switch_on",
+                "Switch on",
+                "price_rule.update",
+                _switch(True),
+                icon="check",
+                when={"is_active": ["false"]},
+            ),
+        ),
+        hooks={
+            "queryset": _own_rules,
+            "organization_of": lambda r: r.seller,
+            "serialize_extra": lambda r, request: rule_view(r, list(PriceRule.objects.filter(variant_id=r.variant_id))),
+            "create": _create_rule,
+            "update": _update_rule,
+        },
+    )
+)
+
+
+def _own_members(request: HttpRequest) -> QuerySet[BuyerGroupMember]:
+    qs = BuyerGroupMember.objects.select_related("buyer")
+    return qs if is_admin(request.user) else qs.filter(seller=active_membership(request).organization)
+
+
+def _create_member(request: HttpRequest, data: dict[str, Any]) -> BuyerGroupMember:
+    seller = _seller_org(request)
+    buyers = Organization.objects.filter(organization_type=Organization.Type.BUYER, approval_state="approved")
+    buyer = relation_ref(buyers, data.pop("buyer", None), "buyer", "Choose an approved buyer organization.")
+    return BuyerGroupMember(seller=seller, buyer=buyer, **data)
+
+
+def _remove_member(request: HttpRequest, m: BuyerGroupMember, data: dict[str, Any]) -> dict[str, Any]:
+    m.delete()
+    return {"deleted": True}
+
+
+buyer_group_member = register(
+    Resource(
+        key="buyer_group_member",
+        path="catalog/buyer-groups",
+        model=BuyerGroupMember,
+        label="Buyer group member",
+        label_plural="Buyer groups",
+        display_field="group_key",
+        fields=(
+            derive(BuyerGroupMember, "id"),
+            derive(BuyerGroupMember, "buyer", relation={"model": "organization", "display": "name"}, filter=("eq",)),
+            derive(BuyerGroupMember, "group_key", widget="text", filter=("in",)),
+            derive(BuyerGroupMember, "created_at", read_only=True, widget="relative-time"),
+        ),
+        list_fields=("buyer", "group_key", "created_at"),
+        ordering=("group_key", "-created_at"),
+        default_page_size=100,
+        writable=("buyer", "group_key"),
+        permissions={"list": "buyer_group.list", "get": "buyer_group.list", "create": "buyer_group.create"},
+        actions=(
+            Action("remove", "Remove from group", "buyer_group.remove", _remove_member, kind="archive", icon="trash"),
+        ),
+        hooks={
+            "queryset": _own_members,
+            "organization_of": lambda m: m.seller,
+            "create": _create_member,
+        },
+    )
+)

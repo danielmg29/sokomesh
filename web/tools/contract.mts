@@ -1,6 +1,6 @@
 // Renders contract/ac-contract.json into lib/contract/generated.ts (manual 3.1).
 // Runs on Node against the committed artefact, so no Python is needed in web builds.
-import type { Contract, FieldMeta } from '../lib/contract/types.ts'
+import type { Contract, FieldMeta, ModelMeta } from '../lib/contract/types.ts'
 
 function zodFor(f: FieldMeta): string {
   let z: string
@@ -33,6 +33,8 @@ const constant = (name: string, value: unknown) => `export const ${name} = ${JSO
 export function renderContract(contract: Contract): string {
   const models = Object.entries(contract.models)
   const fields = models.flatMap(([, m]) => m.fields)
+  // Input-only fields are command inputs, never part of a record or its write schema.
+  const stored = (m: Omit<ModelMeta, 'key'>) => m.fields.filter(f => !f.inputOnly)
   const out: string[] = [
     `// AUTO-GENERATED from contract/ac-contract.json (contract ${contract.meta.contractVersion}) by tools/gen-contract.mts — do not edit.`,
   ]
@@ -47,6 +49,7 @@ export function renderContract(contract: Contract): string {
     constant('listQuery', contract.listQuery),
     constant('locales', contract.locales),
     constant('richText', contract.richText),
+    constant('uploads', contract.uploads),
     `export type Locale = (typeof locales)['supported'][number]['value']`,
     constant('errors', contract.errors),
     `export type ErrorCode = keyof typeof errors`,
@@ -59,10 +62,10 @@ export function renderContract(contract: Contract): string {
   for (const [key, m] of models) {
     const P = pascal(key)
     out.push(`export const ${P}Schema = z.object({`)
-    for (const f of m.fields) out.push(`  ${f.name}: ${zodFor(f)},`)
+    for (const f of stored(m)) out.push(`  ${f.name}: ${zodFor(f)},`)
     out.push(`})`, `export type ${P} = z.infer<typeof ${P}Schema>`)
     // Write schema: read-only fields removed, derived once here instead of in every form.
-    const ro = m.fields.filter(f => f.readOnly).map(f => `${f.name}: true`).join(', ')
+    const ro = stored(m).filter(f => f.readOnly).map(f => `${f.name}: true`).join(', ')
     out.push(`export const ${P}WriteSchema = ${ro ? `${P}Schema.omit({ ${ro} })` : `${P}Schema`}`)
     out.push(`export const ${P}Meta = ${JSON.stringify({ key, ...m }, null, 2)} as const satisfies ModelMeta`)
   }

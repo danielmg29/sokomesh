@@ -16,7 +16,7 @@ from django.utils import timezone
 from apps.accounts.models import EmailVerification, User
 from apps.notifications.services import ensure_preferences
 from apps.organizations.models import OWNER_ROLE, ROLES_FOR, Membership, Organization
-from apps.organizations.tenancy import active_memberships, is_admin
+from apps.organizations.tenancy import active_memberships, forget, is_admin
 from core.api import fail, invalid
 from core.mail import send_email
 from core.result import ErrorCode
@@ -102,6 +102,7 @@ def register(*, display_name: str, email: str, password: str, organization_name:
     user = User.objects.create_user(email, password, display_name=display_name)
     org = Organization.objects.create(name=organization_name, organization_type=organization_type)
     Membership.objects.create(organization=org, user=user, role_key=OWNER_ROLE[organization_type])
+    forget(user)
     if organization_type == "seller":
         from apps.sellers.models import SellerProfile
 
@@ -186,8 +187,16 @@ def navigation(user: User, active: Membership | None) -> list[dict[str, str]]:
         ]
     if org is not None and allowed(user, "organization.get", org):
         items.append({"key": "organization", "label": "Organization", "href": "/organization", "group": "Organization"})
+    if org is not None and org.organization_type == "seller" and allowed(user, "order.list", org):
+        items.append({"key": "sales", "label": "Orders", "href": "/sell/orders", "group": "Sell"})
+    if org is not None and org.organization_type == "seller" and allowed(user, "quote.list", org):
+        items.append({"key": "sell-quotes", "label": "Quotes", "href": "/sell/quotes", "group": "Sell"})
     if org is not None and org.organization_type == "seller" and allowed(user, "catalog_product.list", org):
         items.append({"key": "products", "label": "Products", "href": "/sell/products", "group": "Sell"})
+    if org is not None and org.organization_type == "seller" and allowed(user, "buyer_group.list", org):
+        items.append({"key": "buyers", "label": "Buyers and prices", "href": "/sell/buyers", "group": "Sell"})
+    if org is not None and org.organization_type == "seller" and allowed(user, "analytics.view", org):
+        items.append({"key": "analytics", "label": "Analytics", "href": "/sell/analytics", "group": "Sell"})
     if org is not None and org.organization_type == "seller" and allowed(user, "seller_profile.get", org):
         items.append({"key": "sell", "label": "Seller profile", "href": "/sell", "group": "Sell"})
     if org is not None and org.organization_type == "buyer":
@@ -196,6 +205,8 @@ def navigation(user: User, active: Membership | None) -> list[dict[str, str]]:
             items.append({"key": "cart", "label": "Cart", "href": "/cart", "group": "Buy"})
         if allowed(user, "order.list", org):
             items.append({"key": "orders", "label": "Orders", "href": "/orders", "group": "Buy"})
+        if allowed(user, "quote.list", org):
+            items.append({"key": "quotes", "label": "Quotes", "href": "/quotes", "group": "Buy"})
     items += [
         {"key": "notifications", "label": "Notifications", "href": "/notifications", "group": "You"},
         {"key": "account", "label": "Profile", "href": "/account", "group": "You"},

@@ -14,7 +14,7 @@ One authoritative record of catalogue, stock, price and order, shown to every bu
 
 ---
 
-**Status: foundation, design system and the first ten features are live.** The four foundation features (organization accounts `SM-F-01`, seller onboarding `SM-F-02`, public product pages `SM-F-22`, notifications `SM-F-21`) and all six Core CRUD features (category contracts `SM-F-03`, catalogue management `SM-F-04`, search and facets `SM-F-08`, comparison `SM-F-09`, cart `SM-F-10`, buyer reorder `SM-F-20`) run against the API with seeded demo data; every other component is live on the `/design-system` page. Features land one requirement at a time in the order below; the media pipeline (`SM-F-05`) is next.
+**Status: foundation, design system and the first seventeen features are live.** The four foundation features (organization accounts `SM-F-01`, seller onboarding `SM-F-02`, public product pages `SM-F-22`, notifications `SM-F-21`), the six Core CRUD features (category contracts `SM-F-03`, catalogue management `SM-F-04`, search and facets `SM-F-08`, comparison `SM-F-09`, cart `SM-F-10`, buyer reorder `SM-F-20`) and the seven Integrated features (media pipeline `SM-F-05`, price books `SM-F-06`, quote requests `SM-F-11`, purchase approval `SM-F-12`, order lifecycle `SM-F-15`, seller analytics `SM-F-19`, delivery tracking `SM-F-17`) run against the API with seeded demo data; every other component is live on the `/design-system` page. Features land one requirement at a time in the order below; the inventory ledger (`SM-F-07`) is next.
 
 > *Soko* is Swahili for market; *mesh* is the connected network of buyers, sellers, catalogue rules, stock, orders and fulfilment events. SokoMesh is a portfolio project: the name and identity are concept work and are not cleared for commercial use, and every organization, person, price and figure in the demo is invented.
 
@@ -72,10 +72,10 @@ SokoMesh follows the **Adaptive Convergence** method: the backend owns every bus
 backend models / policies / limits / locales / rich-text allow-list
         │  python manage.py contract export   (enforces the semantic version bump)
         ▼
-contract/ac-contract.json   ◀── committed, reviewed, versioned (0.5.0)
+contract/ac-contract.json   ◀── committed, reviewed, versioned (0.6.0)
         │  pnpm contract:gen
         ▼
-web/lib/contract/generated.ts   (types, Zod schemas, limits, roles, locales, rich-text policy)
+web/lib/contract/generated.ts   (types, Zod schemas, limits, uploads, roles, locales, rich-text policy)
         │
         ▼
 Projection kernel: recipes × slots × field registry → every list, card, form and detail view
@@ -133,12 +133,12 @@ Requirement IDs (`SM-F-xx`) come from the SokoMesh Feature Build Order and Field
 - [x] Brand kit integrated, with an approved reversed logo and mark for dark grounds
 - [x] List-query grammar in the backend kernel and the contract: declared search, filters and ordering, bounded keyset pages with signed cursors, and a web client that sends the same table state
 - [x] Two-way keyset pages (each page returns `next` and `previous` cursors), resource-declared filters for one request (a category contract's facets) and facet counts beside the page (with `SM-F-08`)
-- [x] Operation registry in the backend kernel: one resource declaration generates the routes, the contract model (fields, commands, API path), the commands each record permits and its list endpoint (with `SM-F-01`)
-- [ ] Changesets and idempotency keys for writes
-- [ ] Outbox, event relay and WebSocket gateway (lands with the first real-time topic, `SM-F-15`)
-- [x] Upload policy: file types checked from their contents, per-kind size limits, seller documents served only to their organization and the marketplace reviewers (with `SM-F-02`)
+- [x] Operation registry in the backend kernel: one resource declaration generates the routes, the contract model (fields, commands, API path), the commands each record permits and its list endpoint (with `SM-F-01`); command inputs are input-only fields, so every command dialog is projected (with `SM-F-15`)
+- [ ] Changesets and idempotency keys for writes (checkout is protected by locking and converting the cart; keys land with payments)
+- [ ] Outbox, event relay and WebSocket gateway (order changes notify in-app and by email until live order and stock topics land)
+- [x] Upload policy: file types checked from their contents, per-kind size limits published in the contract (`uploads`), seller documents served only to their organization and the marketplace reviewers (with `SM-F-02`)
 - [x] Email: Brevo's transactional API when `BREVO_API_KEY` is set, Mailpit in development, in-memory in tests
-- [ ] S3-compatible object storage (with `SM-F-05`; uploads are on local disk until then)
+- [ ] S3-compatible object storage and virus scanning (uploads and product photographs go through `default_storage`, on local disk until a deployment target is chosen)
 - [ ] Production deployment target, images and deploy workflow
 
 ### Design system
@@ -203,34 +203,34 @@ Each feature is done when its UI is designed, its backend models, rules and perm
   - [x] UI designed: reorder difference view
   - [x] Backend and contract: immutable order history (snapshots of each line), a reorder preview and command that copies what can be ordered into a fresh cart at today's prices and reports every price, stock, minimum-order and discontinued difference
   - [x] Live pages and tests: order list, order detail with the reorder preview, copy to a new cart
-- [ ] **11. `SM-F-05` Media pipeline**
+- [x] **11. `SM-F-05` Media pipeline**
   - [x] UI designed: media manager with upload, processing and rejection states
-  - [ ] Backend, storage and image workers
-  - [ ] Live pages and tests
-- [ ] **12. `SM-F-06` Price books**
+  - [x] Backend, storage and image workers: uploads checked by their bytes, size and count per product, duplicates refused; a bounded background job measures each photograph, refuses ones too large or too small, strips location and camera metadata without decoding, and publishes the display copy; originals only through short-lived signed links; `process_media` is the worker
+  - [x] Live pages and tests: photographs on the product editor (upload, checking, ready or rejected with the reason, alt text, order, remove), served on product pages from the API once ready
+- [x] **12. `SM-F-06` Price books**
   - [x] UI designed: price book editor, price tier table
-  - [ ] Backend and contract
-  - [ ] Live pages and tests
-- [ ] **13. `SM-F-11` Quote request**
+  - [x] Backend and contract: quantity tiers, buyer-group prices and dated promotions per variant with priorities, one deterministic price with a reason buyers may read, overlapping rules flagged, buyer groups per seller
+  - [x] Live pages and tests: price book on the product editor (add, edit, switch off and on), buyers and price groups for sellers, the quantity ladder and a buyer's own price on product pages, the reason on cart, checkout and order lines
+- [x] **13. `SM-F-11` Quote request**
   - [x] UI designed: quote request sheet, quote decision panel
-  - [ ] Backend and contract
-  - [ ] Live pages and tests
-- [ ] **14. `SM-F-12` Purchase approval**
+  - [x] Backend and contract: a quote from one seller's cart lines with a validity date, seller offers per line or decline with a note, buyer accepts (placing the order at the offered prices) or declines, expiry on read and by command
+  - [x] Live pages and tests: ask for a quote from the cart, quote lists and pages for buyers and sellers
+- [x] **14. `SM-F-12` Purchase approval**
   - [x] UI designed: approval flow
-  - [ ] Backend and contract
-  - [ ] Live pages and tests
-- [ ] **15. `SM-F-15` Order lifecycle**
+  - [x] Backend and contract: approval policies (threshold, approver roles, approvals needed) copied onto each order; never approved by the person who placed it; rejection needs a reason and cancels; sellers see an order only once it is approved
+  - [x] Live pages and tests: approvals tab on the organization page, approval block on the order page
+- [x] **15. `SM-F-15` Order lifecycle**
   - [x] UI designed: order timeline and order detail
-  - [ ] Backend, transitions and real-time updates
-  - [ ] Live pages and tests
-- [ ] **16. `SM-F-19` Seller analytics**
+  - [x] Backend and transitions: checkout revalidates every line and places one order per seller; confirm, pick, short-ship, ship, deliver, cancel and dispute guarded by side and state; an append-only history with actor and reason; notifications to the other side (live push comes later)
+  - [x] Live pages and tests: checkout, order lists and pages for buyers and sellers with the commands each may run
+- [x] **16. `SM-F-19` Seller analytics**
   - [x] UI designed: seller analytics grid and revenue chart with a table view
-  - [ ] Backend and contract
-  - [ ] Live pages and tests
-- [ ] **17. `SM-F-17` Delivery tracking**
+  - [x] Backend and contract: versioned metric definitions (revenue, orders, average order, fill rate, cancellations, stock at risk, product revenue) evaluated on read with the previous period, daily series and top products; CSV export from the same calls
+  - [x] Live pages and tests: analytics page with 7, 30 and 90 day periods in the URL and the export
+- [x] **17. `SM-F-17` Delivery tracking**
   - [x] UI designed: delivery tracking with delays and proof of delivery
-  - [ ] Backend and contract
-  - [ ] Live pages and tests
+  - [x] Backend and contract: shipments from the ship command, carrier and window, appended events, delayed and stale states, proof of delivery as a private document both sides may open; buyers told of delays and the last mile
+  - [x] Live pages and tests: delivery on the order page with updates and confirm delivery for the seller
 - [ ] **18. `SM-F-07` Inventory ledger**
   - [x] UI designed: inventory ledger, stock availability indicator
   - [ ] Immutable movement ledger, balances and contract
@@ -262,9 +262,11 @@ Each feature is done when its UI is designed, its backend models, rules and perm
 
 ### Portfolio release
 
-- [x] Demo data seeded (`seed_demo`): eight organizations (four approved sellers), six people with portraits prepared for the light and dark themes; the sign-in page lists the demo accounts in development
+- [x] Demo data seeded (`seed_demo`): ten organizations (four approved sellers, and two buyers without logins who trade with Mwangaza), six people with portraits prepared for the light and dark themes; the sign-in page lists the demo accounts in development
 - [x] Six category contracts seeded, two with version history (flour has a retired v1, tea an open draft), and 37 products (34 published) with category details and 42 variants, some low or out of stock
-- [x] A buyer cart that needs repricing and three past orders with price, stock, minimum-order and discontinued differences to reorder from
+- [x] A buyer cart that needs repricing (to a key-account price) and past orders with price, stock, minimum-order and discontinued differences to reorder from
+- [x] Price books (tiers, a key-account group, a future and an expired promotion, a switched-off rule), an approval policy, four quotes in each state, and 53 orders with their full history: one awaiting approval, one new, one being picked, one in transit and late, one gone quiet, and three months of Mwangaza sales (one in nine short-shipped, some cancelled) for analytics
+- [x] Two photographs through the real media pipeline: one published, one refused as too small
 - [ ] End-to-end tests for the core journeys (Playwright)
 - [ ] Performance budgets met: storefront LCP ≤ 2.5 s on mid-tier mobile, search p95 < 500 ms
 - [ ] Deployed demo
@@ -287,7 +289,9 @@ Seed the demo data, then open `/login` and choose one of the listed demo account
 cd backend && uv run python manage.py seed_demo
 ```
 
-Each account shows a different side: Brian (buyer purchaser) has a cart waiting for new prices and an order history to reorder from; Faith (seller manager) manages Mwangaza's products and variants; Amina (administrator) edits category contracts and reviews sellers. `seed_demo --reset` puts everything back.
+Each account shows a different side: Brian (buyer purchaser) has a cart waiting for the key-account price, an order waiting for Grace's approval, quotes and an order history to reorder from; Grace (buyer owner) approves or rejects it and sets approval policies; Faith (seller manager) confirms new orders, answers quote requests, manages photographs, price books and price groups, and reads analytics; Peter (warehouse operator) picks, ships and records delivery; Amina (administrator) edits category contracts and reviews sellers. `seed_demo --reset` puts everything back.
+
+Two management commands run beside the API in production: `process_media` (the photograph worker; uploads are also processed in a small pool inside the API) and `expire_quotes` (for a scheduler; quotes also expire when read).
 
 Emails go to Mailpit at http://localhost:8025 unless `BREVO_API_KEY` and `BREVO_SENDER_EMAIL` (a sender verified in Brevo) are set in `.env`; then they are sent through Brevo. Tests never use the database in `DATABASE_URL`: they use `TEST_DATABASE_URL`, or the local Docker Postgres.
 
@@ -332,7 +336,7 @@ docs/           project context, design constitution, brand assets, architecture
 - [DESIGN.md](DESIGN.md): the shipped design system, token by token
 - [Brand assets](docs/design/brand-assets.md): logo usage rules and where every kit file lives
 - [Architecture decisions](docs/architecture/decisions.md): deliberate deviations and deferred work
-- [Code tour](docs/code-tour.md): every file of the foundation and the first ten features, in reading order
+- [Code tour](docs/code-tour.md): every file of the foundation and the first seventeen features, in reading order
 - [Contract changelog](contract/CHANGELOG.md)
 
 ## Credits

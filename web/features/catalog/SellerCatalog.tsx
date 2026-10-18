@@ -4,25 +4,35 @@
 // are generated from that category's published contract (SM-F-03); what buyers order are its variants.
 // Every rule (attribute values, units the category is sold by, SKUs, minimum orders, who may publish) is
 // the API's; these pages mirror a few for quick feedback and show the API's own messages in place.
+// Photographs (SM-F-05) go through the media pipeline; the price book (SM-F-06) lists every rule that
+// competes for a product, and the API decides which one a buyer pays.
 
 import type { Route } from 'next'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useState } from 'react'
-import { CategoryDetailsForm, ProductEditorBlock, VariantMatrixEditor, type DetailsOutcome, type ProductStatus, type VariantErrors, type VariantRow } from '@/components/commerce/catalog'
+import { useQueryClient } from '@tanstack/react-query'
+import { Plus } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { CategoryDetailsForm, MediaManager, ProductEditorBlock, VariantMatrixEditor, type DetailsOutcome, type MediaItem, type ProductStatus, type VariantErrors, type VariantRow } from '@/components/commerce/catalog'
+import { PriceBookEditor, type PriceRule } from '@/components/commerce/pricing'
 import { ActionBar } from '@/components/kernel/actions/ActionBar'
+import { ConfirmAction } from '@/components/kernel/actions/ConfirmAction'
 import { HeaderBlock } from '@/components/kernel/blocks/HeaderBlock'
 import { ListBlock } from '@/components/kernel/blocks/ListBlock'
 import { ErrorState } from '@/components/kernel/feedback/ErrorState'
 import { LoadingState } from '@/components/kernel/feedback/LoadingState'
+import { unitLabel } from '@/components/kernel/fields/types'
+import { ProjectedForm } from '@/components/kernel/forms/ProjectedForm'
 import { PageSection } from '@/components/layout/section'
-import { buttonStyles } from '@/components/ui/button'
+import { Button, buttonStyles } from '@/components/ui/button'
+import { useToast } from '@/components/ui/toast'
 import { ApiError, api, attempt } from '@/lib/client/api'
-import type { CatalogProductRecord, CategoryContractRecord } from '@/lib/client/records'
+import type { CatalogProductRecord, CategoryContractRecord, MediaAssetRecord } from '@/lib/client/records'
 import { useCommand, useList, useRecord, useRefresh, useSave, useSource } from '@/lib/client/resources'
 import { may, useSession } from '@/lib/client/session'
-import { CatalogProductMeta, CategoryContractMeta, VariantMeta } from '@/lib/contract/generated'
-import type { AppError } from '@/lib/contract/types'
+import { CatalogProductMeta, CategoryContractMeta, MediaAssetMeta, PriceRuleMeta, VariantMeta, uploads } from '@/lib/contract/generated'
+import type { ActionMeta, AppError } from '@/lib/contract/types'
+import { formatMoney } from '@/lib/money'
 
 const CREATE_FIELDS = ['name', 'category_contract', 'brand', 'short_description'] as const
 const EDIT_FIELDS = ['name', 'brand', 'short_description', 'description', 'slug', 'available_from', 'available_until', 'seo_title', 'seo_description'] as const
@@ -142,6 +152,119 @@ export function ProductEditor({ id }: { id: string }) {
           attributes={contract.variant_attributes.map(f => ({ key: f.name, label: f.label ?? f.name, options: f.choices ?? [] }))}
           units={contract.sale_units} rows={p.variants.map(rowOf)} onSave={editable ? saveVariants : undefined} saving={savingVariants} />
       </PageSection>
+      <ProductMedia product={p} />
+      <ProductPrices product={p} />
     </>
+  )
+}
+
+// --- SM-F-05 photographs and SM-F-06 price book, on the product editor ---------------------------------
+
+const POLL_MS = 3000
+const POLL_LIMIT = 40 // two minutes; the worker command takes over anything slower
+
+const mediaItem = (m: MediaAssetRecord): MediaItem => ({
+  id: m.id, name: m.name, url: m.url ?? undefined, alt: m.alt_text, size: m.size, width: m.width ?? undefined, height: m.height ?? undefined,
+  state: m.processing_status === 'ready' ? 'ready' : m.scan_status === 'rejected' || m.processing_status === 'failed' ? 'rejected' : 'processing',
+  reason: m.rejection_reason ?? undefined,
+})
+
+function ProductMedia({ product }: { product: CatalogProductRecord }) {
+  const client = useQueryClient()
+  const refresh = useRefresh()
+  const toast = useToast()
+  const save = useSave(MediaAssetMeta, [CatalogProductMeta])
+  const command = useCommand(MediaAssetMeta, [CatalogProductMeta])
+  const [busy, setBusy] = useState(false)
+  const [removing, setRemoving] = useState<MediaAssetRecord | null>(null)
+  const waiting = product.media.some(m => m.processing_status === 'queued' || m.processing_status === 'processing')
+  // While photographs are being checked, look again every few seconds (bounded; stops when none wait).
+  useEffect(() => {
+    if (!waiting) return
+    let polls = 0
+    const timer = setInterval(() => { polls += 1; if (polls > POLL_LIMIT) clearInterval(timer); else void client.invalidateQueries({ queryKey: [CatalogProductMeta.path] }) }, POLL_MS)
+    return () => clearInterval(timer)
+  }, [waiting, client])
+  const upload = async (files: File[]) => {
+    setBusy(true)
+    for (const file of files) { // one at a time: each answer is its own, and a product holds at most twelve
+      const form = new FormData()
+      form.set('file', file)
+      try {
+        await api(`catalog/products/${product.id}/media`, { method: 'POST', body: form })
+      } catch (err) {
+        const e = err instanceof ApiError ? err.error : null
+        toast({ tone: 'danger', title: `${file.name} was not added`, description: e?.fields?.file?.[0] ?? e?.detail ?? 'Try again in a moment.', persistent: true })
+      }
+    }
+    await refresh(CatalogProductMeta.path!, MediaAssetMeta.path!)
+    setBusy(false)
+  }
+  const fail = (title: string) => (err: unknown) => toast({ tone: 'danger', title, description: err instanceof ApiError ? err.error.detail : 'Try again in a moment.', persistent: true })
+  const move = (id: string, to: number) => {
+    const order = product.media.filter(m => m.id !== id)
+    order.splice(to, 0, product.media.find(m => m.id === id)!)
+    // Renumber only what changed: a product holds at most twelve photographs.
+    void Promise.all(order.map((m, i) => (m.sort_order === i ? null : save.mutateAsync({ ref: m.id, body: { sort_order: i } })))).catch(fail('Order not saved'))
+  }
+  const remove = MediaAssetMeta.actions.find(a => a.name === 'remove') as ActionMeta
+  return (
+    // The media manager and the price book carry their own headings, under one rule each.
+    <section className="border-t border-border pt-8" aria-label="Photographs">
+      <MediaManager key={product.media.map(m => `${m.id}:${m.processing_status}:${m.sort_order}:${m.alt_text}`).join('|')} items={product.media.map(mediaItem)}
+        maxBytes={uploads.productImage.maxBytes} accept={uploads.productImage.types} busy={busy} onUpload={files => void upload(files)}
+        onAlt={(id, alt) => void save.mutateAsync({ ref: id, body: { alt_text: alt } }).catch(fail('Alt text not saved'))} onMove={move}
+        onRemove={id => setRemoving(product.media.find(m => m.id === id) ?? null)} />
+      {removing && (removing._can ?? []).includes('remove') ? (
+        <ConfirmAction action={remove} meta={MediaAssetMeta} record={{ ...removing, original_name: removing.name }} open onOpenChange={o => { if (!o) setRemoving(null) }}
+          onConfirm={() => command.run(remove, removing)} />
+      ) : null}
+    </section>
+  )
+}
+
+function ProductPrices({ product }: { product: CatalogProductRecord }) {
+  const save = useSave(PriceRuleMeta, [CatalogProductMeta])
+  const command = useCommand(PriceRuleMeta, [CatalogProductMeta])
+  const toast = useToast()
+  const [saving, setSaving] = useState<string | null>(null)
+  const variants = new Map(product.variants.map(v => [v.id, v]))
+  const unit = product.variants[0]?.packaging_unit ?? 'pack'
+  const rules: PriceRule[] = [
+    ...product.variants.map((v): PriceRule => ({ id: `list:${v.id}`, scope: 'base', label: 'List price', detail: `${v.pack_label} · SKU ${v.sku} · change it with the pack`, unitPrice: v.unit_price, state: 'active', priority: 0, locked: true })),
+    ...product.price_rules.map((r): PriceRule => {
+      const v = variants.get(r.variant)
+      return {
+        id: r.id,
+        scope: r.buyer_group_key ? 'buyer-group' : v && r.minimum_quantity > v.moq ? 'quantity-tier' : 'base',
+        label: r.label || r.explanation,
+        detail: `${v ? `SKU ${v.sku} · ` : ''}from ${r.minimum_quantity} ${unitLabel(r.unit, r.minimum_quantity) ?? r.unit}`,
+        buyerGroup: r.buyer_group_key ? `Group ${r.buyer_group_key}` : undefined,
+        unitPrice: r.unit_price, effectiveFrom: r.effective_from, effectiveTo: r.effective_until ?? undefined, state: r.state, priority: r.priority, conflictNote: r.conflict_note ?? undefined,
+      }
+    }),
+  ]
+  const records = new Map(product.price_rules.map(r => [r.id, r]))
+  const canCreate = product.variants.length > 0
+  const add = canCreate ? (
+    <ProjectedForm meta={PriceRuleMeta} fields={['variant', 'label', 'buyer_group_key', 'minimum_quantity', 'unit_price', 'priority', 'effective_from', 'effective_until']} mode="create" recipe="sheet"
+      submitLabel="Add the rule" title="New price rule" description="A quantity tier, a price for one buyer group, or a dated promotion. Buyers see the rule's reason next to the price."
+      options={{ variant: product.variants.map(v => ({ value: v.id, label: `${v.pack_label} · ${v.sku}`, description: `List ${formatMoney(v.unit_price)}, minimum ${v.moq}` })) }}
+      initial={{ variant: product.variants[0] ? { id: product.variants[0].id, label: `${product.variants[0].pack_label} · ${product.variants[0].sku}` } : null, effective_from: new Date().toISOString() }}
+      trigger={<Button size="sm" variant="primary" leadingIcon={Plus}>Add a rule</Button>}
+      onSubmit={values => attempt(() => save.mutateAsync({ body: values }), 'Rule added')} />
+  ) : null
+  const onSave = (id: string, unitPrice: string) => {
+    setSaving(id)
+    save.mutateAsync({ ref: id, body: { unit_price: unitPrice } })
+      .then(() => toast({ tone: 'success', title: 'Price saved', description: 'Buyers see it from their next look at the product.' }))
+      .catch(err => toast({ tone: 'danger', title: 'Price not saved', description: err instanceof ApiError ? Object.values(err.error.fields).flat()[0] ?? err.error.detail : 'Try again in a moment.', persistent: true }))
+      .finally(() => setSaving(null))
+  }
+  return (
+    <section className="border-t border-border pt-8" aria-label="Price book">
+      <PriceBookEditor rules={rules} unit={unit} product={product.name} toolbar={add} onSave={onSave} saving={saving}
+        ruleActions={r => (records.get(r.id) ? <ActionBar meta={PriceRuleMeta} record={records.get(r.id)!} onRun={command.run} pending={command.pending} density="compact" /> : null)} />
+    </section>
   )
 }

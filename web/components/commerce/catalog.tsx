@@ -1,8 +1,8 @@
 'use client'
 
-import { ArrowDown, ArrowUp, Copy, ImagePlus, LayoutGrid, Plus, Rows3 } from 'lucide-react'
+import { ArrowDown, ArrowUp, Copy, ImagePlus, LayoutGrid, Plus, Rows3, Trash2 } from 'lucide-react'
 import Image from 'next/image'
-import { useState, type ReactNode } from 'react'
+import { useRef, useState, type ReactNode } from 'react'
 import { FiltersBlock, type FilterValues } from '@/components/kernel/blocks/FiltersBlock'
 import { EmptyState } from '@/components/kernel/feedback/EmptyState'
 import { FieldInput } from '@/components/kernel/fields/FieldInput'
@@ -428,46 +428,71 @@ export function VariantMatrixEditor({ attributes, units, rows: initialRows, layo
 
 export type MediaItem = { id: string; name: string; url?: string; alt: string; size: number; width?: number; height?: number; state: 'uploading' | 'processing' | 'ready' | 'rejected'; progress?: number; reason?: string }
 
-/** Product media with derivative status (SM-F-05). Reorder by buttons, not drag alone; alt text is required. */
-export function MediaManager({ items: initial, layout: initialLayout = 'grid', maxBytes }: { items: readonly MediaItem[]; layout?: 'grid' | 'list'; maxBytes: number }) {
+/**
+ * Product media with derivative status (SM-F-05). Reorder by buttons, not drag alone; alt text is required.
+ * With `onUpload`, `onAlt`, `onMove` and `onRemove` the page persists each change (alt text on blur); without
+ * them the manager keeps its own state, as a preview. `accept` and `maxBytes` are the contract's upload rule.
+ */
+export function MediaManager({ items: initial, layout: initialLayout = 'grid', maxBytes, accept = ['image/jpeg', 'image/png', 'image/webp'], onUpload, onAlt, onMove, onRemove, busy }: {
+  items: readonly MediaItem[]; layout?: 'grid' | 'list'; maxBytes: number; accept?: readonly string[]
+  onUpload?: (files: File[]) => void; onAlt?: (id: string, alt: string) => void; onMove?: (id: string, to: number) => void; onRemove?: (id: string) => void; busy?: boolean
+}) {
   const [items, setItems] = useState(initial)
   const [layout, setLayout] = useState(initialLayout)
-  const move = (i: number, dir: -1 | 1) => setItems(list => { const next = [...list]; const [it] = next.splice(i, 1); next.splice(i + dir, 0, it!); return next })
+  const fileRef = useRef<HTMLInputElement>(null)
+  const move = (i: number, dir: -1 | 1) => {
+    const m = items[i]
+    setItems(list => { const next = [...list]; const [it] = next.splice(i, 1); next.splice(i + dir, 0, it!); return next })
+    if (m) onMove?.(m.id, i + dir)
+  }
+  const kinds = accept.map(a => a.split('/')[1]!.toUpperCase()).join(', ')
   const status = (m: MediaItem): ReactNode =>
     m.state === 'uploading' ? <div className="flex flex-col gap-1"><Progress value={m.progress ?? 0} label={`Uploading ${m.name}`} /><span className="text-xs text-muted tabular">Uploading {m.progress ?? 0}%</span></div>
-    : m.state === 'processing' ? <Stamp tone="info" condition="processing" size="sm">Making sizes</Stamp>
-    : m.state === 'rejected' ? <Stamp tone="danger" size="sm" detail={m.reason}>Rejected</Stamp>
+    : m.state === 'processing' ? <Stamp tone="info" condition="processing" size="sm">Checking</Stamp>
+    : m.state === 'rejected' ? <Stamp tone="danger" size="sm">Rejected</Stamp>
     : !m.alt.trim() ? <Stamp tone="warning" size="sm">Needs alt text</Stamp>
     : <Stamp tone="success" size="sm">Ready</Stamp>
   return (
     <section className="flex flex-col gap-3" aria-label="Product media">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex flex-col"><h3 className="font-display text-lg font-bold">Media</h3><span className="text-sm text-muted">JPEG, PNG or WebP up to {formatBytes(maxBytes)}. The first image is the cover.</span></div>
+        <div className="flex flex-col"><h3 className="font-display text-lg font-bold">Media</h3><span className="text-sm text-muted">{kinds} up to {formatBytes(maxBytes)}, at least 600 pixels on the long side. The first ready image is the cover; location and camera details are removed before buyers see it.</span></div>
         <div className="flex items-center gap-2">
-          <Button size="sm" variant="secondary" leadingIcon={ImagePlus}>Add images</Button>
+          <Button size="sm" variant="secondary" leadingIcon={ImagePlus} loading={busy} loadingLabel="Uploading…" onClick={() => fileRef.current?.click()}>Add images</Button>
+          <input ref={fileRef} type="file" multiple accept={accept.join(',')} className="sr-only" tabIndex={-1} aria-hidden onChange={e => { const files = [...(e.target.files ?? [])]; if (files.length) onUpload?.(files); e.target.value = '' }} />
           <Segmented label="Layout" size="sm" value={layout} onValueChange={setLayout} items={[{ value: 'grid', label: 'Grid' }, { value: 'list', label: 'List' }]} />
         </div>
       </div>
-      {/* Grid cells share one rule (a container, not floating cards). */}
-      <ol className={cn(layout === 'grid' ? 'grid grid-cols-2 gap-px border border-border bg-border sm:grid-cols-3 lg:grid-cols-4' : 'flex flex-col divide-y divide-border rounded-md border border-border bg-surface')}>
-        {items.map((m, i) => (
-          <li key={m.id} className={cn(layout === 'grid' ? 'flex flex-col bg-surface' : 'grid grid-cols-[4rem_minmax(0,1fr)_auto] items-center gap-3 p-2', m.state === 'rejected' && 'ring-2 ring-tone-danger ring-inset')}>
-            <div className={cn('relative bg-well', layout === 'grid' ? 'aspect-[4/3] border-b border-border' : 'aspect-square w-16 rounded-sm')}>
-              {m.url && m.state !== 'rejected' ? <Image src={m.url} alt={m.alt || ''} fill sizes="200px" className={cn('object-contain p-[6%]', m.state !== 'ready' && 'opacity-60')} /> : null}
-              {i === 0 && m.state === 'ready' ? <span className="absolute top-1.5 left-1.5"><Stamp tone="signal" size="sm">Cover</Stamp></span> : null}
-            </div>
-            <div className={cn('flex min-w-0 flex-col gap-1.5', layout === 'grid' && 'p-2.5')}>
-              <span className="truncate text-sm font-medium" title={m.name}>{m.name}</span>
-              {status(m)}
-              {m.state === 'ready' ? <Input aria-label={`Alt text for ${m.name}`} placeholder="Describe the product shown" value={m.alt} onChange={e => setItems(list => list.map(x => (x.id === m.id ? { ...x, alt: e.target.value } : x)))} className="h-8 text-sm" aria-invalid={!m.alt.trim() || undefined} /> : null}
-            </div>
-            <div className={cn('flex gap-1', layout === 'grid' && 'border-t border-border p-1.5')}>
-              <IconButton icon={ArrowUp} label={`Move ${m.name} earlier`} size="icon-sm" disabled={i === 0} onClick={() => move(i, -1)} />
-              <IconButton icon={ArrowDown} label={`Move ${m.name} later`} size="icon-sm" disabled={i === items.length - 1} onClick={() => move(i, 1)} />
-            </div>
-          </li>
-        ))}
-      </ol>
+      {items.length ? (
+        /* Grid cells share rules (a container, not floating cards); a short last row leaves open ground. */
+        <ol className={cn(layout === 'grid' ? 'grid grid-cols-2 border-t border-l border-border sm:grid-cols-3 lg:grid-cols-4' : 'flex flex-col divide-y divide-border rounded-md border border-border bg-surface')}>
+          {items.map((m, i) => (
+            <li key={m.id} className={cn(layout === 'grid' ? 'flex flex-col border-r border-b border-border bg-surface' : 'grid grid-cols-[4rem_minmax(0,1fr)_auto] items-center gap-3 p-2', m.state === 'rejected' && 'ring-2 ring-tone-danger ring-inset')}>
+              <div className={cn('relative bg-well', layout === 'grid' ? 'aspect-[4/3] border-b border-border' : 'aspect-square w-16 rounded-sm')}>
+                {m.url && m.state !== 'rejected' ? <Image src={m.url} alt={m.alt || ''} fill sizes="200px" unoptimized className={cn('object-contain p-[6%]', m.state !== 'ready' && 'opacity-60')} /> : null}
+                {i === items.findIndex(x => x.state === 'ready') && m.state === 'ready' ? <span className="absolute top-1.5 left-1.5"><Stamp tone="signal" size="sm">Cover</Stamp></span> : null}
+              </div>
+              <div className={cn('flex min-w-0 flex-col gap-1.5', layout === 'grid' && 'p-2.5')}>
+                <span className="truncate text-sm font-medium" title={m.name}>{m.name}</span>
+                {status(m)}
+                {m.state === 'rejected' && m.reason ? <span className="text-sm text-tone-danger">{m.reason}</span> : null}
+                {m.state === 'ready' ? (
+                  <Input aria-label={`Alt text for ${m.name}`} placeholder="Describe the product shown" value={m.alt}
+                    onChange={e => setItems(list => list.map(x => (x.id === m.id ? { ...x, alt: e.target.value } : x)))}
+                    onBlur={e => { const was = initial.find(x => x.id === m.id)?.alt; if (e.target.value.trim() && e.target.value !== was) onAlt?.(m.id, e.target.value.trim()) }}
+                    className="h-8 text-sm" aria-invalid={!m.alt.trim() || undefined} />
+                ) : null}
+              </div>
+              <div className={cn('flex gap-1', layout === 'grid' && 'border-t border-border p-1.5')}>
+                <IconButton icon={ArrowUp} label={`Move ${m.name} earlier`} size="icon-sm" disabled={i === 0} onClick={() => move(i, -1)} />
+                <IconButton icon={ArrowDown} label={`Move ${m.name} later`} size="icon-sm" disabled={i === items.length - 1} onClick={() => move(i, 1)} />
+                {onRemove ? <IconButton icon={Trash2} label={`Remove ${m.name}`} size="icon-sm" className="ml-auto" onClick={() => onRemove(m.id)} /> : null}
+              </div>
+            </li>
+          ))}
+        </ol>
+      ) : (
+        <EmptyState kind="no-data" title="No photographs yet" description="Add a clear photograph of the pack on a plain background; buyers see the first one in search and on the product page." size="inline" />
+      )}
     </section>
   )
 }

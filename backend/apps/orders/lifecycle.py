@@ -1,0 +1,205 @@
+"""SM-F-15 order lifecycle: which side may move an order from which state to which, and the record of it.
+
+Moves are guarded here and nowhere else; the order resource's commands call `move`, and so do approvals
+(SM-F-12) and delivery (SM-F-17). Every move appends an OrderTransition (actor, time, reason), raises the
+order's version and tells the other side.
+
+    pending_approval ──approve──► submitted ──confirm──► confirmed ──start_picking──► picking
+            │ reject/cancel            │ cancel              │ cancel (seller)          │ mark_partial / ship
+            ▼                          ▼                      ▼                          ▼
+        cancelled                  cancelled              cancelled        partially_fulfilled ──ship──► shipped
+                                                                                                       │ mark_delivered
+                                                                                                       ▼
+                                                    disputed ◄──dispute (buyer)── delivered / shipped
+"""
+
+from typing import Any
+
+from django.http import HttpRequest
+from django.utils import timezone
+
+from apps.orders.models import Order, OrderTransition
+from apps.organizations.models import Membership, Organization
+from apps.organizations.tenancy import active_membership, is_admin
+from core.api import fail, invalid
+from core.result import ErrorCode
+
+S = Order.Status
+# Seller commands: (from states, to state, reason required)
+SELLER_MOVES: dict[str, tuple[tuple[str, ...], str, bool]] = {
+    "confirm": ((S.SUBMITTED,), S.CONFIRMED, False),
+    "start_picking": ((S.CONFIRMED,), S.PICKING, False),
+    "mark_partial": ((S.PICKING,), S.PARTIALLY_FULFILLED, True),
+    "ship": ((S.CONFIRMED, S.PICKING, S.PARTIALLY_FULFILLED), S.SHIPPED, False),
+    "mark_delivered": ((S.SHIPPED,), S.DELIVERED, False),
+}
+BUYER_CANCEL_FROM = (S.PENDING_APPROVAL, S.SUBMITTED)
+SELLER_CANCEL_FROM = (S.SUBMITTED, S.CONFIRMED, S.PICKING)
+DISPUTE_FROM = (S.SHIPPED, S.DELIVERED)
+BUYER_ACTIONS = {"approve", "reject", "dispute", "reorder"}
+SELLER_ACTIONS = set(SELLER_MOVES)
+
+# Messages per destination (apps.notifications.messages) and who hears of it.
+NOTICE: dict[str, tuple[str, str]] = {
+    S.CONFIRMED: ("order.confirmed", "buyer"),
+    S.PARTIALLY_FULFILLED: ("order.partial", "buyer"),
+    S.SHIPPED: ("order.shipped", "buyer"),
+    S.DELIVERED: ("order.delivered", "buyer"),
+}
+
+
+def side_of(request: HttpRequest, order: Order) -> str | None:
+    """Whether the request acts for the order's buyer or its seller (administrators act for neither)."""
+    if is_admin(request.user):
+        return None
+    org_id = active_membership(request).organization_id  # pyright: ignore[reportAttributeAccessIssue]
+    if org_id == order.buyer_organization_id:  # pyright: ignore[reportAttributeAccessIssue]
+        return "buyer"
+    if org_id == order.seller_organization_id:  # pyright: ignore[reportAttributeAccessIssue]
+        return "seller"
+    return None
+
+
+def members(org: Organization, roles: tuple[str, ...]) -> list[Any]:
+    return [
+        m.user
+        for m in Membership.objects.filter(
+            organization=org, role_key__in=roles, status=Membership.Status.ACTIVE
+        ).select_related("user")
+    ]
+
+
+def tell(
+    org: Organization,
+    roles: tuple[str, ...],
+    *,
+    event_key: str,
+    event_id: str,
+    message: str,
+    params: dict[str, Any],
+    link: str,
+    skip: Any = None,
+) -> None:
+    from apps.notifications.services import notify
+
+    for user in members(org, roles):
+        if skip is not None and user.pk == skip.pk:
+            continue
+        notify(user, event_key=event_key, event_id=event_id, message=message, params=params, deep_link=link)
+
+
+def buyer_link(order: Order) -> str:
+    return f"/orders/{order.pk}"
+
+
+def seller_link(order: Order) -> str:
+    return f"/sell/orders/{order.pk}"
+
+
+def person_name(user: Any) -> str:
+    """How a person is named to others in notices and timelines."""
+    return getattr(user, "display_name", "") or getattr(user, "email", "")
+
+
+def seller_name(order: Order) -> str:
+    profile = getattr(order.seller_organization, "seller_profile", None)
+    return profile.public_name if profile else order.seller_organization.name
+
+
+def record(order: Order, to: str, actor: Any, reason: str = "") -> OrderTransition:
+    """Append the transition and move the order (no guard: callers check who may make the move)."""
+    transition = OrderTransition.objects.create(
+        order=order, from_status=order.status, to_status=to, actor=actor, reason=reason, occurred_at=timezone.now()
+    )
+    order.status = to
+    order.version += 1
+    order.save(update_fields=["status", "version"])
+    return transition
+
+
+def move(request: HttpRequest, order: Order, action: str, reason: str = "") -> OrderTransition:
+    """A seller move, a cancellation or a dispute, by the side the request acts for."""
+    side = side_of(request, order)
+    actor = request.user
+    if action in SELLER_MOVES:
+        allowed_from, to, needs_reason = SELLER_MOVES[action]
+        if side != "seller":
+            fail(ErrorCode.FORBIDDEN, "Only the seller moves an order through fulfilment.")
+    elif action == "cancel":
+        allowed_from = BUYER_CANCEL_FROM if side == "buyer" else SELLER_CANCEL_FROM if side == "seller" else ()
+        to, needs_reason = S.CANCELLED, side == "seller"
+    elif action == "dispute":
+        if side != "buyer":
+            fail(ErrorCode.FORBIDDEN, "Only the buyer can dispute an order.")
+        allowed_from, to, needs_reason = DISPUTE_FROM, S.DISPUTED, True
+    else:
+        fail(ErrorCode.NOT_FOUND)
+    if order.status not in allowed_from:
+        label = Order.Status(order.status).label.lower()
+        fail(ErrorCode.CONFLICT, f"An order that is {label} cannot be moved that way.")
+    if needs_reason and not reason.strip():
+        invalid({"reason": ["Give a reason; the other side reads it."]})
+    transition = record(order, to, actor, reason.strip())
+    params = {"order": order.order_number, "seller": seller_name(order), "reason": reason.strip() or "-"}
+    if to in NOTICE:
+        message, _ = NOTICE[to]
+        tell(
+            order.buyer_organization,
+            ("buyer_owner", "buyer_purchaser"),
+            event_key="order",
+            event_id=f"order:{order.pk}:{to}",
+            message=message,
+            params=params,
+            link=buyer_link(order),
+        )
+    elif to == S.CANCELLED:
+        if side == "buyer":
+            tell(
+                order.seller_organization,
+                ("seller_manager",),
+                event_key="order",
+                event_id=f"order:{order.pk}:cancelled",
+                message="order.cancelled",
+                params={**params, "by": order.buyer_organization.name},
+                link=seller_link(order),
+            )
+        else:
+            tell(
+                order.buyer_organization,
+                ("buyer_owner", "buyer_purchaser"),
+                event_key="order",
+                event_id=f"order:{order.pk}:cancelled",
+                message="order.cancelled",
+                params={**params, "by": seller_name(order)},
+                link=buyer_link(order),
+            )
+    elif to == S.DISPUTED:
+        tell(
+            order.seller_organization,
+            ("seller_manager",),
+            event_key="order",
+            event_id=f"order:{order.pk}:disputed",
+            message="order.disputed",
+            params={**params, "buyer": order.buyer_organization.name},
+            link=seller_link(order),
+        )
+    return transition
+
+
+def next_actions(order: Order, side: str | None) -> list[str]:
+    """What the viewing side could do next, by name (the order resource narrows `_can` with this)."""
+    out: list[str] = []
+    if side == "seller":
+        out += [name for name, (froms, _, _) in SELLER_MOVES.items() if order.status in froms]
+        if order.status in SELLER_CANCEL_FROM:
+            out.append("cancel")
+    elif side == "buyer":
+        if order.status == S.PENDING_APPROVAL:
+            out += ["approve", "reject"]
+        if order.status in BUYER_CANCEL_FROM:
+            out.append("cancel")
+        if order.status in DISPUTE_FROM:
+            out.append("dispute")
+        if order.status not in (S.PENDING_APPROVAL,):
+            out.append("reorder")
+    return out

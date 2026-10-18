@@ -19,7 +19,8 @@ export type SellerProfileRecord = Rec & {
 // --- catalogue (apps/catalog/resources.py) ----------------------------------------------------------
 
 export type RichValue = { html: string; text: string }
-export type ImageRecord = { url: string; alt: string; width: number; height: number; credit?: string }
+/** `widths`: the responsive widths a processed photograph may be served at (SM-F-05). */
+export type ImageRecord = { url: string; alt: string; width: number; height: number; credit?: string; widths?: number[] }
 /** CartLine.stock_status values (spec SM-F-10): buyer-visible state, never warehouse detail. */
 export type StockStatus = 'available' | 'limited' | 'unavailable' | 'unknown'
 export type StockRecord = { state: StockStatus; available: number | null; unit: string }
@@ -40,6 +41,24 @@ export type VariantRecord = {
   /** Per-variant attribute values (choice values), as the contract defines them. */
   attributes: Record<string, string>
   details: { key: string; label: string; value: string }[]
+  /** Product pages only: the public price at each quantity where it changes (SM-F-06). */
+  tiers?: PriceTierRecord[]
+}
+
+/** One step of a variant's price ladder, from `pricing.tiers`. */
+export type PriceTierRecord = { min_quantity: number; max_quantity: number | null; unit_price: string; explanation: string }
+
+/** PriceResolution (SM-F-06) for one variant and quantity, as `GET prices` answers it. */
+export type PriceAnswer = {
+  variant_id: string
+  unit_price: string
+  rule_id: string | null
+  explanation: string
+  resolved_at: string
+  quantity: number
+  /** Resolved for the signed-in buyer's organization (their groups apply), not the public. */
+  personal: boolean
+  tiers: PriceTierRecord[]
 }
 
 export type ProductPage = {
@@ -157,6 +176,46 @@ export type CatalogProductRecord = Rec & {
   contract: ContractSummary
   newer_contract: ContractSummary | null
   public_url: string | null
+  media: MediaAssetRecord[]
+  price_rules: PriceRuleRecord[]
+}
+
+/** A product photograph (`media_asset`, SM-F-05) through its pipeline. */
+export type MediaAssetRecord = Rec & {
+  name: string
+  alt_text: string
+  size: number
+  width: number | null
+  height: number | null
+  sort_order: number
+  scan_status: 'pending' | 'clean' | 'rejected' | 'failed'
+  processing_status: 'queued' | 'processing' | 'ready' | 'failed'
+  rejection_reason: string | null
+  url: string | null
+  original_url: string
+}
+
+/** A price-book rule (`price_rule`, SM-F-06) with the state the editor shows. */
+export type PriceRuleRecord = Rec & {
+  variant: string
+  label: string
+  buyer_group_key: string | null
+  minimum_quantity: number
+  unit: string
+  unit_price: string
+  priority: number
+  effective_from: string
+  effective_until: string | null
+  is_active: boolean
+  state: 'active' | 'future' | 'expired' | 'off' | 'conflict'
+  conflict_note: string | null
+  explanation: string
+}
+
+/** `GET catalog/buyers`: a seller's trading partners and the price groups they are in. */
+export type TradingPartners = {
+  results: { id: string; name: string; city: string | null; orders: number; last_order_at: string | null; groups: { id: string; group_key: string }[] }[]
+  groups: { value: string; label: string }[]
 }
 
 /** ComparisonState (spec SM-F-09), projected by the API's `compare` view. */
@@ -192,6 +251,8 @@ export type CartLineRecord = {
   state: CartLineState
   reason: string | null
   seller_id: string
+  /** Why this price: "List price", "Key accounts price", "Quantity price from 10 bales". */
+  price_explanation: string
 }
 export type CartRecord = Rec & {
   status: 'active' | 'submitted' | 'abandoned' | 'converted'
@@ -219,20 +280,65 @@ export type ReorderDifference = {
   substitution: null
   product_slug: string | null
 }
-export type OrderLineRecord = { id: string; product: string; sku: string; pack_label: string; quantity: number; unit: string; unit_price: string; line_total: string }
+export type OrderLineRecord = {
+  id: string; product: string; sku: string; pack_label: string; quantity: number; unit: string; unit_price: string; line_total: string
+  price_explanation: string | null
+}
+export type OrderStatusValue = 'pending_approval' | 'submitted' | 'confirmed' | 'picking' | 'partially_fulfilled' | 'shipped' | 'delivered' | 'cancelled' | 'disputed'
+export type OrderTransitionRecord = { id: string; from: OrderStatusValue | null; to: OrderStatusValue; at: string; actor: string; reason: string | null }
+/** The approval an order waits for or passed (SM-F-12), from the policy snapshot taken when it was placed. */
+export type ApprovalRecord = {
+  state: 'pending' | 'approved' | 'rejected'
+  policy: string
+  threshold: string
+  roles: string[]
+  minimum: number
+  approved: number
+  decisions: { approver: string; decision: 'approved' | 'rejected'; comment: string; decided_at: string }[]
+  can_decide: boolean
+}
+export type ShipmentStatusValue = 'pending' | 'handed_over' | 'in_transit' | 'delivered' | 'exception'
+export type ShipmentEventRecord = { id: string; type: string; label: string; description: string; location: string | null; occurred_at: string; received_at: string; source: string }
+/** A shipment as its resource (`shipment`, SM-F-17) serves it, with `_can`. */
+export type ShipmentRecord = Rec & {
+  order: { id: string; label: string }
+  carrier_name: string
+  carrier_reference: string
+  status: ShipmentStatusValue
+  estimated_start_at: string | null
+  estimated_end_at: string | null
+  last_event_at: string | null
+  last_source: string | null
+  stale: boolean
+  delayed: boolean
+  events: ShipmentEventRecord[]
+  proof_of_delivery: FileRecord | null
+}
+export type FileRecord = { id: string; name: string; size: number; type: string; url: string; state?: string }
 export type OrderRecord = Rec & {
   order_number: string
-  status: string
+  status: OrderStatusValue
   submitted_at: string
   subtotal: string
   total: string
   special_instructions: string
+  side: 'buyer' | 'seller' | null
   seller: { id: string; label: string }
+  buyer: { id: string; label: string }
+  delivery: { label: string; line1: string; city: string; region: string; postal_code: string } | null
   delivery_address: { id: string; label: string } | null
   submitted_by: { id: string; label: string } | null
+  next_actions: string[]
+  // The detail adds these:
   lines: OrderLineRecord[]
+  transitions?: OrderTransitionRecord[]
+  approval?: ApprovalRecord | null
+  shipments?: { id: string }[]
+  quote?: { id: string; reference: string } | null
   reorder?: { lines: ReorderDifference[]; addable: number; current_cart_lines: number }
 }
+/** `carts/<id>/checkout`: one order per seller. */
+export type CheckoutResult = { orders: OrderRecord[] }
 export type ReorderResult = {
   source_order_id: string
   new_cart_id: string
@@ -240,4 +346,51 @@ export type ReorderResult = {
   unavailable_line_ids: string[]
   replaced_cart_lines: number
   created_at: string
+}
+
+// --- quotes (apps/quotes, SM-F-11) ------------------------------------------------------------------
+
+export type QuoteStatusValue = 'requested' | 'responded' | 'accepted' | 'declined' | 'expired' | 'cancelled'
+export type QuoteLineRecord = { id: string; product: string; sku: string; pack_label: string; quantity: number; unit: string; list_price: string; offered_price: string | null }
+export type QuoteRecord = Rec & {
+  reference: string
+  status: QuoteStatusValue
+  side: 'buyer' | 'seller' | null
+  seller: { id: string; label: string }
+  buyer: { id: string; label: string }
+  delivery_address: { id: string; label: string } | null
+  expires_at: string
+  buyer_notes: string
+  seller_notes: string
+  responded_at: string | null
+  accepted_at: string | null
+  created_at: string
+  lines: QuoteLineRecord[]
+  list_total: string
+  offered_total: string
+  order: { id: string; order_number: string } | null
+}
+
+// --- analytics (apps/analytics, SM-F-19) --------------------------------------------------------------
+
+export type MetricResult = {
+  key: string
+  name: string
+  unit: string
+  /** Which way is good news, from the metric definition. */
+  better: 'higher' | 'lower'
+  description: string
+  version: number
+  dimensions: string[]
+  /** "" when there was nothing to average or divide. */
+  value: string
+  /** The period before, the same length; null for a metric of the present (stock). */
+  previous: string | null
+  series?: { bucket: string; value: string }[]
+  breakdown?: { rank: number; label: string; value: string; units?: number }[]
+}
+export type AnalyticsAnswer = {
+  query: { date_from: string; date_to: string; previous_from: string; previous_to: string; dimension: string | null }
+  definitions_version: string
+  metrics: MetricResult[]
 }

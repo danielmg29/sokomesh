@@ -11,7 +11,7 @@ from django.utils import timezone
 from apps.carts.models import Cart, CartLine
 from apps.catalog.contracts import definition_errors
 from apps.catalog.models import CategoryContract, Product, Variant
-from apps.orders.models import Order, OrderLine
+from apps.orders.models import Order, OrderLine, OrderTransition
 from apps.organizations.models import Organization
 from apps.sellers.models import SellerProfile
 from tests.test_features import FLOUR, call, catalogue, person, signed_in, world  # noqa: F401  (fixtures)
@@ -295,6 +295,7 @@ def test_reorder_copies_history_into_a_fresh_cart_with_explicit_differences(worl
         status="delivered",
         submitted_at=timezone.now() - timedelta(days=7),
     )
+    OrderTransition.objects.create(order=order, to_status="submitted", occurred_at=order.submitted_at)
     OrderLine.objects.create(
         order=order,
         variant=lead,
@@ -336,7 +337,8 @@ def test_reorder_copies_history_into_a_fresh_cart_with_explicit_differences(worl
     assert old.status == "abandoned" and OrderLine.objects.get(
         order=order, sku_snapshot="MVN-2K-12"
     ).unit_price == Decimal("1690.00")
-    assert call(signed_in(world["manager"]), "get", f"orders/{order.pk}")[0] == 404  # not the seller's view yet
+    seller_view = call(signed_in(world["manager"]), "get", f"orders/{order.pk}")[1]  # the seller's side (SM-F-15)
+    assert seller_view["side"] == "seller" and "reorder" not in seller_view["_can"] and "reorder" not in seller_view
 
 
 def test_contract_versions_are_monotonic_per_category(catalogue):  # noqa: F811

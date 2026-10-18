@@ -1,6 +1,9 @@
 """The demo catalogue's structure: category contracts (SM-F-03), each product's attributes and variants
-(SM-F-04), more products for search and paging (SM-F-08), a cart that needs repricing (SM-F-10) and order
-history to reorder from (SM-F-20). Prices are invented but realistic for Kenyan wholesale in 2026.
+(SM-F-04), more products for search and paging (SM-F-08), a cart that needs repricing (SM-F-10), order
+history to reorder from (SM-F-20), and the Integrated features' data: price books (SM-F-06), photographs
+(SM-F-05), quotes (SM-F-11), an approval policy (SM-F-12), orders through their lifecycle with deliveries
+(SM-F-15, 17) and months of sales for analytics (SM-F-19). Prices are invented but realistic for Kenyan
+wholesale in 2026.
 
 Listings for the first twelve products are in apps/demo/products.py; the further products here use a
 shorter listing built from their facts, still in the rich-text shape the allow-list keeps.
@@ -1139,33 +1142,188 @@ CART = {
     "lines": [("MVN-2K-12", 5, "1690.00"), ("JUA-3L-06", 2, None), ("MLM-500-05", 2, None)],
 }
 
-# Historical orders (immutable): one line repriced since, one out of stock, one discontinued, one MOQ raised.
+# --- The Integrated features (SM-F-05, 06, 11, 12, 15, 17, 19) ------------------------------------------
+
+# Price books (SM-F-06): sku, label, buyer group, from packs, price per pack, priority, starts and ends (days
+# from today; None for no end), switched on. Wanjiru is a Mwangaza key account, so Brian's cart line at the
+# old list price shows as repriced to the key-account price until he accepts it.
+PRICE_RULES: list[tuple[str, str, str, int, str, int, int, int | None, bool]] = [
+    ("MVN-2K-12", "", "", 20, "1690.00", 0, -60, None, True),
+    ("MVN-2K-12", "", "", 50, "1640.00", 0, -60, None, True),
+    ("MVN-2K-12", "", "key_accounts", 5, "1700.00", 0, -45, None, True),
+    ("MVN-2K-12", "Harvest promotion", "", 5, "1660.00", 5, 7, 21, True),
+    ("MVN-2K-12", "September promotion", "", 5, "1650.00", 5, -48, -18, True),
+    ("MWP-25K-01", "", "", 10, "4700.00", 0, -30, None, True),
+    ("MWP-25K-01", "", "key_accounts", 2, "4780.00", 0, -30, None, True),
+    ("MGB-1K-24", "", "", 10, "3600.00", 0, -30, None, False),
+    ("UBF-2K-10", "", "", 20, "1620.00", 0, -20, None, True),
+    ("UBF-2K-10", "", "retail_partners", 5, "1650.00", 0, -20, None, True),
+]
+
+# seller, buyer, group
+BUYER_GROUPS = [
+    ("mwangaza", "wanjiru", "key_accounts"),
+    ("mwangaza", "kilimo", "key_accounts"),
+    ("rift", "wanjiru", "retail_partners"),
+]
+
+# Purchase approval (SM-F-12): buyer, policy, threshold, approver roles, approvals needed.
+APPROVAL_POLICIES = [("wanjiru", "Large orders", "50000.00", ["buyer_owner"], 1)]
+
+# The way an order moved, from submission: status, hours after it was placed, who (an email or None for the
+# seller's own staff without demo logins), and why. Orders are numbered in the order they were placed.
+PATHS: dict[str, list[tuple[str, int, str | None, str]]] = {
+    "mwangaza": [
+        ("confirmed", 2, "faith@mwangaza-demo.co.ke", ""),
+        ("picking", 18, "peter@mwangaza-demo.co.ke", ""),
+        ("shipped", 26, "peter@mwangaza-demo.co.ke", ""),
+        ("delivered", 50, "peter@mwangaza-demo.co.ke", "Delivery confirmed"),
+    ],
+    "other": [
+        ("confirmed", 3, None, "Confirmed by the seller"),
+        ("picking", 20, None, ""),
+        ("shipped", 30, None, ""),
+        ("delivered", 56, None, "Delivery confirmed"),
+    ],
+}
+
+# Wanjiru's orders, kept by hand: each shows a step of the lifecycle. `quote` names an accepted quote below.
 ORDERS: list[dict[str, Any]] = [
     {
-        "number": "SO-2026-0141",
         "seller": "mwangaza",
         "email": "grace@wanjiru-demo.co.ke",
         "days_ago": 21,
         "status": "delivered",
         "notes": "Deliver before 10:00 and use the back gate.",
         "lines": [("MVN-2K-12", 10, "1690.00"), ("MWP-25K-01", 2, "4850.00"), ("MGB-2K-10", 3, "3150.00")],
+        "shipment": ("Own van · KDA 412X", "MW-DLV-0141", "delivered"),
     },
     {
-        "number": "SO-2026-0158",
         "seller": "pwani",
         "email": "brian@wanjiru-demo.co.ke",
         "days_ago": 9,
         "status": "delivered",
         "notes": "",
         "lines": [("JUA-3L-06", 2, "5100.00"), ("SFI-800-25", 2, "4375.00"), ("JUA-5L-04", 1, "6900.00")],
+        "shipment": ("Coast Haulage", "CH-90021", "delivered"),
     },
     {
-        "number": "SO-2026-0163",
+        "seller": "mwangaza",
+        "email": "grace@wanjiru-demo.co.ke",
+        "days_ago": 6,
+        "status": "shipped",
+        "notes": "From quote: weekly flour and rice.",
+        "quote": "flour-and-rice",
+        "lines": [("MVN-2K-12", 40, "1620.00"), ("MWP-25K-01", 10, "4650.00")],
+        "shipment": ("G4S Logistics", "G4S-778120", "delayed"),
+    },
+    {
         "seller": "rift",
         "email": "grace@wanjiru-demo.co.ke",
-        "days_ago": 2,
+        "days_ago": 3,
         "status": "shipped",
         "notes": "Call Grace on arrival.",
         "lines": [("SKB-1K-24", 2, "3960.00"), ("UBF-2K-10", 4, "1650.00")],
+        "shipment": ("Rift Express", "RX-552019", "stale"),
     },
+    {
+        "seller": "mwangaza",
+        "email": "brian@wanjiru-demo.co.ke",
+        "days_ago": 1,
+        "status": "picking",
+        "notes": "",
+        "lines": [("MVN-1K-24", 6, "1820.00"), ("MVW-2K-12", 5, "1620.00")],
+    },
+    {
+        "seller": "mwangaza",
+        "email": "grace@wanjiru-demo.co.ke",
+        "hours_ago": 5,
+        "status": "submitted",
+        "notes": "Store room, please, not the shop.",
+        "lines": [("MWP-5K-04", 4, "4180.00"), ("MGB-1K-24", 2, "3720.00")],
+    },
+    {
+        "seller": "mwangaza",
+        "email": "brian@wanjiru-demo.co.ke",
+        "hours_ago": 3,
+        "status": "pending_approval",
+        "notes": "Stock for the end-of-month rush.",
+        "lines": [("MVN-2K-12", 30, "1690.00")],
+    },
+]
+
+# Months of Mwangaza sales to its other buyers (and some to Wanjiru) for seller analytics (SM-F-19):
+# generated from a fixed seed, so every reseed is the same. Days ago, buyer and lines come from these.
+HISTORY = {
+    "seller": "mwangaza",
+    "count": 46,
+    "days": (8, 88),
+    "buyers": ["kilimo", "kilimo", "njeri", "njeri", "wanjiru"],
+    "skus": [
+        ("MVN-2K-12", 5, 25),
+        ("MVN-1K-24", 5, 12),
+        ("MWP-25K-01", 2, 8),
+        ("MVW-2K-12", 5, 10),
+        ("MVN-10K-01", 10, 20),
+        ("MWP-5K-04", 3, 6),
+        ("MGB-1K-24", 2, 5),
+    ],
+    "cancelled_every": 13,
+    "short_every": 9,
+}
+
+# Quotes (SM-F-11): key, buyer email, seller, status, days since asked, days valid, notes, lines (sku,
+# quantity, offered price or None), seller notes.
+QUOTES: list[dict[str, Any]] = [
+    {
+        "key": "flour-and-rice",
+        "email": "grace@wanjiru-demo.co.ke",
+        "seller": "mwangaza",
+        "status": "accepted",
+        "days_ago": 8,
+        "valid_days": 3,
+        "notes": "Weekly order for the next month; can you do better than the tier price?",
+        "lines": [("MVN-2K-12", 40, "1620.00"), ("MWP-25K-01", 10, "4650.00")],
+        "seller_notes": "For 40 bales a week we can hold 1,620 until the end of the month.",
+    },
+    {
+        "key": "oil-restock",
+        "email": "brian@wanjiru-demo.co.ke",
+        "seller": "pwani",
+        "status": "responded",
+        "days_ago": 1,
+        "valid_days": 4,
+        "notes": "Ten cartons of the 3 litre for the festive season.",
+        "lines": [("JUA-3L-06", 10, "4990.00"), ("SFI-800-25", 4, "4290.00")],
+        "seller_notes": "Delivery from Mombasa in four days; price includes the festive discount.",
+    },
+    {
+        "key": "rice-bulk",
+        "email": "brian@wanjiru-demo.co.ke",
+        "seller": "mwangaza",
+        "status": "requested",
+        "hours_ago": 20,
+        "valid_days": 3,
+        "notes": "Twenty sacks of pishori if the price is right; delivery to the store room.",
+        "lines": [("MWP-25K-01", 20, None), ("MVN-10K-01", 20, None)],
+        "seller_notes": "",
+    },
+    {
+        "key": "sugar-old",
+        "email": "grace@wanjiru-demo.co.ke",
+        "seller": "rift",
+        "status": "expired",
+        "days_ago": 12,
+        "valid_days": 2,
+        "notes": "Sugar for the school term.",
+        "lines": [("SKB-1K-24", 10, None)],
+        "seller_notes": "",
+    },
+]
+
+# Photographs uploaded through the media pipeline (SM-F-05): product, cut-out in web/public/images/products,
+# alt text. The milk powder cut-out is too small (285 x 323), so the pipeline refuses it with its reason.
+MEDIA = [
+    ("magharibi-brown-sugar-1kg", "sugar.webp", "Brown sugar in a white bowl, as packed in the 1 kg packets"),
+    ("magharibi-brown-sugar-1kg", "milk-powder.webp", "Close-up of the sugar crystals"),
 ]

@@ -41,6 +41,9 @@ INSTALLED_APPS = [
     "apps.catalog",
     "apps.carts",
     "apps.orders",
+    "apps.quotes",
+    "apps.delivery",
+    "apps.analytics",
     "apps.demo",
 ]
 
@@ -185,7 +188,7 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 
 AC_CONTRACT = {
     # Bump with every contract change: major = breaking, minor = additive, patch = presentational.
-    "version": "0.5.0",
+    "version": "0.6.0",
     "api_base": "/api/v1/",
     "path": Path(env("AC_CONTRACT_PATH", default=str(REPO_DIR / "contract" / "ac-contract.json"))),
 }
@@ -233,7 +236,14 @@ MEDIA_URL = "/media/"
 AC_UPLOADS = {
     "document": {"types": ["application/pdf", "image/jpeg", "image/png"], "max_bytes": 10 * 1_048_576},
     "avatar": {"types": ["image/jpeg", "image/png", "image/webp"], "max_bytes": 2 * 1_048_576},
+    "product_image": {"types": ["image/jpeg", "image/png", "image/webp"], "max_bytes": 15 * 1_048_576},
 }
+# SM-F-05 media jobs: an in-process pool of `workers` with at most `queue` waiting (the rest stay queued for
+# `manage.py process_media`); `eager` processes at upload (tests). Photographs above `max_pixels` or with a
+# longer side under `min_long_side` are refused.
+AC_MEDIA = {"workers": 2, "queue": 8, "eager": False, "max_pixels": 40_000_000, "min_long_side": 600}
+# SM-F-17: a shipment with no news for this long is shown as stale (last known state, with its time).
+AC_DELIVERY = {"stale_hours": 24}
 FILE_UPLOAD_MAX_MEMORY_SIZE = 2_621_440
 
 # The public site, for links in emails (verification, invitations, notifications).

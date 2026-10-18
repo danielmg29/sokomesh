@@ -1,9 +1,10 @@
 """SM-F-10 cart: a server-backed buyer cart, grouped by seller, revalidated wherever it is opened.
 
-Each line keeps the price it was added at (`quoted_unit_price`) and when that price was checked. When a
-seller's price changes the line says so and the cart's total uses the current price, but the quote only
-moves when the buyer accepts the new prices: repricing is explicit, never silent. Authoritative prices
-are resolved again at checkout, which arrives with the order lifecycle (SM-F-15).
+Each line keeps the price it was quoted at (`quoted_unit_price`, from the seller's price book for this buyer
+and quantity, SM-F-06) and when that price was checked. When the resolved price changes the line says so
+and the cart's total uses the current price, but the quote only moves when the buyer accepts the new
+prices or changes the quantity themselves: repricing is explicit, never silent. Checkout (SM-F-15)
+resolves every price again and refuses a cart whose quotes are out of date.
 """
 
 import uuid
@@ -71,6 +72,10 @@ class CartLine(models.Model):
         "Price when added", max_digits=12, decimal_places=2, editable=False, blank=True
     )
     price_validated_at = models.DateTimeField("Price checked", default=timezone.now, editable=False)
+    # The rule that set the quoted price (SM-F-06); empty means the variant's list price.
+    price_rule = models.ForeignKey(
+        "catalog.PriceRule", null=True, blank=True, on_delete=models.SET_NULL, related_name="+", editable=False
+    )
     stock_status = models.CharField(
         "Stock", max_length=20, choices=Stock.choices, default=Stock.UNKNOWN, editable=False
     )
@@ -98,8 +103,12 @@ class CartLine(models.Model):
         v = self.variant
         self.seller_id = v.seller_id  # pyright: ignore[reportAttributeAccessIssue]
         self.unit = v.packaging_unit
-        if self.quoted_unit_price is None:
-            self.quoted_unit_price, self.price_validated_at = v.unit_price, timezone.now()
+        if self.quoted_unit_price is None:  # a new line, or a quantity the buyer changed: quote it now
+            from apps.catalog.pricing import resolve
+
+            price = resolve(v, self.cart.buyer_organization, self.quantity)
+            self.quoted_unit_price, self.price_validated_at = price.unit_price, price.resolved_at
+            self.price_rule_id = price.rule_id  # pyright: ignore[reportAttributeAccessIssue]
         self.stock_status = v.stock_state()
         errors: dict[str, list[str]] = {}
         if self.cart.status != Cart.Status.ACTIVE:

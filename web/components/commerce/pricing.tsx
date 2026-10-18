@@ -1,7 +1,7 @@
 'use client'
 
 import { ArrowRight, Info, Pencil, TriangleAlert } from 'lucide-react'
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { unitLabel } from '@/components/kernel/fields/types'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/disclosure'
@@ -58,19 +58,31 @@ export type PriceRule = {
   buyerGroup?: string
   unitPrice?: Money
   tiers?: PriceTier[]
-  effectiveFrom: string
+  /** Absent for the list price, which always applies unless a rule does. */
+  effectiveFrom?: string
   effectiveTo?: string
-  state: 'active' | 'future' | 'expired' | 'conflict'
+  state: 'active' | 'future' | 'expired' | 'off' | 'conflict'
   priority: number
   conflictNote?: string
+  /** A second line under the label: the SKU, the quantity it starts at. */
+  detail?: string
+  /** The list price is edited with the pack, not here. */
+  locked?: boolean
 }
 
 const ruleLook: Record<PriceRule['state'], { tone: Tone; label: string }> = {
-  active: { tone: 'success', label: 'Active' }, future: { tone: 'info', label: 'Starts later' }, expired: { tone: 'neutral', label: 'Expired' }, conflict: { tone: 'danger', label: 'Conflict' },
+  active: { tone: 'success', label: 'Active' }, future: { tone: 'info', label: 'Starts later' }, expired: { tone: 'neutral', label: 'Expired' },
+  off: { tone: 'neutral', label: 'Switched off' }, conflict: { tone: 'danger', label: 'Conflict' },
 }
 
-/** Seller price books. The backend resolves one explainable price; the editor shows every rule that competes. */
-export function PriceBookEditor({ rules, unit, product, mode: initialMode = 'view', onSave }: { rules: readonly PriceRule[]; unit: string; product: string; mode?: 'view' | 'edit'; onSave?: (id: string, unitPrice: Money) => void }) {
+/**
+ * Seller price books. The backend resolves one explainable price; the editor shows every rule that
+ * competes. `ruleActions` adds per-rule controls (switch off, on); `toolbar` the add-rule control.
+ */
+export function PriceBookEditor({ rules, unit, product, mode: initialMode = 'view', onSave, ruleActions, toolbar, saving }: {
+  rules: readonly PriceRule[]; unit: string; product: string; mode?: 'view' | 'edit'; onSave?: (id: string, unitPrice: Money) => void
+  ruleActions?: (rule: PriceRule) => ReactNode; toolbar?: ReactNode; saving?: string | null
+}) {
   const [mode, setMode] = useState(initialMode)
   const [drafts, setDrafts] = useState<Record<string, string>>({})
   const scopes = [
@@ -81,7 +93,10 @@ export function PriceBookEditor({ rules, unit, product, mode: initialMode = 'vie
     <section className="flex min-w-0 flex-col gap-3 rounded-md border border-border bg-surface p-4" aria-label={`Price book for ${product}`}>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h3 className="font-display text-lg font-bold">Price book · {product}</h3>
-        <Button size="sm" variant={mode === 'edit' ? 'primary' : 'secondary'} leadingIcon={Pencil} aria-pressed={mode === 'edit'} onClick={() => setMode(m => (m === 'edit' ? 'view' : 'edit'))}>{mode === 'edit' ? 'Done editing' : 'Edit prices'}</Button>
+        <div className="flex flex-wrap items-center gap-2">
+          {toolbar}
+          {onSave ? <Button size="sm" variant={mode === 'edit' ? 'primary' : 'secondary'} leadingIcon={Pencil} aria-pressed={mode === 'edit'} onClick={() => setMode(m => (m === 'edit' ? 'view' : 'edit'))}>{mode === 'edit' ? 'Done editing' : 'Edit prices'}</Button> : null}
+        </div>
       </div>
       {conflicts.length ? (
         <div role="alert" className="flex items-start gap-2 rounded-sm border border-tone-danger bg-tone-danger-bg/50 p-3 text-md">
@@ -98,18 +113,22 @@ export function PriceBookEditor({ rules, unit, product, mode: initialMode = 'vie
                 <li key={r.id} className={cn('grid grid-cols-1 gap-2 px-3 py-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center', r.state === 'conflict' && 'bg-tone-danger-bg/30')}>
                   <div className="flex min-w-0 flex-col gap-1">
                     <div className="flex flex-wrap items-center gap-2"><span className="font-semibold">{r.label}</span><Stamp tone={ruleLook[r.state].tone} size="sm">{ruleLook[r.state].label}</Stamp><span className="text-sm text-muted">Priority {r.priority}</span></div>
-                    <span className="text-sm text-muted tabular">{r.effectiveTo ? `${formatDate(r.effectiveFrom)} to ${formatDate(r.effectiveTo)}` : `From ${formatDate(r.effectiveFrom)}, no end date`}{r.buyerGroup ? ` · ${r.buyerGroup}` : ''}</span>
+                    {r.detail ? <span className="text-sm text-muted">{r.detail}</span> : null}
+                    <span className="text-sm text-muted tabular">{!r.effectiveFrom ? 'Applies whenever no rule does' : r.effectiveTo ? `${formatDate(r.effectiveFrom)} to ${formatDate(r.effectiveTo)}` : `From ${formatDate(r.effectiveFrom)}, no end date`}{r.buyerGroup ? ` · ${r.buyerGroup}` : ''}</span>
                     {r.conflictNote ? <span className="text-sm font-medium text-tone-danger">{r.conflictNote}</span> : null}
                     {r.tiers ? <div className="mt-1"><PriceTierTable tiers={r.tiers} unit={unit} density="compact" /></div> : null}
                   </div>
-                  {r.unitPrice ? (
-                    mode === 'edit' && r.state !== 'expired' ? (
-                      <div className="flex items-center gap-2">
-                        <Input aria-label={`Price per ${unit} for ${r.label}`} prefix="KES" inputMode="decimal" value={drafts[r.id] ?? r.unitPrice} onChange={e => setDrafts(d => ({ ...d, [r.id]: e.target.value.replace(/[^\d.]/g, '') }))} className="w-40" inputClassName="text-right tabular" />
-                        <Button size="sm" variant="primary" disabled={!drafts[r.id] || drafts[r.id] === r.unitPrice} onClick={() => onSave?.(r.id, drafts[r.id]!)}>Save</Button>
-                      </div>
-                    ) : <span className="font-display text-lg font-bold tabular sm:text-right">{formatMoney(r.unitPrice)} <span className="font-sans text-sm font-normal text-muted">/ {unit}</span></span>
-                  ) : null}
+                  <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+                    {r.unitPrice ? (
+                      mode === 'edit' && r.state !== 'expired' && !r.locked ? (
+                        <div className="flex items-center gap-2">
+                          <Input aria-label={`Price per ${unit} for ${r.label}`} prefix="KES" inputMode="decimal" value={drafts[r.id] ?? r.unitPrice} onChange={e => setDrafts(d => ({ ...d, [r.id]: e.target.value.replace(/[^\d.]/g, '') }))} className="w-40" inputClassName="text-right tabular" />
+                          <Button size="sm" variant="primary" disabled={!drafts[r.id] || drafts[r.id] === r.unitPrice} loading={saving === r.id} loadingLabel="Saving…" onClick={() => onSave?.(r.id, drafts[r.id]!)}>Save</Button>
+                        </div>
+                      ) : <span className="font-display text-lg font-bold tabular sm:text-right">{formatMoney(r.unitPrice)} <span className="font-sans text-sm font-normal text-muted">/ {unit}</span></span>
+                    ) : null}
+                    {ruleActions?.(r)}
+                  </div>
                 </li>
               ))}
             </ul>

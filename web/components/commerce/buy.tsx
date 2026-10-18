@@ -2,24 +2,28 @@
 
 // The product page's buying column (SM-F-10): choose a pack, choose how many, add it to the server-backed
 // cart. The stepper mirrors the API's rules (minimum order, reported stock) for quick feedback; the API
-// decides, and its message is shown in place when it refuses. Who may buy comes from the session.
+// decides, and its message is shown in place when it refuses. Who may buy comes from the session. The price
+// for the chosen quantity, with its reason and the quantity ladder, is the API's (`GET prices`, SM-F-06):
+// a signed-in buyer sees their own group prices; the client never picks a rule.
 
 import { Minus, Plus, ShoppingCart } from 'lucide-react'
 import type { Route } from 'next'
 import Link from 'next/link'
-import { useState } from 'react'
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
+import { useDeferredValue, useState } from 'react'
 import { Button, IconButton, buttonStyles } from '@/components/ui/button'
 import { Icon } from '@/components/ui/icon'
 import { useToast } from '@/components/ui/toast'
 import { cn } from '@/lib/cn'
 import { ApiError, api } from '@/lib/client/api'
-import type { VariantRecord } from '@/lib/client/records'
+import type { PriceAnswer, PriceTierRecord, VariantRecord } from '@/lib/client/records'
 import { useRefresh } from '@/lib/client/resources'
 import { activeMembership, may, useSession } from '@/lib/client/session'
 import { CartLineMeta, CartMeta } from '@/lib/contract/generated'
 import { formatMoney, multiplyMoney } from '@/lib/money'
+import { PriceTierTable } from './pricing'
 import { StockAvailabilityIndicator } from './stock'
-import { stockFrom } from './types'
+import { stockFrom, type PriceTier } from './types'
 
 const plural = (n: number, one: string, many = `${one}s`) => `${n.toLocaleString('en-KE')} ${n === 1 ? one : many}`
 
@@ -35,12 +39,31 @@ function useBuyer(): { can: true } | { can: false; reason: string; href?: Route;
   return { can: true }
 }
 
-/** Add one variant to the cart: a quantity stepper from its minimum order, and the add button. */
-export function AddToCart({ variant, productName, compact = false }: { variant: VariantRecord; productName: string; compact?: boolean }) {
+const tierOf = (t: PriceTierRecord): PriceTier => ({ minQuantity: t.min_quantity, maxQuantity: t.max_quantity ?? undefined, unitPrice: t.unit_price, note: t.explanation })
+
+/** The price this person pays for `quantity` packs of `variant`, and why (their buyer groups apply). */
+function usePrice(variant: VariantRecord, quantity: number) {
+  const { data: session } = useSession()
+  const settled = useDeferredValue(quantity)
+  return useQuery({
+    queryKey: ['prices', variant.id, settled, session?.active_organization ?? null],
+    queryFn: ({ signal }) => api<PriceAnswer>(`prices?variant=${variant.id}&quantity=${settled}`, { signal }),
+    enabled: settled >= variant.moq,
+    staleTime: 60_000,
+    placeholderData: keepPreviousData,
+  })
+}
+
+/**
+ * Add one variant to the cart: a quantity stepper from its minimum order, and the add button. `unitPrice`
+ * is the resolved price for the current quantity (the list price until it arrives).
+ */
+export function AddToCart({ variant, productName, compact = false, onQuantity, unitPrice }: { variant: VariantRecord; productName: string; compact?: boolean; onQuantity?: (n: number) => void; unitPrice?: string }) {
   const buyer = useBuyer()
   const toast = useToast()
   const refresh = useRefresh()
-  const [quantity, setQuantity] = useState(variant.moq)
+  const [quantity, setOwnQuantity] = useState(variant.moq)
+  const setQuantity = (next: number | ((q: number) => number)) => setOwnQuantity(q => { const n = typeof next === 'function' ? next(q) : next; onQuantity?.(n); return n })
   const [pending, setPending] = useState(false)
   const [problem, setProblem] = useState<string | null>(null)
   const max = variant.stock.available ?? Number.POSITIVE_INFINITY
@@ -85,7 +108,7 @@ export function AddToCart({ variant, productName, compact = false }: { variant: 
           />
           <IconButton icon={Plus} label="One pack more" size={compact ? 'icon-sm' : 'icon'} variant="secondary" disabled={out || quantity >= max} onClick={() => setQuantity(q => clamp(q + 1))} />
         </div>
-        {!compact ? <span className="text-md text-muted tabular">{formatMoney(multiplyMoney(variant.unit_price, quantity))}</span> : null}
+        {!compact ? <span className="text-md text-muted tabular">{formatMoney(multiplyMoney(unitPrice ?? variant.unit_price, quantity))}</span> : null}
       </div>
       <Button variant="primary" size={compact ? 'md' : 'lg'} block leadingIcon={ShoppingCart} disabled={out || quantity < variant.moq} loading={pending} loadingLabel="Adding…" onClick={() => void add()}>
         {out ? 'Out of stock' : 'Add to cart'}
@@ -104,6 +127,16 @@ export function BuyBox({ variants, productName }: { variants: readonly VariantRe
   const [chosen, setChosen] = useState(variants[0]?.id)
   const variant = variants.find(v => v.id === chosen) ?? variants[0]
   if (!variant) return <p className="text-md text-muted">This product has no packs on sale right now.</p>
+  return <BuyColumn key={variant.id} variants={variants} variant={variant} onChoose={setChosen} productName={productName} />
+}
+
+function BuyColumn({ variants, variant, onChoose, productName }: { variants: readonly VariantRecord[]; variant: VariantRecord; onChoose: (id: string) => void; productName: string }) {
+  const [quantity, setQuantity] = useState(variant.moq)
+  const price = usePrice(variant, quantity)
+  const answer = price.data
+  const tiers = (answer?.tiers ?? variant.tiers ?? []).map(tierOf)
+  const special = answer && answer.explanation !== 'List price'
+  const setChosen = onChoose
   return (
     <div className="flex flex-col gap-5">
       <fieldset className="flex flex-col gap-2">
@@ -126,7 +159,11 @@ export function BuyBox({ variants, productName }: { variants: readonly VariantRe
           )
         })}
       </fieldset>
-      <AddToCart key={variant.id} variant={variant} productName={productName} />
+      {tiers.length > 1 || special ? (
+        <PriceTierTable tiers={tiers} unit={variant.packaging_unit} quantity={quantity} density="compact"
+          explanation={answer ? `${formatMoney(answer.unit_price)} per pack for ${plural(quantity, 'pack')}: ${answer.explanation}${answer.personal ? ', for your organization' : ''}.` : undefined} />
+      ) : null}
+      <AddToCart variant={variant} productName={productName} onQuantity={setQuantity} unitPrice={answer?.quantity === quantity ? answer.unit_price : undefined} />
     </div>
   )
 }

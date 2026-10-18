@@ -57,6 +57,8 @@ class Field:
     max_bytes: int | None = None
     field_policy: Mapping[str, str] | None = None
     max_items: int | None = None  # list values (multiselect, image galleries): the most entries allowed
+    # A command's input only (a reason, a carrier reference): described for forms, never part of a record.
+    input_only: bool = False
 
     def meta(self) -> dict[str, Any]:
         out: dict[str, Any] = {"name": self.name, "type": self.type, "widget": self.widget}
@@ -83,6 +85,8 @@ class Field:
             out["required"] = True
         if self.read_only:
             out["readOnly"] = True
+        if self.input_only:
+            out["inputOnly"] = True
         return out
 
 
@@ -175,7 +179,8 @@ class Action:
 class Resource:
     """One model's declaration.
 
-    Hooks: queryset, organization_of, serialize_extra, create, update, can; and for lists, list_spec
+    Hooks: queryset, organization_of (one organization, or several), serialize_extra, create, after_create,
+    update, can; and for lists, list_spec
     (widen one request's filters from the resource's own data) and list_extra (add to the response).
     """
 
@@ -237,18 +242,24 @@ class Resource:
         hook = self.hooks.get("organization_of")
         return hook(obj) if hook else getattr(obj, "organization", None)
 
+    def organizations(self, obj: Any) -> tuple[Any, ...]:
+        """The organizations a record belongs to: one, or several (an order is the buyer's and the seller's)."""
+        org = self.organization_of(obj)
+        return tuple(org) if isinstance(org, list | tuple) else (org,)
+
     def authorize(self, request: HttpRequest, permission: str, obj: Any = None) -> None:
         # "self": records that belong to the signed-in person; the queryset already holds only theirs.
         if permission == SELF:
             return
-        if not allowed(request.user, permission, self.organization_of(obj) if obj is not None else None):
+        orgs = self.organizations(obj) if obj is not None else (None,)
+        if not any(allowed(request.user, permission, org) for org in orgs):
             fail(ErrorCode.FORBIDDEN)
 
     def permitted(self, request: HttpRequest, obj: Any) -> list[str]:
-        org = self.organization_of(obj)
+        orgs = self.organizations(obj)
 
         def may(policy: str) -> bool:
-            return policy == SELF or allowed(request.user, policy, org)
+            return policy == SELF or any(allowed(request.user, policy, org) for org in orgs)
 
         names = [a.name for a in self.actions if may(a.policy) and self._when(a, obj)]
         if "update" in self.permissions and may(self.permissions["update"]):
@@ -259,12 +270,12 @@ class Resource:
 
     @staticmethod
     def _when(action: Action, obj: Any) -> bool:
-        return all(str(getattr(obj, k, "")) in v for k, v in (action.when or {}).items())
+        return all(when_value(getattr(obj, k, "")) in v for k, v in (action.when or {}).items())
 
     def serialize(self, obj: Any, request: HttpRequest) -> dict[str, Any]:
         out: dict[str, Any] = {"id": str(obj.pk)}
         for f in self.fields:
-            if f.name == "id":
+            if f.name == "id" or f.input_only:
                 continue
             out[f.name] = value_of(obj, f)
         if self.versioned:
@@ -306,6 +317,9 @@ class Resource:
             obj = creator(request, data) if creator else self.model(**data)
             obj.full_clean()
             obj.save()
+            after = self.hooks.get("after_create")  # work that needs the saved record (child rows, notices)
+            if after:
+                after(obj, request)
         return Created(self.serialize(obj, request))
 
     def item_view(self, request: HttpRequest, ref: str) -> Any:
@@ -356,6 +370,11 @@ class Resource:
             fail(ErrorCode.NOT_FOUND)
 
 
+def when_value(value: Any) -> str:
+    """A field value as `Action.when` lists it; booleans are `true`/`false`, as clients write them."""
+    return ("true" if value else "false") if isinstance(value, bool) else str(value)
+
+
 def value_of(obj: Any, f: Field) -> Any:
     if f.type == "relation":
         related = getattr(obj, f.name, None)
@@ -372,6 +391,30 @@ def value_of(obj: Any, f: Field) -> Any:
     if isinstance(raw, uuid.UUID):
         return str(raw)
     return raw
+
+
+def action_input(
+    resource: Resource, action: Action, data: Mapping[str, Any], required: tuple[str, ...] = ()
+) -> dict[str, Any]:
+    """A command's input, type-checked against the fields it names (`action.input`); others are refused."""
+    by_name = {f.name: f for f in resource.fields}
+    errors: dict[str, list[str]] = {}
+    out: dict[str, Any] = {}
+    for key, value in data.items():
+        f = by_name.get(key)
+        if f is None or key not in action.input:
+            errors[key] = ["This command does not take that."]
+            continue
+        try:
+            out.update(coerce(f, value))
+        except ValueError as exc:
+            errors[key] = [str(exc)]
+    for key in required:
+        if out.get(key) in (None, ""):
+            errors.setdefault(key, ["This is required."])
+    if errors:
+        invalid(errors)
+    return out
 
 
 def clean_input(resource: Resource, data: Mapping[str, Any]) -> dict[str, Any]:
@@ -492,4 +535,15 @@ def urls() -> list[URLPattern]:
     return out
 
 
-__all__ = ["REGISTRY", "SELF", "Action", "Field", "Resource", "derive", "export_models", "register", "urls"]
+__all__ = [
+    "REGISTRY",
+    "SELF",
+    "Action",
+    "Field",
+    "Resource",
+    "action_input",
+    "derive",
+    "export_models",
+    "register",
+    "urls",
+]

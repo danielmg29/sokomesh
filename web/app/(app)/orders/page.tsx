@@ -6,5 +6,5 @@ export const metadata: Metadata = { title: 'Orders' }
 export const instant = false
 
 export default function Page() {
-  return <OrdersPage />
+  return <OrdersPage side="buyer" />
 }

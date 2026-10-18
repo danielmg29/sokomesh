@@ -7,7 +7,7 @@ import { EmptyState } from '@/components/kernel/feedback/EmptyState'
 import { asStringList } from '@/components/kernel/fields/types'
 import { FieldInput } from '@/components/kernel/fields/FieldInput'
 import { RelativeTime } from '@/components/kernel/fields/islands'
-import { Button } from '@/components/ui/button'
+import { Button, buttonStyles } from '@/components/ui/button'
 import { chipStyles } from '@/components/ui/chip'
 import { ColumnChart, type ColumnDatum } from '@/components/ui/chart'
 import { Segmented } from '@/components/ui/choice'
@@ -65,16 +65,27 @@ function TopProducts({ rows }: { rows: readonly TopProduct[] }) {
   )
 }
 
-/** Seller dashboard (SM-F-19): cards, chart and export reconcile to one shared metric definition. */
-export function SellerAnalyticsGrid({ periods, definitionVersion, state = 'ready' }: { periods: Record<AnalyticsRange, AnalyticsPeriod>; definitionVersion: string; state?: 'ready' | 'loading' | 'empty' | 'error' }) {
-  const [range, setRange] = useState<AnalyticsRange>('30d')
-  const p = periods[range]
+const EMPTY_PERIOD: AnalyticsPeriod = { metrics: [], daily: [], topProducts: [] }
+
+/**
+ * Seller dashboard (SM-F-19): cards, chart and export reconcile to one shared metric definition. Pass
+ * `range` and `onRange` to fetch one period at a time (the page keeps it in the URL); `exportHref` is the
+ * CSV of the same query, and `note` says what the figures count.
+ */
+export function SellerAnalyticsGrid({ periods, definitionVersion, state = 'ready', range: controlled, onRange, exportHref, note }: {
+  periods: Partial<Record<AnalyticsRange, AnalyticsPeriod>>; definitionVersion: string; state?: 'ready' | 'loading' | 'empty' | 'error'
+  range?: AnalyticsRange; onRange?: (range: AnalyticsRange) => void; exportHref?: string; note?: string
+}) {
+  const [own, setOwn] = useState<AnalyticsRange>('30d')
+  const range = controlled ?? own
+  const setRange = (r: AnalyticsRange) => { setOwn(r); onRange?.(r) }
+  const p = periods[range] ?? EMPTY_PERIOD
   const tick = (n: number) => (n >= 1_000_000 ? `${(n / 1_000_000).toFixed(1)}M` : n >= 1000 ? `${Math.round(n / 1000)}k` : String(Math.round(n)))
   return (
     <section className="flex min-w-0 flex-col gap-4" aria-label="Seller analytics">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <Segmented label="Period" value={range} onValueChange={setRange} items={[{ value: '7d', label: '7 days' }, { value: '30d', label: '30 days' }, { value: '90d', label: '90 days' }]} />
-        <Button size="sm" variant="secondary" leadingIcon={Download}>Export CSV</Button>
+        {exportHref ? <a href={exportHref} download className={buttonStyles({ size: 'sm', variant: 'secondary' })}><Icon icon={Download} />Export CSV</a> : <Button size="sm" variant="secondary" leadingIcon={Download}>Export CSV</Button>}
       </div>
       <StatsBlock metrics={p.metrics} state={state} caption={`Key figures, last ${range.replace('d', ' days')}`} />
       {state === 'ready' ? (
@@ -85,7 +96,7 @@ export function SellerAnalyticsGrid({ periods, definitionVersion, state = 'ready
           <TopProducts rows={p.topProducts} />
         </div>
       ) : null}
-      <p className="text-sm text-muted">Figures use metric definitions <code className="font-mono">{definitionVersion}</code>: confirmed orders only, net of cancellations, in East Africa Time.</p>
+      {state !== 'loading' ? <p className="text-sm text-muted">Figures use metric definitions <code className="font-mono">{definitionVersion}</code>: {note ?? 'confirmed orders only, net of cancellations, in East Africa Time.'}</p> : null}
     </section>
   )
 }

@@ -13,7 +13,7 @@ import { Icon } from '@/components/ui/icon'
 import { Stamp } from '@/components/ui/stamp'
 import { Thread, type ThreadStep } from '@/components/ui/thread'
 import { cn } from '@/lib/cn'
-import type { FieldMeta, Tone } from '@/lib/contract/types'
+import type { AppError, FieldMeta, Tone } from '@/lib/contract/types'
 import { formatDate, formatDateTime } from '@/lib/format'
 import { addMoney, compareMoney, formatMoney, multiplyMoney, percentChange } from '@/lib/money'
 import { StockAvailabilityIndicator } from './stock'
@@ -37,7 +37,7 @@ function LineStepper({ line, onQuantity, disabled }: { line: CartLine; onQuantit
 }
 
 /** One seller's part of a mixed cart: lines validated seller by seller. */
-export function SellerCartGroup({ group, defaultOpen = true, onQuantity, onRemove }: { group: SellerGroup; defaultOpen?: boolean; onQuantity?: (lineId: string, n: number) => void; onRemove?: (lineId: string) => void }) {
+export function SellerCartGroup({ group, defaultOpen = true, onQuantity, onRemove, actions }: { group: SellerGroup; defaultOpen?: boolean; onQuantity?: (lineId: string, n: number) => void; onRemove?: (lineId: string) => void; actions?: ReactNode }) {
   const [open, setOpen] = useState(defaultOpen)
   const subtotal = groupSubtotal(group)
   const belowMinimum = group.minimumOrder && compareMoney(subtotal, group.minimumOrder) < 0
@@ -49,7 +49,7 @@ export function SellerCartGroup({ group, defaultOpen = true, onQuantity, onRemov
         <CollapsibleTrigger className="flex w-full flex-wrap items-center justify-between gap-x-4 gap-y-1 px-4 py-3 text-left hover:bg-sunken/60">
           <span className="flex min-w-0 flex-col">
             <span className="font-display text-lg font-bold">{group.seller}</span>
-            <span className="text-sm text-muted">{group.location}{group.dispatch ? ` · dispatches ${group.dispatch}` : ''} · {group.lines.length} lines</span>
+            <span className="text-sm text-muted">{group.location}{group.dispatch ? ` · dispatches ${group.dispatch}` : ''} · {group.lines.length} {group.lines.length === 1 ? 'line' : 'lines'}</span>
           </span>
           <span className="flex items-center gap-3">
             {changed ? <Stamp tone="warning" size="sm">{changed} repriced</Stamp> : null}
@@ -79,6 +79,7 @@ export function SellerCartGroup({ group, defaultOpen = true, onQuantity, onRemov
                 <div className="col-start-2 flex flex-col sm:col-start-auto sm:items-end">
                   <span className="font-semibold tabular">{l.state === 'unavailable' ? <Empty label="Not in the total" /> : formatMoney(lineTotal(l))}</span>
                   <span className="text-sm text-muted tabular">{formatMoney(l.unitPrice)} / {l.unit}</span>
+                  {l.priceNote ? <span className="text-sm text-muted">{l.priceNote}</span> : null}
                 </div>
               </li>
             ))}
@@ -86,6 +87,7 @@ export function SellerCartGroup({ group, defaultOpen = true, onQuantity, onRemov
           <div className="flex flex-col gap-1 border-t border-border px-4 py-3 text-md">
             <div className="flex justify-between"><span className="text-muted">Delivery from {group.seller}</span><span className="tabular">{group.deliveryFee ? formatMoney(group.deliveryFee) : <span className="text-muted">Confirmed at checkout</span>}</span></div>
             {belowMinimum ? <p className="flex items-center gap-1.5 text-sm font-medium text-tone-warning"><Icon icon={TriangleAlert} />Add {formatMoney(addMoney(group.minimumOrder!, `-${subtotal}`))} more to reach this seller&apos;s minimum order of {formatMoney(group.minimumOrder!)}.</p> : null}
+            {actions ? <div className="flex flex-wrap justify-end gap-2 pt-1">{actions}</div> : null}
           </div>
         </CollapsibleContent>
       </section>
@@ -98,11 +100,12 @@ export type CartState = 'valid' | 'repricing' | 'out-of-stock' | 'approval-neede
 /**
  * Server-backed mixed-seller cart. Repricing is explicit: the banner offers to accept the new prices
  * (`onAcceptPrices`). Checkout explains why it is blocked, including `checkoutBlockedReason` from the page.
+ * `groupActions` adds controls to one seller's part (a quote request goes to one seller).
  */
-export function CartBlock({ groups, state, approvalThreshold, onCheckout, onRequestApproval, onRequestQuote, onQuantity, onRemove, onAcceptPrices, accepting, checkoutBlockedReason, submitting }: {
+export function CartBlock({ groups, state, approvalThreshold, onCheckout, onRequestApproval, onRequestQuote, onQuantity, onRemove, onAcceptPrices, accepting, checkoutBlockedReason, submitting, groupActions }: {
   groups: readonly SellerGroup[]; state: CartState; approvalThreshold?: Money; onCheckout?: () => void; onRequestApproval?: () => void; onRequestQuote?: () => void
   onQuantity?: (lineId: string, n: number) => void; onRemove?: (lineId: string) => void; onAcceptPrices?: () => void; accepting?: boolean
-  checkoutBlockedReason?: string; submitting?: boolean
+  checkoutBlockedReason?: string; submitting?: boolean; groupActions?: (group: SellerGroup) => ReactNode
 }) {
   const subtotal = addMoney(...groups.map(groupSubtotal), '0')
   const fees = groups.flatMap(g => (g.deliveryFee ? [g.deliveryFee] : []))
@@ -112,7 +115,7 @@ export function CartBlock({ groups, state, approvalThreshold, onCheckout, onRequ
   const banner: Partial<Record<CartState, { tone: string; text: ReactNode }>> = {
     repricing: { tone: 'border-tone-warning bg-tone-warning-bg/60', text: 'Some prices changed since you added these lines. The new prices apply; review them before checkout.' },
     'out-of-stock': { tone: 'border-tone-danger bg-tone-danger-bg/60', text: 'Some lines are no longer available. They are left out of the total; remove them or request a quote for later supply.' },
-    'approval-needed': { tone: 'border-tone-info bg-tone-info-bg/60', text: <>Orders over {approvalThreshold ? formatMoney(approvalThreshold) : 'your limit'} need approval from a buyer owner before they are sent to sellers.</> },
+    'approval-needed': { tone: 'border-tone-info bg-tone-info-bg/60', text: <>Orders over {approvalThreshold ? formatMoney(approvalThreshold) : 'your limit'} wait for a colleague&apos;s approval before they are sent to sellers.</> },
   }
   const blocked = state === 'out-of-stock' || Boolean(checkoutBlockedReason)
   return (
@@ -124,7 +127,7 @@ export function CartBlock({ groups, state, approvalThreshold, onCheckout, onRequ
             {state === 'repricing' && onAcceptPrices ? <Button variant="secondary" size="sm" loading={accepting} loadingLabel="Accepting…" onClick={onAcceptPrices}>Accept new prices</Button> : null}
           </div>
         ) : null}
-        {groups.map(g => <SellerCartGroup key={g.sellerId} group={g} onQuantity={onQuantity} onRemove={onRemove} />)}
+        {groups.map(g => <SellerCartGroup key={g.sellerId} group={g} onQuantity={onQuantity} onRemove={onRemove} actions={groupActions?.(g)} />)}
       </div>
       <aside className="flex h-fit flex-col gap-4 rounded-md border border-border bg-surface p-4 lg:sticky lg:top-4" aria-label="Cart summary">
         <h3 className="font-display text-xl font-bold">Summary</h3>
@@ -135,11 +138,11 @@ export function CartBlock({ groups, state, approvalThreshold, onCheckout, onRequ
           <div className="flex justify-between gap-3"><dt className="text-muted">Delivery ({groups.length} {groups.length === 1 ? 'seller' : 'sellers'})</dt><dd className="tabular">{priced ? formatMoney(delivery) : <span className="text-muted">At checkout</span>}</dd></div>
           <div className="mt-2 flex items-baseline justify-between gap-3 border-t border-border pt-3"><dt className="font-semibold">{priced ? 'Total' : 'Goods total'}</dt><dd className="font-display text-2xl font-extrabold tabular">{formatMoney(total)}</dd></div>
         </dl>
-        <p className="text-sm text-muted">Prices are confirmed and stock is reserved when you start checkout. Each seller ships separately.</p>
+        <p className="text-sm text-muted">Prices, minimum orders and stock are checked again when you place the order. Each seller confirms and ships their own part.</p>
         {state === 'approval-needed' ? (
-          <Button variant="primary" size="lg" block onClick={onRequestApproval}>Request approval</Button>
+          <Button variant="primary" size="lg" block onClick={onRequestApproval}>Check out for approval</Button>
         ) : (
-          <Button variant="primary" size="lg" block disabled={blocked} loading={submitting} loadingLabel="Reserving stock…" onClick={onCheckout} aria-describedby={blocked ? 'cart-blocked' : undefined}>Reserve stock and check out</Button>
+          <Button variant="primary" size="lg" block disabled={blocked} loading={submitting} loadingLabel="Checking…" onClick={onCheckout} aria-describedby={blocked ? 'cart-blocked' : undefined}>Check out</Button>
         )}
         {blocked ? <p id="cart-blocked" className={cn('flex items-start gap-1.5 text-sm', state === 'out-of-stock' ? 'text-tone-danger' : 'text-muted')}><Icon icon={Lock} className="mt-0.5 shrink-0" />{state === 'out-of-stock' ? 'Remove unavailable lines to continue.' : checkoutBlockedReason}</p> : null}
         {onRequestQuote ? <Button variant="secondary" block onClick={onRequestQuote}>Request a quote instead</Button> : null}
@@ -157,19 +160,21 @@ const quoteLook: Record<QuoteStatus, { tone: Tone; label: string }> = {
 
 export type QuoteLineView = { id: string; product: string; quantity: number; unit: string; listPrice: Money; offeredPrice?: Money }
 
-// Field metadata mirrors Quote.* in the field specification (SM-F-11) until the quote model joins the contract.
-const quoteFields: FieldMeta[] = [
-  { name: 'delivery_address_id', type: 'relation', widget: 'relation', label: 'Deliver to', required: true },
-  { name: 'expires_at', type: 'datetime', widget: 'datetime', label: 'Quote valid until', required: true, help: 'The seller must respond before this time.' },
-  { name: 'buyer_notes', type: 'text', widget: 'textarea', label: 'Notes for the seller', maxLength: 1000, help: 'Delivery window, packaging or payment terms you need.' },
-]
+export type QuoteOutcome = { ok: true } | { ok: false; error: AppError }
+type Option = { value: string; label: string; description?: string }
 
-/** Buyer quote request from selected lines: create, revise or view, with its status thread. */
-export function QuoteRequestSheet({ mode, status, seller, lines, addresses, trigger, onSubmit, reference }: {
-  mode: 'create' | 'revise' | 'view'; status: QuoteStatus; seller: string; lines: readonly QuoteLineView[]; addresses: { value: string; label: string; description?: string }[]
-  trigger: ReactNode; onSubmit?: (values: Record<string, unknown>) => void; reference?: string
+/**
+ * Buyer quote request (SM-F-11) for one seller's cart lines: create, or view with its status thread. The
+ * form's fields are the quote model's from the contract (`fields`); the API's answer is shown in place.
+ */
+export function QuoteRequestSheet({ mode, status, seller, lines, fields, initial, options, trigger, onSubmit, reference, expiresAt, open, onOpenChange }: {
+  mode: 'create' | 'revise' | 'view'; status: QuoteStatus; seller: string; lines: readonly QuoteLineView[]; fields: readonly FieldMeta[]
+  initial?: Record<string, unknown>; options?: Record<string, Option[]>; trigger?: ReactNode; reference?: string; expiresAt?: string
+  onSubmit?: (values: Record<string, unknown>) => Promise<QuoteOutcome> | void; open?: boolean; onOpenChange?: (open: boolean) => void
 }) {
-  const [values, setValues] = useState<Record<string, unknown>>({ delivery_address_id: addresses[0] ? { id: addresses[0].value, label: addresses[0].label } : null, expires_at: '2026-10-16T17:00:00+03:00', buyer_notes: '' })
+  const [values, setValues] = useState<Record<string, unknown>>(() => Object.fromEntries(fields.map(f => [f.name, initial?.[f.name] ?? null])))
+  const [error, setError] = useState<AppError | null>(null)
+  const [pending, setPending] = useState(false)
   const steps: ThreadStep[] = (['requested', 'responded', 'accepted'] as const).map((s, i) => {
     const order = ['draft', 'requested', 'responded', 'accepted']
     const at = order.indexOf(status)
@@ -177,13 +182,22 @@ export function QuoteRequestSheet({ mode, status, seller, lines, addresses, trig
     return { key: s, label: quoteLook[s].label, state: failed && i === 1 ? 'failed' : at > i + 1 ? 'done' : at === i + 1 ? 'current' : 'upcoming' }
   })
   const editable = mode !== 'view'
+  const submit = async () => {
+    setPending(true)
+    setError(null)
+    const out = await onSubmit?.(values)
+    setPending(false)
+    if (out && !out.ok) setError(out.error)
+  }
   return (
     <Sheet
       trigger={trigger}
+      open={open}
+      onOpenChange={onOpenChange}
       width="lg"
       title={mode === 'create' ? `Request a quote from ${seller}` : mode === 'revise' ? 'Revise quote request' : `Quote ${reference ?? ''}`}
       description={<span className="inline-flex items-center gap-2">Status <Stamp tone={quoteLook[status].tone} size="sm">{quoteLook[status].label}</Stamp></span>}
-      footer={editable ? <Button variant="primary" onClick={() => onSubmit?.(values)}>{mode === 'create' ? 'Send quote request' : 'Send revision'}</Button> : null}
+      footer={editable ? <Button variant="primary" loading={pending} loadingLabel="Sending…" onClick={() => void submit()}>{mode === 'create' ? 'Send quote request' : 'Send revision'}</Button> : null}
     >
       <div className="flex flex-col gap-6">
         <Thread label="Quote progress" steps={steps} />
@@ -201,20 +215,29 @@ export function QuoteRequestSheet({ mode, status, seller, lines, addresses, trig
               </li>
             ))}
           </ul>
+          {mode === 'create' ? <p className="text-sm text-muted">These lines leave your cart and wait in the quote; accepting the seller&apos;s offer places the order at the offered prices.</p> : null}
         </section>
-        {editable ? quoteFields.map(f => (
-          <FieldInput key={f.name} field={f} value={values[f.name]} onChange={v => setValues(s => ({ ...s, [f.name]: v }))} options={f.name === 'delivery_address_id' ? addresses : undefined} />
-        )) : <p className="text-md text-muted">Valid until {formatDateTime(String(values.expires_at))}.</p>}
+        {error && !Object.keys(error.fields).length ? <p role="alert" className="rounded-sm border border-tone-danger bg-tone-danger-bg/60 px-3 py-2 text-md text-tone-danger">{error.detail}</p> : null}
+        {editable ? fields.map(f => (
+          <FieldInput key={f.name} field={f} value={values[f.name]} error={error?.fields[f.name]?.[0]} onChange={v => setValues(s => ({ ...s, [f.name]: v }))} options={options?.[f.name]} />
+        )) : expiresAt ? <p className="text-md text-muted">Valid until {formatDateTime(expiresAt)}.</p> : null}
       </div>
     </Sheet>
   )
 }
 
-/** Seller response (accept, counter, decline). An accepted quote becomes an immutable order input. */
-export function QuoteDecisionPanel({ reference, buyer, lines, expiresAt, accepted, onDecide }: {
-  reference: string; buyer: string; lines: readonly QuoteLineView[]; expiresAt: string; accepted?: { at: string; total: Money }; onDecide?: (decision: 'accept' | 'counter' | 'decline', offers: Record<string, string>) => void
+export type QuoteDecision = 'accept' | 'counter' | 'decline'
+
+/**
+ * Seller response (accept, counter, decline). An accepted quote becomes an immutable order input.
+ * `notesField` (the quote's seller notes, from the contract) is sent with the decision; declining needs it.
+ */
+export function QuoteDecisionPanel({ reference, buyer, lines, expiresAt, accepted, onDecide, notesField, pending = null, error }: {
+  reference: string; buyer: string; lines: readonly QuoteLineView[]; expiresAt: string; accepted?: { at: string; total: Money }
+  onDecide?: (decision: QuoteDecision, offers: Record<string, string>, notes: string) => void; notesField?: FieldMeta; pending?: QuoteDecision | null; error?: string
 }) {
   const [offers, setOffers] = useState<Record<string, string>>(() => Object.fromEntries(lines.map(l => [l.id, l.offeredPrice ?? l.listPrice])))
+  const [notes, setNotes] = useState('')
   const total = addMoney(...lines.map(l => multiplyMoney(offers[l.id] ?? l.listPrice, l.quantity)))
   const listTotal = addMoney(...lines.map(l => multiplyMoney(l.listPrice, l.quantity)))
   const offerField: FieldMeta = { name: 'offered_price', type: 'decimal', widget: 'currency', label: 'Offer per unit', currency: 'KES', decimalPlaces: 2, maxDigits: 12 }
@@ -244,21 +267,27 @@ export function QuoteDecisionPanel({ reference, buyer, lines, expiresAt, accepte
         ))}
       </ul>
       <div className="flex flex-wrap items-baseline justify-between gap-2 text-md"><span className="text-muted">List total {formatMoney(listTotal)}</span><span className="font-semibold">Your offer <span className="font-display text-xl tabular">{formatMoney(total)}</span> ({percentChange(listTotal, total)})</span></div>
+      {notesField ? <FieldInput field={notesField} value={notes} onChange={v => setNotes(String(v ?? ''))} mirror={false} /> : null}
+      {error ? <p role="alert" className="rounded-sm border border-tone-danger bg-tone-danger-bg/60 px-3 py-2 text-md text-tone-danger">{error}</p> : null}
       <div className="flex flex-wrap gap-2">
-        <Button variant="primary" onClick={() => onDecide?.('accept', offers)}>Accept at list prices</Button>
-        <Button variant="signal" onClick={() => onDecide?.('counter', offers)}>Send counter-offer</Button>
-        <Button variant="danger-outline" onClick={() => onDecide?.('decline', offers)}>Decline</Button>
+        <Button variant="primary" disabled={pending !== null} loading={pending === 'accept'} loadingLabel="Sending…" onClick={() => onDecide?.('accept', Object.fromEntries(lines.map(l => [l.id, l.listPrice])), notes)}>Offer list prices</Button>
+        <Button variant="signal" disabled={pending !== null} loading={pending === 'counter'} loadingLabel="Sending…" onClick={() => onDecide?.('counter', offers, notes)}>Send counter-offer</Button>
+        <Button variant="danger-outline" disabled={pending !== null || (Boolean(notesField) && !notes.trim())} loading={pending === 'decline'} loadingLabel="Declining…" onClick={() => onDecide?.('decline', offers, notes)}>Decline</Button>
       </div>
+      {notesField ? <p className="text-sm text-muted">The buyer reads your notes; declining needs a reason.</p> : null}
     </section>
   )
 }
 
 export type ApprovalStep = { level: number; role: string; approver?: string; decision?: 'approved' | 'rejected'; comment?: string; decidedAt?: string }
 
-/** Buyer purchase approval (SM-F-12): the API also refuses orders that skip it. */
-export function ApprovalFlowBlock({ state, policyName, threshold, orderTotal, steps, canDecide, onDecide }: {
+/**
+ * Buyer purchase approval (SM-F-12): the API also refuses orders that skip it. `waiting` tells someone who
+ * cannot decide who can; `commentField` is the decision comment from the contract when the page has it.
+ */
+export function ApprovalFlowBlock({ state, policyName, threshold, orderTotal, steps, canDecide, onDecide, waiting, commentField: given, pending = null }: {
   state: 'not-required' | 'pending' | 'approved' | 'rejected'; policyName: string; threshold: Money; orderTotal: Money; steps: readonly ApprovalStep[]; canDecide?: boolean
-  onDecide?: (decision: 'approved' | 'rejected', comment: string) => void
+  onDecide?: (decision: 'approved' | 'rejected', comment: string) => void; waiting?: string; commentField?: FieldMeta; pending?: 'approved' | 'rejected' | null
 }) {
   const [comment, setComment] = useState('')
   const look: Record<typeof state, { tone: Tone; label: string }> = {
@@ -270,25 +299,25 @@ export function ApprovalFlowBlock({ state, policyName, threshold, orderTotal, st
     detail: s.decision ? `${s.approver} · ${s.decision} ${s.decidedAt ? formatDate(s.decidedAt) : ''}${s.comment ? ` · "${s.comment}"` : ''}` : s.approver ?? 'Any approver with this role',
     state: s.decision === 'approved' ? 'done' : s.decision === 'rejected' ? 'failed' : steps.slice(0, i).every(p => p.decision === 'approved') && state === 'pending' ? 'current' : 'upcoming',
   }))
-  const commentField: FieldMeta = { name: 'comment', type: 'text', widget: 'textarea', label: 'Decision reason', maxLength: 500, help: 'Required to reject; kept in the order history.' }
+  const commentField: FieldMeta = given ?? { name: 'comment', type: 'text', widget: 'textarea', label: 'Decision reason', maxLength: 500, help: 'Required to reject; kept in the order history.' }
   return (
     <section className="flex flex-col gap-4 rounded-md border border-border bg-surface p-4" aria-label="Purchase approval">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h3 className="font-display text-lg font-bold">Purchase approval</h3>
         <Stamp tone={look[state].tone} condition={state === 'pending' ? 'pending' : undefined}>{look[state].label}</Stamp>
       </div>
-      <p className="text-md text-muted">{policyName}: orders over {formatMoney(threshold)} need approval. This order is {formatMoney(orderTotal)}.</p>
+      <p className="text-md text-muted">{policyName}: orders of {formatMoney(threshold)} or more need approval. This order is {formatMoney(orderTotal)}.</p>
       {state !== 'not-required' ? <Thread orientation="vertical" label="Approval steps" steps={thread} /> : null}
       {state === 'pending' && canDecide ? (
         <div className="flex flex-col gap-3 border-t border-border pt-4">
           <FieldInput field={commentField} value={comment} onChange={v => setComment(String(v ?? ''))} mirror={false} />
           <div className="flex flex-wrap gap-2">
-            <Button variant="primary" onClick={() => onDecide?.('approved', comment)}>Approve order</Button>
-            <Button variant="danger-outline" disabled={!comment.trim()} onClick={() => onDecide?.('rejected', comment)}>Reject with reason</Button>
+            <Button variant="primary" disabled={pending !== null} loading={pending === 'approved'} loadingLabel="Approving…" onClick={() => onDecide?.('approved', comment)}>Approve order</Button>
+            <Button variant="danger-outline" disabled={pending !== null || !comment.trim()} loading={pending === 'rejected'} loadingLabel="Rejecting…" onClick={() => onDecide?.('rejected', comment)}>Reject with reason</Button>
           </div>
         </div>
       ) : null}
-      {state === 'pending' && !canDecide ? <p className="flex items-center gap-1.5 text-sm text-muted"><Icon icon={Lock} />Only a buyer owner can approve. You will be notified when they decide.</p> : null}
+      {state === 'pending' && !canDecide ? <p className="flex items-center gap-1.5 text-sm text-muted"><Icon icon={Lock} />{waiting ?? 'Only a buyer owner can approve. You will be notified when they decide.'}</p> : null}
     </section>
   )
 }

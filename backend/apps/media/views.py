@@ -6,7 +6,7 @@ from django.conf import settings
 from django.http import FileResponse, HttpRequest
 
 from apps.media.models import FileAsset
-from apps.media.services import store
+from apps.media.services import ACCESS_RULES, store
 from apps.organizations.tenancy import active_membership
 from core.api import Created, endpoint, fail, invalid
 from core.policies import allowed
@@ -22,7 +22,8 @@ def upload(request: HttpRequest):
     if length > settings.AC_UPLOADS[kind]["max_bytes"] + 65_536:  # refuse before reading the body
         invalid({"file": [f"Files can be up to {settings.AC_UPLOADS[kind]['max_bytes'] // 1_048_576} MB."]})
     org = active_membership(request).organization
-    if not allowed(request.user, "seller_document.create", org):
+    # Seller documents (SM-F-02) and proof of delivery (SM-F-17) are both private documents.
+    if not (allowed(request.user, "seller_document.create", org) or allowed(request.user, "shipment.update", org)):
         fail(ErrorCode.FORBIDDEN)
     upload_file = request.FILES.get("file")
     if upload_file is None:
@@ -37,7 +38,10 @@ def download(request: HttpRequest, asset_id: str):
     except (ValueError, FileAsset.DoesNotExist):
         fail(ErrorCode.NOT_FOUND)
     private = asset.kind == FileAsset.Kind.DOCUMENT
-    if private and not allowed(request.user, "seller_document.list", asset.organization):
+    readable = allowed(request.user, "seller_document.list", asset.organization) or any(
+        rule(request.user, asset) for rule in ACCESS_RULES
+    )
+    if private and not readable:
         fail(ErrorCode.NOT_FOUND)  # do not reveal that a private file exists
     response = FileResponse(asset.file.open("rb"), content_type=asset.content_type)
     disposition = (

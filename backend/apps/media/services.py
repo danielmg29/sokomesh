@@ -1,6 +1,7 @@
 """Accepting an upload: the bytes decide the type, the settings decide the size, the caller decides the owner."""
 
 import hashlib
+from collections.abc import Callable
 from typing import Any
 
 from django.conf import settings
@@ -8,6 +9,10 @@ from django.core.files.uploadedfile import UploadedFile
 
 from apps.media.models import FileAsset
 from core.api import invalid
+
+# Extra readers of private files, registered by the apps that share them (a proof of delivery is also the
+# buyer's); each answers whether this user may read this file. The owner's own check comes first.
+ACCESS_RULES: list[Callable[[Any, FileAsset], bool]] = []
 
 SIGNATURES = (
     (b"%PDF-", "application/pdf"),

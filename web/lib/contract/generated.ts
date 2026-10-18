@@ -1,8 +1,8 @@
-// AUTO-GENERATED from contract/ac-contract.json (contract 0.5.0) by tools/gen-contract.mts — do not edit.
+// AUTO-GENERATED from contract/ac-contract.json (contract 0.6.0) by tools/gen-contract.mts — do not edit.
 import { z } from 'zod'
 import type { ModelMeta } from '@/lib/contract/types'
 import { decimalString } from '@/lib/contract/decimal'
-export const CONTRACT_VERSION = "0.5.0"
+export const CONTRACT_VERSION = "0.6.0"
 export const API_BASE = "/api/v1/"
 export const auth = {
   "mode": "multi",
@@ -122,6 +122,32 @@ export const richText = {
     "ul": []
   }
 } as const
+export const uploads = {
+  "avatar": {
+    "maxBytes": 2097152,
+    "types": [
+      "image/jpeg",
+      "image/png",
+      "image/webp"
+    ]
+  },
+  "document": {
+    "maxBytes": 10485760,
+    "types": [
+      "application/pdf",
+      "image/jpeg",
+      "image/png"
+    ]
+  },
+  "productImage": {
+    "maxBytes": 15728640,
+    "types": [
+      "image/jpeg",
+      "image/png",
+      "image/webp"
+    ]
+  }
+} as const
 export type Locale = (typeof locales)['supported'][number]['value']
 export const errors = {
   "CONFLICT": {
@@ -190,6 +216,11 @@ export const rolePermissions = {
     "address.delete",
     "address.list",
     "address.update",
+    "approval_policy.create",
+    "approval_policy.get",
+    "approval_policy.list",
+    "approval_policy.update",
+    "cart.checkout",
     "cart.get",
     "cart.list",
     "cart.update",
@@ -201,14 +232,26 @@ export const rolePermissions = {
     "membership.invite",
     "membership.list",
     "membership.update",
+    "order.approve",
+    "order.cancel",
+    "order.dispute",
     "order.get",
     "order.list",
     "order.reorder",
     "organization.get",
-    "organization.update"
+    "organization.update",
+    "quote.accept",
+    "quote.create",
+    "quote.get",
+    "quote.list",
+    "shipment.get",
+    "shipment.list"
   ],
   "buyer_purchaser": [
     "address.list",
+    "approval_policy.get",
+    "approval_policy.list",
+    "cart.checkout",
     "cart.get",
     "cart.list",
     "cart.update",
@@ -218,10 +261,19 @@ export const rolePermissions = {
     "cart_line.remove",
     "cart_line.update",
     "membership.list",
+    "order.approve",
+    "order.cancel",
+    "order.dispute",
     "order.get",
     "order.list",
     "order.reorder",
-    "organization.get"
+    "organization.get",
+    "quote.accept",
+    "quote.create",
+    "quote.get",
+    "quote.list",
+    "shipment.get",
+    "shipment.list"
   ],
   "marketplace_admin": [
     "*"
@@ -231,23 +283,47 @@ export const rolePermissions = {
     "address.delete",
     "address.list",
     "address.update",
+    "analytics.view",
+    "buyer_group.create",
+    "buyer_group.list",
+    "buyer_group.remove",
     "catalog_product.archive",
     "catalog_product.create",
     "catalog_product.get",
     "catalog_product.list",
     "catalog_product.publish",
     "catalog_product.update",
+    "media_asset.create",
+    "media_asset.get",
+    "media_asset.list",
+    "media_asset.remove",
+    "media_asset.update",
     "membership.invite",
     "membership.list",
     "membership.update",
+    "metric_definition.list",
+    "order.cancel",
+    "order.fulfil",
+    "order.get",
+    "order.list",
     "organization.get",
     "organization.update",
+    "price_rule.create",
+    "price_rule.get",
+    "price_rule.list",
+    "price_rule.update",
+    "quote.get",
+    "quote.list",
+    "quote.respond",
     "seller_document.create",
     "seller_document.delete",
     "seller_document.list",
     "seller_profile.get",
     "seller_profile.submit",
     "seller_profile.update",
+    "shipment.get",
+    "shipment.list",
+    "shipment.update",
     "variant.create",
     "variant.get",
     "variant.list",
@@ -257,10 +333,20 @@ export const rolePermissions = {
     "address.list",
     "catalog_product.get",
     "catalog_product.list",
+    "media_asset.get",
+    "media_asset.list",
     "membership.list",
+    "order.fulfil",
+    "order.get",
+    "order.list",
     "organization.get",
+    "price_rule.get",
+    "price_rule.list",
     "seller_document.list",
     "seller_profile.get",
+    "shipment.get",
+    "shipment.list",
+    "shipment.update",
     "variant.get",
     "variant.list"
   ]
@@ -513,6 +599,239 @@ export const AddressMeta = {
   "tenantScoped": true,
   "versioned": false
 } as const satisfies ModelMeta
+export const ApprovalPolicySchema = z.object({
+  id: z.uuid().nullish(),
+  name: z.string().max(80).min(1),
+  threshold_amount: decimalString(14, 2),
+  approver_role_keys: z.unknown(),
+  minimum_approvals: z.number().int().nullish(),
+  is_active: z.boolean().nullish(),
+  currency: z.string().max(3).nullish(),
+  updated_at: z.iso.datetime({ offset: true }).nullish(),
+})
+export type ApprovalPolicy = z.infer<typeof ApprovalPolicySchema>
+export const ApprovalPolicyWriteSchema = ApprovalPolicySchema.omit({ is_active: true, currency: true, updated_at: true })
+export const ApprovalPolicyMeta = {
+  "key": "approval_policy",
+  "actions": [
+    {
+      "confirm": true,
+      "icon": "pause",
+      "kind": "command",
+      "label": "Switch off",
+      "name": "switch_off",
+      "policy": "approval_policy.update",
+      "when": {
+        "is_active": [
+          "true"
+        ]
+      }
+    },
+    {
+      "icon": "check",
+      "kind": "command",
+      "label": "Switch on",
+      "name": "switch_on",
+      "policy": "approval_policy.update",
+      "when": {
+        "is_active": [
+          "false"
+        ]
+      }
+    }
+  ],
+  "displayField": "name",
+  "fields": [
+    {
+      "label": "Id",
+      "name": "id",
+      "type": "uuid",
+      "widget": "hidden"
+    },
+    {
+      "label": "Name",
+      "maxLength": 80,
+      "name": "name",
+      "required": true,
+      "type": "string",
+      "weight": 10,
+      "widget": "text"
+    },
+    {
+      "currency": "KES",
+      "decimalPlaces": 2,
+      "help": "Orders of this value and above need approval.",
+      "label": "From order value",
+      "maxDigits": 14,
+      "name": "threshold_amount",
+      "required": true,
+      "type": "decimal",
+      "weight": 20,
+      "widget": "currency"
+    },
+    {
+      "choices": [
+        {
+          "label": "Buyer owner",
+          "value": "buyer_owner"
+        },
+        {
+          "label": "Buyer purchaser",
+          "value": "buyer_purchaser"
+        }
+      ],
+      "help": "Members with any of these roles can approve; never the person who placed the order.",
+      "label": "Who can approve",
+      "name": "approver_role_keys",
+      "required": true,
+      "type": "multiselect",
+      "weight": 30,
+      "widget": "multiselect"
+    },
+    {
+      "label": "Approvals needed",
+      "name": "minimum_approvals",
+      "type": "integer",
+      "weight": 40,
+      "widget": "integer"
+    },
+    {
+      "filter": [
+        "eq"
+      ],
+      "label": "On",
+      "name": "is_active",
+      "readOnly": true,
+      "type": "boolean",
+      "widget": "boolean"
+    },
+    {
+      "label": "Currency",
+      "maxLength": 3,
+      "name": "currency",
+      "readOnly": true,
+      "type": "string",
+      "widget": "text"
+    },
+    {
+      "label": "Updated",
+      "name": "updated_at",
+      "readOnly": true,
+      "type": "datetime",
+      "widget": "relative-time"
+    }
+  ],
+  "label": "Approval policy",
+  "labelPlural": "Approval policies",
+  "list": {
+    "defaultPageSize": 25,
+    "fields": [
+      "name",
+      "threshold_amount",
+      "approver_role_keys",
+      "minimum_approvals",
+      "is_active"
+    ],
+    "maxPageSize": 100
+  },
+  "lookup": "pk",
+  "ordering": [
+    "threshold_amount",
+    "-updated_at"
+  ],
+  "path": "approval-policies",
+  "primaryKey": "id",
+  "public": false,
+  "search": [
+    "name"
+  ],
+  "tenantScoped": true,
+  "versioned": false
+} as const satisfies ModelMeta
+export const BuyerGroupMemberSchema = z.object({
+  id: z.uuid().nullish(),
+  buyer: z.uuid(),
+  group_key: z.string().max(40).min(1),
+  created_at: z.iso.datetime({ offset: true }).nullish(),
+})
+export type BuyerGroupMember = z.infer<typeof BuyerGroupMemberSchema>
+export const BuyerGroupMemberWriteSchema = BuyerGroupMemberSchema.omit({ created_at: true })
+export const BuyerGroupMemberMeta = {
+  "key": "buyer_group_member",
+  "actions": [
+    {
+      "icon": "trash",
+      "kind": "archive",
+      "label": "Remove from group",
+      "name": "remove",
+      "policy": "buyer_group.remove"
+    }
+  ],
+  "displayField": "group_key",
+  "fields": [
+    {
+      "label": "Id",
+      "name": "id",
+      "type": "uuid",
+      "widget": "hidden"
+    },
+    {
+      "filter": [
+        "eq"
+      ],
+      "label": "Buyer",
+      "name": "buyer",
+      "relation": {
+        "display": "name",
+        "model": "organization"
+      },
+      "required": true,
+      "type": "relation",
+      "widget": "relation"
+    },
+    {
+      "filter": [
+        "in"
+      ],
+      "help": "A short name your price rules use, such as key_accounts.",
+      "label": "Group",
+      "maxLength": 40,
+      "name": "group_key",
+      "required": true,
+      "type": "string",
+      "widget": "text"
+    },
+    {
+      "label": "Created at",
+      "name": "created_at",
+      "readOnly": true,
+      "type": "datetime",
+      "widget": "relative-time"
+    }
+  ],
+  "label": "Buyer group member",
+  "labelPlural": "Buyer groups",
+  "list": {
+    "defaultPageSize": 100,
+    "fields": [
+      "buyer",
+      "group_key",
+      "created_at"
+    ],
+    "maxPageSize": 100
+  },
+  "lookup": "pk",
+  "ordering": [
+    "group_key",
+    "-created_at"
+  ],
+  "path": "catalog/buyer-groups",
+  "primaryKey": "id",
+  "public": false,
+  "search": [],
+  "tenantScoped": true,
+  "versioned": false
+} as const satisfies ModelMeta
 export const CartSchema = z.object({
   id: z.uuid().nullish(),
   buyer_organization: z.uuid(),
@@ -532,6 +851,22 @@ export const CartMeta = {
       "label": "Accept new prices",
       "name": "accept_prices",
       "policy": "cart.update",
+      "when": {
+        "status": [
+          "active"
+        ]
+      }
+    },
+    {
+      "icon": "check",
+      "input": [
+        "delivery_address",
+        "special_instructions"
+      ],
+      "kind": "command",
+      "label": "Place orders",
+      "name": "checkout",
+      "policy": "cart.checkout",
       "when": {
         "status": [
           "active"
@@ -631,6 +966,26 @@ export const CartMeta = {
       "readOnly": true,
       "type": "datetime",
       "widget": "relative-time"
+    },
+    {
+      "inputOnly": true,
+      "label": "Deliver to",
+      "name": "delivery_address",
+      "relation": {
+        "display": "label",
+        "model": "address"
+      },
+      "type": "relation",
+      "widget": "relation"
+    },
+    {
+      "help": "Gate, opening hours, who receives the goods.",
+      "inputOnly": true,
+      "label": "Delivery notes",
+      "maxLength": 1000,
+      "name": "special_instructions",
+      "type": "text",
+      "widget": "textarea"
     }
   ],
   "label": "Cart",
@@ -1436,6 +1791,229 @@ export const CategoryContractMeta = {
   "tenantScoped": false,
   "versioned": false
 } as const satisfies ModelMeta
+export const MediaAssetSchema = z.object({
+  id: z.uuid().nullish(),
+  product: z.uuid().nullish(),
+  variant: z.uuid().nullish(),
+  original_name: z.string().max(160).min(1),
+  alt_text: z.string().max(200).min(1),
+  sort_order: z.number().int().nullish(),
+  mime_type: z.string().max(40).min(1),
+  size_bytes: z.number().int(),
+  width_px: z.number().int().nullish(),
+  height_px: z.number().int().nullish(),
+  scan_status: z.enum(["pending", "clean", "rejected", "failed"]).nullish(),
+  processing_status: z.enum(["queued", "processing", "ready", "failed"]).nullish(),
+  rejection_reason: z.string().max(200).nullish(),
+  created_at: z.iso.datetime({ offset: true }).nullish(),
+})
+export type MediaAsset = z.infer<typeof MediaAssetSchema>
+export const MediaAssetWriteSchema = MediaAssetSchema.omit({ product: true, original_name: true, mime_type: true, size_bytes: true, width_px: true, height_px: true, scan_status: true, processing_status: true, rejection_reason: true, created_at: true })
+export const MediaAssetMeta = {
+  "key": "media_asset",
+  "actions": [
+    {
+      "confirm": true,
+      "icon": "trash",
+      "kind": "archive",
+      "label": "Remove",
+      "name": "remove",
+      "policy": "media_asset.remove",
+      "tone": "danger"
+    }
+  ],
+  "displayField": "original_name",
+  "fields": [
+    {
+      "label": "Id",
+      "name": "id",
+      "type": "uuid",
+      "widget": "hidden"
+    },
+    {
+      "filter": [
+        "eq"
+      ],
+      "label": "Product",
+      "name": "product",
+      "readOnly": true,
+      "relation": {
+        "display": "name",
+        "model": "catalog_product"
+      },
+      "type": "relation",
+      "widget": "relation"
+    },
+    {
+      "label": "Variant",
+      "name": "variant",
+      "relation": {
+        "display": "sku",
+        "model": "variant"
+      },
+      "type": "relation",
+      "widget": "relation"
+    },
+    {
+      "label": "File",
+      "maxLength": 160,
+      "name": "original_name",
+      "readOnly": true,
+      "required": true,
+      "type": "string",
+      "widget": "text"
+    },
+    {
+      "help": "What the photograph shows, for people who cannot see it.",
+      "label": "Description",
+      "maxLength": 200,
+      "name": "alt_text",
+      "required": true,
+      "type": "string",
+      "widget": "text"
+    },
+    {
+      "label": "Order",
+      "name": "sort_order",
+      "type": "integer",
+      "widget": "integer"
+    },
+    {
+      "label": "Type",
+      "maxLength": 40,
+      "name": "mime_type",
+      "readOnly": true,
+      "required": true,
+      "type": "string",
+      "widget": "text"
+    },
+    {
+      "label": "Size",
+      "name": "size_bytes",
+      "readOnly": true,
+      "required": true,
+      "type": "integer",
+      "widget": "integer"
+    },
+    {
+      "label": "Width",
+      "name": "width_px",
+      "readOnly": true,
+      "type": "integer",
+      "widget": "integer"
+    },
+    {
+      "label": "Height",
+      "name": "height_px",
+      "readOnly": true,
+      "type": "integer",
+      "widget": "integer"
+    },
+    {
+      "choices": [
+        {
+          "label": "Checking",
+          "tone": "info",
+          "value": "pending"
+        },
+        {
+          "label": "Clean",
+          "tone": "success",
+          "value": "clean"
+        },
+        {
+          "label": "Rejected",
+          "tone": "danger",
+          "value": "rejected"
+        },
+        {
+          "label": "Could not check",
+          "tone": "warning",
+          "value": "failed"
+        }
+      ],
+      "label": "Check",
+      "name": "scan_status",
+      "readOnly": true,
+      "type": "enum",
+      "widget": "status"
+    },
+    {
+      "choices": [
+        {
+          "label": "Queued",
+          "tone": "neutral",
+          "value": "queued"
+        },
+        {
+          "label": "Processing",
+          "tone": "info",
+          "value": "processing"
+        },
+        {
+          "label": "Ready",
+          "tone": "success",
+          "value": "ready"
+        },
+        {
+          "label": "Failed",
+          "tone": "danger",
+          "value": "failed"
+        }
+      ],
+      "filter": [
+        "in"
+      ],
+      "label": "Processing",
+      "name": "processing_status",
+      "readOnly": true,
+      "type": "enum",
+      "widget": "status"
+    },
+    {
+      "label": "Why it was rejected",
+      "maxLength": 200,
+      "name": "rejection_reason",
+      "readOnly": true,
+      "type": "string",
+      "widget": "text"
+    },
+    {
+      "label": "Created at",
+      "name": "created_at",
+      "readOnly": true,
+      "type": "datetime",
+      "widget": "relative-time"
+    }
+  ],
+  "label": "Photograph",
+  "labelPlural": "Photographs",
+  "list": {
+    "defaultPageSize": 50,
+    "fields": [
+      "original_name",
+      "alt_text",
+      "processing_status",
+      "scan_status",
+      "sort_order"
+    ],
+    "maxPageSize": 100
+  },
+  "lookup": "pk",
+  "ordering": [
+    "sort_order",
+    "-created_at"
+  ],
+  "path": "catalog/media",
+  "primaryKey": "id",
+  "public": false,
+  "search": [
+    "original_name",
+    "alt_text"
+  ],
+  "tenantScoped": true,
+  "versioned": false
+} as const satisfies ModelMeta
 export const MembershipSchema = z.object({
   id: z.uuid().nullish(),
   name: z.string().nullish(),
@@ -1672,6 +2250,172 @@ export const MembershipMeta = {
     "email"
   ],
   "tenantScoped": true,
+  "versioned": false
+} as const satisfies ModelMeta
+export const MetricDefinitionSchema = z.object({
+  id: z.uuid().nullish(),
+  key: z.string().max(40).min(1),
+  name: z.string().max(80).min(1),
+  aggregation: z.enum(["sum", "count", "avg", "ratio"]),
+  source_entity: z.enum(["order", "order_line", "variant"]),
+  unit: z.string().max(20).nullish(),
+  better: z.enum(["higher", "lower"]).nullish(),
+  description: z.string().nullish(),
+  dimensions_json: z.unknown().nullish(),
+  version: z.number().int().nullish(),
+})
+export type MetricDefinition = z.infer<typeof MetricDefinitionSchema>
+export const MetricDefinitionWriteSchema = MetricDefinitionSchema.omit({ key: true, name: true, aggregation: true, source_entity: true, unit: true, better: true, description: true, dimensions_json: true, version: true })
+export const MetricDefinitionMeta = {
+  "key": "metric_definition",
+  "actions": [],
+  "displayField": "name",
+  "fields": [
+    {
+      "label": "Id",
+      "name": "id",
+      "type": "uuid",
+      "widget": "hidden"
+    },
+    {
+      "label": "Key",
+      "maxLength": 40,
+      "name": "key",
+      "readOnly": true,
+      "required": true,
+      "type": "string",
+      "widget": "code"
+    },
+    {
+      "label": "Name",
+      "maxLength": 80,
+      "name": "name",
+      "readOnly": true,
+      "required": true,
+      "type": "string",
+      "widget": "text"
+    },
+    {
+      "choices": [
+        {
+          "label": "Sum",
+          "value": "sum"
+        },
+        {
+          "label": "Count",
+          "value": "count"
+        },
+        {
+          "label": "Average",
+          "value": "avg"
+        },
+        {
+          "label": "Ratio",
+          "value": "ratio"
+        }
+      ],
+      "label": "Aggregation",
+      "name": "aggregation",
+      "readOnly": true,
+      "required": true,
+      "type": "enum",
+      "widget": "select"
+    },
+    {
+      "choices": [
+        {
+          "label": "Orders",
+          "value": "order"
+        },
+        {
+          "label": "Order lines",
+          "value": "order_line"
+        },
+        {
+          "label": "Variants (stock now)",
+          "value": "variant"
+        }
+      ],
+      "label": "Source",
+      "name": "source_entity",
+      "readOnly": true,
+      "required": true,
+      "type": "enum",
+      "widget": "select"
+    },
+    {
+      "label": "Unit",
+      "maxLength": 20,
+      "name": "unit",
+      "readOnly": true,
+      "type": "string",
+      "widget": "text"
+    },
+    {
+      "choices": [
+        {
+          "label": "Higher",
+          "value": "higher"
+        },
+        {
+          "label": "Lower",
+          "value": "lower"
+        }
+      ],
+      "label": "Better when",
+      "name": "better",
+      "readOnly": true,
+      "type": "enum",
+      "widget": "select"
+    },
+    {
+      "label": "What it means",
+      "name": "description",
+      "readOnly": true,
+      "type": "text",
+      "widget": "textarea"
+    },
+    {
+      "label": "Breakdowns",
+      "name": "dimensions_json",
+      "readOnly": true,
+      "type": "json",
+      "widget": "json"
+    },
+    {
+      "label": "Version",
+      "name": "version",
+      "readOnly": true,
+      "type": "integer",
+      "widget": "integer"
+    }
+  ],
+  "label": "Metric",
+  "labelPlural": "Metrics",
+  "list": {
+    "defaultPageSize": 50,
+    "fields": [
+      "name",
+      "key",
+      "aggregation",
+      "unit",
+      "version"
+    ],
+    "maxPageSize": 100
+  },
+  "lookup": "pk",
+  "ordering": [
+    "key",
+    "-version"
+  ],
+  "path": "metric-definitions",
+  "primaryKey": "id",
+  "public": false,
+  "search": [
+    "name",
+    "key"
+  ],
+  "tenantScoped": false,
   "versioned": false
 } as const satisfies ModelMeta
 export const NotificationSchema = z.object({
@@ -1981,7 +2725,7 @@ export const OrderSchema = z.object({
   buyer_organization: z.uuid(),
   submitted_by: z.uuid().nullish(),
   delivery_address: z.uuid().nullish(),
-  status: z.enum(["submitted", "confirmed", "picking", "partially_fulfilled", "shipped", "delivered", "cancelled", "disputed"]).nullish(),
+  status: z.enum(["pending_approval", "submitted", "confirmed", "picking", "partially_fulfilled", "shipped", "delivered", "cancelled", "disputed"]).nullish(),
   submitted_at: z.iso.datetime({ offset: true }),
   subtotal: decimalString(14, 2),
   total: decimalString(14, 2),
@@ -1992,6 +2736,140 @@ export const OrderWriteSchema = OrderSchema.omit({ order_number: true, seller_or
 export const OrderMeta = {
   "key": "order",
   "actions": [
+    {
+      "icon": "check",
+      "input": [
+        "comment"
+      ],
+      "kind": "command",
+      "label": "Approve order",
+      "name": "approve",
+      "policy": "order.approve",
+      "when": {
+        "status": [
+          "pending_approval"
+        ]
+      }
+    },
+    {
+      "input": [
+        "comment"
+      ],
+      "kind": "command",
+      "label": "Reject",
+      "name": "reject",
+      "policy": "order.approve",
+      "tone": "danger",
+      "when": {
+        "status": [
+          "pending_approval"
+        ]
+      }
+    },
+    {
+      "icon": "check",
+      "kind": "command",
+      "label": "Confirm order",
+      "name": "confirm",
+      "policy": "order.fulfil",
+      "when": {
+        "status": [
+          "submitted"
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "label": "Start picking",
+      "name": "start_picking",
+      "policy": "order.fulfil",
+      "when": {
+        "status": [
+          "confirmed"
+        ]
+      }
+    },
+    {
+      "input": [
+        "reason"
+      ],
+      "kind": "command",
+      "label": "Short-ship",
+      "name": "mark_partial",
+      "policy": "order.fulfil",
+      "tone": "warning",
+      "when": {
+        "status": [
+          "picking"
+        ]
+      }
+    },
+    {
+      "icon": "truck",
+      "input": [
+        "carrier_name",
+        "carrier_reference",
+        "estimated_start_at",
+        "estimated_end_at"
+      ],
+      "kind": "command",
+      "label": "Ship",
+      "name": "ship",
+      "policy": "order.fulfil",
+      "when": {
+        "status": [
+          "confirmed",
+          "picking",
+          "partially_fulfilled"
+        ]
+      }
+    },
+    {
+      "confirm": true,
+      "kind": "command",
+      "label": "Mark delivered",
+      "name": "mark_delivered",
+      "policy": "order.fulfil",
+      "when": {
+        "status": [
+          "shipped"
+        ]
+      }
+    },
+    {
+      "input": [
+        "reason"
+      ],
+      "kind": "command",
+      "label": "Cancel order",
+      "name": "cancel",
+      "policy": "order.cancel",
+      "tone": "danger",
+      "when": {
+        "status": [
+          "pending_approval",
+          "submitted",
+          "confirmed",
+          "picking"
+        ]
+      }
+    },
+    {
+      "input": [
+        "reason"
+      ],
+      "kind": "command",
+      "label": "Report a problem",
+      "name": "dispute",
+      "policy": "order.dispute",
+      "tone": "danger",
+      "when": {
+        "status": [
+          "shipped",
+          "delivered"
+        ]
+      }
+    },
     {
       "icon": "copy",
       "kind": "command",
@@ -2034,6 +2912,10 @@ export const OrderMeta = {
       "widget": "relation"
     },
     {
+      "filter": [
+        "eq",
+        "in"
+      ],
       "label": "Buyer",
       "name": "buyer_organization",
       "readOnly": true,
@@ -2070,6 +2952,11 @@ export const OrderMeta = {
     {
       "choices": [
         {
+          "label": "Awaiting approval",
+          "tone": "warning",
+          "value": "pending_approval"
+        },
+        {
           "label": "Submitted",
           "tone": "info",
           "value": "submitted"
@@ -2081,7 +2968,7 @@ export const OrderMeta = {
         },
         {
           "label": "Picking",
-          "tone": "info",
+          "tone": "signal",
           "value": "picking"
         },
         {
@@ -2144,6 +3031,9 @@ export const OrderMeta = {
     {
       "currency": "KES",
       "decimalPlaces": 2,
+      "filter": [
+        "range"
+      ],
       "label": "Total",
       "maxDigits": 14,
       "name": "total",
@@ -2158,6 +3048,54 @@ export const OrderMeta = {
       "readOnly": true,
       "type": "text",
       "widget": "textarea"
+    },
+    {
+      "help": "The other side reads this.",
+      "inputOnly": true,
+      "label": "Reason",
+      "maxLength": 1000,
+      "name": "reason",
+      "type": "text",
+      "widget": "textarea"
+    },
+    {
+      "help": "Kept in the order history.",
+      "inputOnly": true,
+      "label": "Comment",
+      "maxLength": 500,
+      "name": "comment",
+      "type": "text",
+      "widget": "textarea"
+    },
+    {
+      "inputOnly": true,
+      "label": "Carrier",
+      "maxLength": 80,
+      "name": "carrier_name",
+      "type": "string",
+      "widget": "text"
+    },
+    {
+      "inputOnly": true,
+      "label": "Tracking reference",
+      "maxLength": 80,
+      "name": "carrier_reference",
+      "type": "string",
+      "widget": "code"
+    },
+    {
+      "inputOnly": true,
+      "label": "Expected from",
+      "name": "estimated_start_at",
+      "type": "datetime",
+      "widget": "datetime"
+    },
+    {
+      "inputOnly": true,
+      "label": "Expected by",
+      "name": "estimated_end_at",
+      "type": "datetime",
+      "widget": "datetime"
     }
   ],
   "label": "Order",
@@ -2167,6 +3105,7 @@ export const OrderMeta = {
     "fields": [
       "order_number",
       "seller_organization",
+      "buyer_organization",
       "status",
       "submitted_at",
       "total"
@@ -2454,6 +3393,199 @@ export const OrganizationMeta = {
   "tenantScoped": true,
   "versioned": false
 } as const satisfies ModelMeta
+export const PriceRuleSchema = z.object({
+  id: z.uuid().nullish(),
+  variant: z.uuid(),
+  label: z.string().max(80).nullish(),
+  buyer_group_key: z.string().max(40).nullish(),
+  minimum_quantity: z.number().int().nullish(),
+  unit_price: decimalString(12, 2),
+  priority: z.number().int().nullish(),
+  effective_from: z.iso.datetime({ offset: true }).nullish(),
+  effective_until: z.iso.datetime({ offset: true }).nullish(),
+  is_active: z.boolean().nullish(),
+  unit: z.string().max(20).nullish(),
+  currency: z.string().max(3).nullish(),
+  updated_at: z.iso.datetime({ offset: true }).nullish(),
+})
+export type PriceRule = z.infer<typeof PriceRuleSchema>
+export const PriceRuleWriteSchema = PriceRuleSchema.omit({ unit: true, currency: true, updated_at: true })
+export const PriceRuleMeta = {
+  "key": "price_rule",
+  "actions": [
+    {
+      "confirm": true,
+      "icon": "pause",
+      "kind": "command",
+      "label": "Switch off",
+      "name": "switch_off",
+      "policy": "price_rule.update",
+      "when": {
+        "is_active": [
+          "true"
+        ]
+      }
+    },
+    {
+      "icon": "check",
+      "kind": "command",
+      "label": "Switch on",
+      "name": "switch_on",
+      "policy": "price_rule.update",
+      "when": {
+        "is_active": [
+          "false"
+        ]
+      }
+    }
+  ],
+  "displayField": "label",
+  "fields": [
+    {
+      "label": "Id",
+      "name": "id",
+      "type": "uuid",
+      "widget": "hidden"
+    },
+    {
+      "filter": [
+        "eq"
+      ],
+      "label": "Variant",
+      "name": "variant",
+      "relation": {
+        "display": "sku",
+        "model": "variant"
+      },
+      "required": true,
+      "type": "relation",
+      "weight": 5,
+      "widget": "relation"
+    },
+    {
+      "help": "For you, such as October promotion.",
+      "label": "Name",
+      "maxLength": 80,
+      "name": "label",
+      "type": "string",
+      "weight": 10,
+      "widget": "text"
+    },
+    {
+      "filter": [
+        "in"
+      ],
+      "help": "Leave empty for every buyer.",
+      "label": "Buyer group",
+      "maxLength": 40,
+      "name": "buyer_group_key",
+      "type": "string",
+      "weight": 15,
+      "widget": "text"
+    },
+    {
+      "help": "In packs.",
+      "label": "From quantity",
+      "name": "minimum_quantity",
+      "type": "integer",
+      "weight": 20,
+      "widget": "integer"
+    },
+    {
+      "currency": "KES",
+      "decimalPlaces": 2,
+      "label": "Price per pack",
+      "maxDigits": 12,
+      "name": "unit_price",
+      "required": true,
+      "type": "decimal",
+      "weight": 25,
+      "widget": "currency"
+    },
+    {
+      "help": "Where rules overlap, the higher one wins.",
+      "label": "Priority",
+      "name": "priority",
+      "type": "integer",
+      "weight": 30,
+      "widget": "integer"
+    },
+    {
+      "label": "Starts",
+      "name": "effective_from",
+      "type": "datetime",
+      "weight": 35,
+      "widget": "datetime"
+    },
+    {
+      "label": "Ends",
+      "name": "effective_until",
+      "type": "datetime",
+      "weight": 40,
+      "widget": "datetime"
+    },
+    {
+      "filter": [
+        "eq"
+      ],
+      "label": "On",
+      "name": "is_active",
+      "type": "boolean",
+      "weight": 45,
+      "widget": "boolean"
+    },
+    {
+      "label": "Unit",
+      "maxLength": 20,
+      "name": "unit",
+      "readOnly": true,
+      "type": "string",
+      "widget": "text"
+    },
+    {
+      "label": "Currency",
+      "maxLength": 3,
+      "name": "currency",
+      "readOnly": true,
+      "type": "string",
+      "widget": "text"
+    },
+    {
+      "label": "Updated",
+      "name": "updated_at",
+      "readOnly": true,
+      "type": "datetime",
+      "widget": "relative-time"
+    }
+  ],
+  "label": "Price rule",
+  "labelPlural": "Price rules",
+  "list": {
+    "defaultPageSize": 50,
+    "fields": [
+      "label",
+      "variant",
+      "buyer_group_key",
+      "minimum_quantity",
+      "unit_price",
+      "is_active"
+    ],
+    "maxPageSize": 100
+  },
+  "lookup": "pk",
+  "ordering": [
+    "-updated_at",
+    "minimum_quantity"
+  ],
+  "path": "catalog/price-rules",
+  "primaryKey": "id",
+  "public": false,
+  "search": [
+    "label"
+  ],
+  "tenantScoped": true,
+  "versioned": false
+} as const satisfies ModelMeta
 export const ProductSchema = z.object({
   id: z.uuid().nullish(),
   primary_image: z.unknown().nullish(),
@@ -2721,6 +3853,296 @@ export const ProductMeta = {
   ],
   "tenantScoped": false,
   "versioned": false
+} as const satisfies ModelMeta
+export const QuoteSchema = z.object({
+  id: z.uuid().nullish(),
+  reference: z.string().max(20).min(1),
+  seller_organization: z.uuid(),
+  buyer_organization: z.uuid().nullish(),
+  requested_by: z.uuid().nullish(),
+  delivery_address: z.uuid(),
+  expires_at: z.iso.datetime({ offset: true }),
+  buyer_notes: z.string().nullish(),
+  seller_notes: z.string().nullish(),
+  status: z.enum(["requested", "responded", "accepted", "declined", "expired", "cancelled"]).nullish(),
+  responded_at: z.iso.datetime({ offset: true }).nullish(),
+  accepted_at: z.iso.datetime({ offset: true }).nullish(),
+  created_at: z.iso.datetime({ offset: true }).nullish(),
+})
+export type Quote = z.infer<typeof QuoteSchema>
+export const QuoteWriteSchema = QuoteSchema.omit({ reference: true, buyer_organization: true, requested_by: true, status: true, responded_at: true, accepted_at: true, created_at: true })
+export const QuoteMeta = {
+  "key": "quote",
+  "actions": [
+    {
+      "icon": "check",
+      "input": [
+        "offers",
+        "seller_notes"
+      ],
+      "kind": "command",
+      "label": "Send offer",
+      "name": "respond",
+      "policy": "quote.respond",
+      "when": {
+        "status": [
+          "requested",
+          "responded"
+        ]
+      }
+    },
+    {
+      "input": [
+        "seller_notes"
+      ],
+      "kind": "command",
+      "label": "Decline",
+      "name": "decline",
+      "policy": "quote.respond",
+      "tone": "danger",
+      "when": {
+        "status": [
+          "requested",
+          "responded"
+        ]
+      }
+    },
+    {
+      "confirm": true,
+      "icon": "check",
+      "kind": "command",
+      "label": "Accept and order",
+      "name": "accept",
+      "policy": "quote.accept",
+      "when": {
+        "status": [
+          "responded"
+        ]
+      }
+    },
+    {
+      "confirm": true,
+      "kind": "command",
+      "label": "Decline offer",
+      "name": "decline_offer",
+      "policy": "quote.accept",
+      "tone": "danger",
+      "when": {
+        "status": [
+          "responded"
+        ]
+      }
+    },
+    {
+      "confirm": true,
+      "kind": "command",
+      "label": "Cancel request",
+      "name": "cancel",
+      "policy": "quote.accept",
+      "tone": "danger",
+      "when": {
+        "status": [
+          "requested"
+        ]
+      }
+    }
+  ],
+  "displayField": "reference",
+  "fields": [
+    {
+      "label": "Id",
+      "name": "id",
+      "type": "uuid",
+      "widget": "hidden"
+    },
+    {
+      "label": "Quote",
+      "maxLength": 20,
+      "name": "reference",
+      "readOnly": true,
+      "required": true,
+      "type": "string",
+      "widget": "code"
+    },
+    {
+      "filter": [
+        "eq",
+        "in"
+      ],
+      "label": "Seller",
+      "name": "seller_organization",
+      "relation": {
+        "display": "name",
+        "model": "organization"
+      },
+      "required": true,
+      "type": "relation",
+      "weight": 10,
+      "widget": "relation"
+    },
+    {
+      "filter": [
+        "eq",
+        "in"
+      ],
+      "label": "Buyer",
+      "name": "buyer_organization",
+      "readOnly": true,
+      "relation": {
+        "display": "name",
+        "model": "organization"
+      },
+      "type": "relation",
+      "widget": "relation"
+    },
+    {
+      "label": "Requested by",
+      "name": "requested_by",
+      "readOnly": true,
+      "relation": {
+        "display": "display_name",
+        "model": "user"
+      },
+      "type": "relation",
+      "widget": "relation"
+    },
+    {
+      "label": "Deliver to",
+      "name": "delivery_address",
+      "relation": {
+        "display": "label",
+        "model": "address"
+      },
+      "required": true,
+      "type": "relation",
+      "weight": 20,
+      "widget": "relation"
+    },
+    {
+      "help": "The seller must respond, and you accept, before this time.",
+      "label": "Valid until",
+      "name": "expires_at",
+      "required": true,
+      "type": "datetime",
+      "weight": 30,
+      "widget": "datetime"
+    },
+    {
+      "label": "Notes for the seller",
+      "name": "buyer_notes",
+      "type": "text",
+      "weight": 40,
+      "widget": "textarea"
+    },
+    {
+      "label": "Seller's notes",
+      "name": "seller_notes",
+      "type": "text",
+      "weight": 50,
+      "widget": "textarea"
+    },
+    {
+      "choices": [
+        {
+          "label": "Requested",
+          "tone": "info",
+          "value": "requested"
+        },
+        {
+          "label": "Seller responded",
+          "tone": "signal",
+          "value": "responded"
+        },
+        {
+          "label": "Accepted",
+          "tone": "success",
+          "value": "accepted"
+        },
+        {
+          "label": "Declined",
+          "tone": "danger",
+          "value": "declined"
+        },
+        {
+          "label": "Expired",
+          "tone": "neutral",
+          "value": "expired"
+        },
+        {
+          "label": "Cancelled",
+          "tone": "neutral",
+          "value": "cancelled"
+        }
+      ],
+      "filter": [
+        "in"
+      ],
+      "label": "Status",
+      "name": "status",
+      "readOnly": true,
+      "type": "enum",
+      "widget": "status"
+    },
+    {
+      "label": "Responded",
+      "name": "responded_at",
+      "readOnly": true,
+      "type": "datetime",
+      "widget": "relative-time"
+    },
+    {
+      "label": "Accepted",
+      "name": "accepted_at",
+      "readOnly": true,
+      "type": "datetime",
+      "widget": "relative-time"
+    },
+    {
+      "filter": [
+        "range"
+      ],
+      "label": "Requested",
+      "name": "created_at",
+      "readOnly": true,
+      "type": "datetime",
+      "widget": "relative-time"
+    },
+    {
+      "help": "Your price per pack for each line, by line.",
+      "inputOnly": true,
+      "label": "Offers",
+      "name": "offers",
+      "type": "json",
+      "widget": "json"
+    }
+  ],
+  "label": "Quote",
+  "labelPlural": "Quotes",
+  "list": {
+    "defaultPageSize": 25,
+    "fields": [
+      "reference",
+      "seller_organization",
+      "buyer_organization",
+      "status",
+      "expires_at",
+      "created_at"
+    ],
+    "maxPageSize": 100
+  },
+  "lookup": "pk",
+  "ordering": [
+    "-created_at",
+    "expires_at"
+  ],
+  "path": "quotes",
+  "primaryKey": "id",
+  "public": false,
+  "search": [
+    "reference"
+  ],
+  "tenantScoped": true,
+  "versioned": true
 } as const satisfies ModelMeta
 export const SellerDocumentSchema = z.object({
   id: z.uuid().nullish(),
@@ -3184,6 +4606,257 @@ export const SellerProfileMeta = {
   "tenantScoped": true,
   "versioned": false
 } as const satisfies ModelMeta
+export const ShipmentSchema = z.object({
+  id: z.uuid().nullish(),
+  order: z.uuid(),
+  carrier_name: z.string().max(80).nullish(),
+  carrier_reference: z.string().max(80).nullish(),
+  status: z.enum(["pending", "handed_over", "in_transit", "delivered", "exception"]).nullish(),
+  estimated_start_at: z.iso.datetime({ offset: true }).nullish(),
+  estimated_end_at: z.iso.datetime({ offset: true }).nullish(),
+  last_event_at: z.iso.datetime({ offset: true }).nullish(),
+  created_at: z.iso.datetime({ offset: true }).nullish(),
+})
+export type Shipment = z.infer<typeof ShipmentSchema>
+export const ShipmentWriteSchema = ShipmentSchema.omit({ order: true, status: true, last_event_at: true, created_at: true })
+export const ShipmentMeta = {
+  "key": "shipment",
+  "actions": [
+    {
+      "icon": "plus",
+      "input": [
+        "event_type",
+        "description",
+        "location_text",
+        "occurred_at"
+      ],
+      "kind": "command",
+      "label": "Add update",
+      "name": "add_event",
+      "policy": "shipment.update",
+      "when": {
+        "status": [
+          "handed_over",
+          "in_transit",
+          "exception",
+          "pending"
+        ]
+      }
+    },
+    {
+      "icon": "check",
+      "input": [
+        "proof_file",
+        "description",
+        "occurred_at"
+      ],
+      "kind": "command",
+      "label": "Confirm delivery",
+      "name": "confirm_delivery",
+      "policy": "shipment.update",
+      "when": {
+        "status": [
+          "handed_over",
+          "in_transit",
+          "exception",
+          "pending"
+        ]
+      }
+    }
+  ],
+  "displayField": "carrier_reference",
+  "fields": [
+    {
+      "label": "Id",
+      "name": "id",
+      "type": "uuid",
+      "widget": "hidden"
+    },
+    {
+      "filter": [
+        "eq"
+      ],
+      "label": "Order",
+      "name": "order",
+      "readOnly": true,
+      "relation": {
+        "display": "order_number",
+        "model": "order"
+      },
+      "required": true,
+      "type": "relation",
+      "widget": "relation"
+    },
+    {
+      "label": "Carrier",
+      "maxLength": 80,
+      "name": "carrier_name",
+      "type": "string",
+      "widget": "text"
+    },
+    {
+      "label": "Tracking reference",
+      "maxLength": 80,
+      "name": "carrier_reference",
+      "type": "string",
+      "widget": "code"
+    },
+    {
+      "choices": [
+        {
+          "label": "Being prepared",
+          "tone": "neutral",
+          "value": "pending"
+        },
+        {
+          "label": "Handed to carrier",
+          "tone": "info",
+          "value": "handed_over"
+        },
+        {
+          "label": "In transit",
+          "tone": "signal",
+          "value": "in_transit"
+        },
+        {
+          "label": "Delivered",
+          "tone": "success",
+          "value": "delivered"
+        },
+        {
+          "label": "Delivery problem",
+          "tone": "danger",
+          "value": "exception"
+        }
+      ],
+      "filter": [
+        "in"
+      ],
+      "label": "Status",
+      "name": "status",
+      "readOnly": true,
+      "type": "enum",
+      "widget": "status"
+    },
+    {
+      "label": "Expected from",
+      "name": "estimated_start_at",
+      "type": "datetime",
+      "widget": "datetime"
+    },
+    {
+      "label": "Expected by",
+      "name": "estimated_end_at",
+      "type": "datetime",
+      "widget": "datetime"
+    },
+    {
+      "label": "Last update",
+      "name": "last_event_at",
+      "readOnly": true,
+      "type": "datetime",
+      "widget": "relative-time"
+    },
+    {
+      "label": "Created at",
+      "name": "created_at",
+      "readOnly": true,
+      "type": "datetime",
+      "widget": "relative-time"
+    },
+    {
+      "choices": [
+        {
+          "label": "Handed to carrier",
+          "value": "handed_over"
+        },
+        {
+          "label": "In transit",
+          "value": "in_transit"
+        },
+        {
+          "label": "Out for delivery",
+          "value": "out_for_delivery"
+        },
+        {
+          "label": "Delayed",
+          "value": "delayed"
+        },
+        {
+          "label": "Delivery problem",
+          "value": "exception"
+        },
+        {
+          "label": "Note",
+          "value": "note"
+        }
+      ],
+      "inputOnly": true,
+      "label": "What happened",
+      "name": "event_type",
+      "type": "enum",
+      "widget": "select"
+    },
+    {
+      "inputOnly": true,
+      "label": "Details",
+      "maxLength": 500,
+      "name": "description",
+      "type": "text",
+      "widget": "textarea"
+    },
+    {
+      "inputOnly": true,
+      "label": "Where",
+      "maxLength": 120,
+      "name": "location_text",
+      "type": "string",
+      "widget": "text"
+    },
+    {
+      "help": "Leave empty for now.",
+      "inputOnly": true,
+      "label": "When",
+      "name": "occurred_at",
+      "type": "datetime",
+      "widget": "datetime"
+    },
+    {
+      "help": "A signed delivery note or photo.",
+      "inputOnly": true,
+      "label": "Proof of delivery",
+      "name": "proof_file",
+      "type": "file",
+      "widget": "file"
+    }
+  ],
+  "label": "Shipment",
+  "labelPlural": "Shipments",
+  "list": {
+    "defaultPageSize": 25,
+    "fields": [
+      "order",
+      "carrier_name",
+      "carrier_reference",
+      "status",
+      "last_event_at"
+    ],
+    "maxPageSize": 100
+  },
+  "lookup": "pk",
+  "ordering": [
+    "-created_at",
+    "-last_event_at"
+  ],
+  "path": "shipments",
+  "primaryKey": "id",
+  "public": false,
+  "search": [
+    "carrier_reference"
+  ],
+  "tenantScoped": true,
+  "versioned": false
+} as const satisfies ModelMeta
 export const VariantSchema = z.object({
   id: z.uuid().nullish(),
   product: z.uuid(),
@@ -3382,5 +5055,5 @@ export const VariantMeta = {
   "tenantScoped": true,
   "versioned": false
 } as const satisfies ModelMeta
-export const registry = { account: () => ({ schema: AccountSchema, write: AccountWriteSchema, meta: AccountMeta }), address: () => ({ schema: AddressSchema, write: AddressWriteSchema, meta: AddressMeta }), cart: () => ({ schema: CartSchema, write: CartWriteSchema, meta: CartMeta }), cart_line: () => ({ schema: CartLineSchema, write: CartLineWriteSchema, meta: CartLineMeta }), catalog_product: () => ({ schema: CatalogProductSchema, write: CatalogProductWriteSchema, meta: CatalogProductMeta }), category: () => ({ schema: CategorySchema, write: CategoryWriteSchema, meta: CategoryMeta }), category_contract: () => ({ schema: CategoryContractSchema, write: CategoryContractWriteSchema, meta: CategoryContractMeta }), membership: () => ({ schema: MembershipSchema, write: MembershipWriteSchema, meta: MembershipMeta }), notification: () => ({ schema: NotificationSchema, write: NotificationWriteSchema, meta: NotificationMeta }), notification_preference: () => ({ schema: NotificationPreferenceSchema, write: NotificationPreferenceWriteSchema, meta: NotificationPreferenceMeta }), order: () => ({ schema: OrderSchema, write: OrderWriteSchema, meta: OrderMeta }), organization: () => ({ schema: OrganizationSchema, write: OrganizationWriteSchema, meta: OrganizationMeta }), product: () => ({ schema: ProductSchema, write: ProductWriteSchema, meta: ProductMeta }), seller_document: () => ({ schema: SellerDocumentSchema, write: SellerDocumentWriteSchema, meta: SellerDocumentMeta }), seller_profile: () => ({ schema: SellerProfileSchema, write: SellerProfileWriteSchema, meta: SellerProfileMeta }), variant: () => ({ schema: VariantSchema, write: VariantWriteSchema, meta: VariantMeta }) } as const
+export const registry = { account: () => ({ schema: AccountSchema, write: AccountWriteSchema, meta: AccountMeta }), address: () => ({ schema: AddressSchema, write: AddressWriteSchema, meta: AddressMeta }), approval_policy: () => ({ schema: ApprovalPolicySchema, write: ApprovalPolicyWriteSchema, meta: ApprovalPolicyMeta }), buyer_group_member: () => ({ schema: BuyerGroupMemberSchema, write: BuyerGroupMemberWriteSchema, meta: BuyerGroupMemberMeta }), cart: () => ({ schema: CartSchema, write: CartWriteSchema, meta: CartMeta }), cart_line: () => ({ schema: CartLineSchema, write: CartLineWriteSchema, meta: CartLineMeta }), catalog_product: () => ({ schema: CatalogProductSchema, write: CatalogProductWriteSchema, meta: CatalogProductMeta }), category: () => ({ schema: CategorySchema, write: CategoryWriteSchema, meta: CategoryMeta }), category_contract: () => ({ schema: CategoryContractSchema, write: CategoryContractWriteSchema, meta: CategoryContractMeta }), media_asset: () => ({ schema: MediaAssetSchema, write: MediaAssetWriteSchema, meta: MediaAssetMeta }), membership: () => ({ schema: MembershipSchema, write: MembershipWriteSchema, meta: MembershipMeta }), metric_definition: () => ({ schema: MetricDefinitionSchema, write: MetricDefinitionWriteSchema, meta: MetricDefinitionMeta }), notification: () => ({ schema: NotificationSchema, write: NotificationWriteSchema, meta: NotificationMeta }), notification_preference: () => ({ schema: NotificationPreferenceSchema, write: NotificationPreferenceWriteSchema, meta: NotificationPreferenceMeta }), order: () => ({ schema: OrderSchema, write: OrderWriteSchema, meta: OrderMeta }), organization: () => ({ schema: OrganizationSchema, write: OrganizationWriteSchema, meta: OrganizationMeta }), price_rule: () => ({ schema: PriceRuleSchema, write: PriceRuleWriteSchema, meta: PriceRuleMeta }), product: () => ({ schema: ProductSchema, write: ProductWriteSchema, meta: ProductMeta }), quote: () => ({ schema: QuoteSchema, write: QuoteWriteSchema, meta: QuoteMeta }), seller_document: () => ({ schema: SellerDocumentSchema, write: SellerDocumentWriteSchema, meta: SellerDocumentMeta }), seller_profile: () => ({ schema: SellerProfileSchema, write: SellerProfileWriteSchema, meta: SellerProfileMeta }), shipment: () => ({ schema: ShipmentSchema, write: ShipmentWriteSchema, meta: ShipmentMeta }), variant: () => ({ schema: VariantSchema, write: VariantWriteSchema, meta: VariantMeta }) } as const
 export type ModelKey = keyof typeof registry

@@ -26,7 +26,7 @@ export function HeaderBlock({ source, meta, record, title, description, count, s
   const statusField = meta?.fields.find(f => f.widget === 'status')
   const heading =
     source === 'meta' ? meta?.labelPlural ?? meta?.label
-    : source === 'record' && meta && record ? String(record[meta.displayField ?? 'id'] ?? meta.label)
+    : source === 'record' && meta && record ? String(record[meta.displayField ?? 'id'] || meta.label)
     : title
   const badge = status ?? (source === 'record' && statusField && record ? <StatusBadge field={statusField} value={record[statusField.name]} /> : null)
   return (

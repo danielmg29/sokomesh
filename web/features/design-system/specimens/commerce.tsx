@@ -18,7 +18,7 @@ import { FieldInput } from '@/components/kernel/fields/FieldInput'
 import type { SubmitResult } from '@/components/kernel/forms/ProjectedForm'
 import { Button } from '@/components/ui/button'
 import { Segmented } from '@/components/ui/choice'
-import { locales } from '@/lib/contract/generated'
+import { QuoteMeta, locales } from '@/lib/contract/generated'
 import type { FieldMeta, ModelMeta } from '@/lib/contract/types'
 import { formatMoney } from '@/lib/money'
 import { Breadcrumbs } from '@/components/kernel/nav/Breadcrumbs'
@@ -153,7 +153,7 @@ export const mediaItems = [
 ]
 
 function Media() {
-  return <Plates cols={1}><Plate label="grid, every item state, alt text required"><MediaManager items={mediaItems} maxBytes={10_485_760} /></Plate><Plate label="list"><MediaManager items={mediaItems.slice(0, 3)} layout="list" maxBytes={10_485_760} /></Plate></Plates>
+  return <Plates cols={1}><Plate label="grid, every item state, alt text required"><MediaManager items={mediaItems} maxBytes={10_485_760} /></Plate><Plate label="list · with remove"><MediaManager items={mediaItems.slice(0, 3)} layout="list" maxBytes={10_485_760} onRemove={() => undefined} /></Plate><Plate label="empty"><MediaManager items={[]} maxBytes={10_485_760} /></Plate></Plates>
 }
 
 export const tiers = [{ minQuantity: 5, maxQuantity: 9, unitPrice: '1740.00' }, { minQuantity: 10, maxQuantity: 49, unitPrice: '1690.00' }, { minQuantity: 50, unitPrice: '1640.00' }]
@@ -164,6 +164,7 @@ export const priceRules = [
   { id: 'r3', scope: 'buyer-group' as const, label: 'Retail Partners (Rift Valley)', buyerGroup: '14 buyers', unitPrice: '1700.00', effectiveFrom: '2026-10-01T00:00:00+03:00', state: 'active' as const, priority: 20 },
   { id: 'r4', scope: 'buyer-group' as const, label: 'Harvest promotion', buyerGroup: 'Retail Partners (Rift Valley)', unitPrice: '1680.00', effectiveFrom: '2026-10-10T00:00:00+03:00', effectiveTo: '2026-10-31T23:59:00+03:00', state: 'conflict' as const, priority: 20, conflictNote: 'Same buyers, dates and priority as "Retail Partners (Rift Valley)".' },
   { id: 'r5', scope: 'quantity-tier' as const, label: 'Volume tiers', tiers, effectiveFrom: '2026-09-01T00:00:00+03:00', state: 'active' as const, priority: 30 },
+  { id: 'r7', scope: 'quantity-tier' as const, label: 'Quantity price', detail: 'SKU MVN-2K-12 · from 50 bales', unitPrice: '1620.00', effectiveFrom: '2026-09-01T00:00:00+03:00', state: 'off' as const, priority: 0 },
   { id: 'r6', scope: 'base' as const, label: 'Old list price', unitPrice: '1650.00', effectiveFrom: '2026-01-01T00:00:00+03:00', effectiveTo: '2026-08-31T23:59:00+03:00', state: 'expired' as const, priority: 10 },
 ]
 
@@ -284,6 +285,7 @@ function CartGroup() {
 }
 
 export const quoteLines = [{ id: 'q1', product: 'Mavuno Maize Flour 2 kg', quantity: 60, unit: 'bale', listPrice: '1690.00', offeredPrice: '1650.00' }, { id: 'q2', product: 'Mwea Pishori Rice 25 kg', quantity: 10, unit: 'sack', listPrice: '4850.00' }]
+const quoteRequestFields = ['delivery_address', 'expires_at', 'buyer_notes']
 export const addresses = [{ value: 'a1', label: 'Shop · Moi Avenue, Naivasha', description: 'Nakuru County' }, { value: 'a2', label: 'Store room · Kabati, Naivasha', description: 'Nakuru County' }]
 
 function QuoteSheet() {
@@ -293,7 +295,10 @@ function QuoteSheet() {
       <Plate label="mode × status">
         <div className="flex flex-wrap items-center gap-3">
           <Segmented label="Status" size="sm" value={status} onValueChange={setStatus} items={(['draft', 'requested', 'responded', 'accepted', 'declined', 'expired'] as const).map(v => ({ value: v, label: v }))} />
-          <QuoteRequestSheet mode={status === 'draft' ? 'create' : status === 'responded' ? 'revise' : 'view'} status={status} seller={sellers.mwangaza.label} lines={quoteLines} addresses={addresses} reference="SM-QT-000318" trigger={<Button variant="primary">Open quote sheet</Button>} />
+          <QuoteRequestSheet mode={status === 'draft' ? 'create' : status === 'responded' ? 'revise' : 'view'} status={status} seller={sellers.mwangaza.label} lines={quoteLines} reference="SM-QT-000318" expiresAt="2026-10-21T17:00:00+03:00"
+            fields={QuoteMeta.fields.filter(f => quoteRequestFields.includes(f.name))} options={{ delivery_address: addresses }}
+            initial={{ delivery_address: { id: addresses[0]!.value, label: addresses[0]!.label }, expires_at: '2026-10-21T17:00:00+03:00' }}
+            trigger={<Button variant="primary">Open quote sheet</Button>} />
         </div>
       </Plate>
     </Plates>
@@ -368,6 +373,25 @@ function Checkout() {
   )
 }
 
+function CheckoutWithoutPayment() {
+  const [step, setStep] = useState<'address' | 'review' | 'result'>('review')
+  return (
+    <Plates cols={1}>
+      <Plate label="no payment step · fees confirmed by each seller">
+        <div className="mb-4"><Segmented label="Step" size="sm" value={step} onValueChange={setStep} items={(['address', 'review', 'result'] as const).map(v => ({ value: v, label: v }))} /></div>
+        <CheckoutSummaryBlock step={step} steps={['address', 'review', 'result']} state="valid" groups={checkoutGroups.map(({ seller, lines, subtotal }) => ({ seller, lines, subtotal }))} address={naivasha}
+          continueLabel={step === 'address' ? 'Review the orders' : 'Place 2 orders'} onContinue={() => setStep(step === 'address' ? 'review' : 'result')} onBack={() => setStep('address')}>
+          <p className="border border-border bg-surface p-4 text-md">{step === 'result' ? 'Two orders placed; one waits for approval.' : 'Each seller receives their own order.'}</p>
+        </CheckoutSummaryBlock>
+      </Plate>
+    </Plates>
+  )
+}
+
+function CheckoutFlows() {
+  return <div className="flex flex-col gap-6"><CheckoutWithoutPayment /><Checkout /></div>
+}
+
 function Payment() {
   const [state, setState] = useState<PaymentState>('pending')
   const common = { amount: '48250.00', orderReference: 'SM-ORD-004215', phone: '+254712345678', transactionId: state === 'created' ? undefined : 'TXN-1770727500-12345', sentAt: '2026-10-12T11:30:00+03:00' }
@@ -382,7 +406,8 @@ function Payment() {
 }
 
 export const orderTransitions = [
-  { id: 't1', to: 'submitted' as const, at: '2026-10-11T15:44:00+03:00', actor: people.brian },
+  { id: 't0', to: 'pending_approval' as const, at: '2026-10-11T15:31:00+03:00', actor: people.brian, reason: 'Placed from the cart' },
+  { id: 't1', from: 'pending_approval' as const, to: 'submitted' as const, at: '2026-10-11T15:44:00+03:00', actor: people.grace, reason: 'Approved by Grace Wanjiru' },
   { id: 't2', from: 'submitted' as const, to: 'confirmed' as const, at: '2026-10-11T16:05:00+03:00', actor: people.faith },
   { id: 't3', from: 'confirmed' as const, to: 'picking' as const, at: '2026-10-12T07:10:00+03:00', actor: people.peter },
   { id: 't4', from: 'picking' as const, to: 'partially_fulfilled' as const, at: '2026-10-12T08:20:00+03:00', actor: people.peter, reason: 'Sugar short by 3 bales; buyer accepted the partial delivery.', reference: 'FUL-7781' },
@@ -400,6 +425,8 @@ function Delivery() {
       <Plate label="in transit"><DeliveryTrackingBlock status="in_transit" carrier="Rift Express" reference="RX-552019" windowStart="2026-10-12T12:00:00+03:00" windowEnd="2026-10-12T14:00:00+03:00" events={deliveryEvents} mapHref="#" now={DEMO_NOW} /></Plate>
       <Plate label="delayed (window passed)"><DeliveryTrackingBlock status="in_transit" carrier="Rift Express" reference="RX-551870" windowStart="2026-10-12T08:00:00+03:00" windowEnd="2026-10-12T10:00:00+03:00" events={deliveryEvents.slice(0, 1)} delayed lastEventAt="2026-10-12T08:30:00+03:00" now={DEMO_NOW} /></Plate>
       <Plate label="delivered · proof"><DeliveryTrackingBlock status="delivered" carrier="Own fleet · KDA 412X" reference="SHP-20441" windowStart="2026-10-11T09:00:00+03:00" windowEnd="2026-10-11T11:00:00+03:00" events={[...deliveryEvents, { id: 's3', at: '2026-10-11T10:40:00+03:00', label: 'Delivered, signed by M. Wanjiru', location: 'Naivasha' }]} proofOfDelivery={{ name: 'pod-SHP-20441.jpg', size: 1_240_000, type: 'image/jpeg', state: 'ready', url: '#' }} /></Plate>
+      <Plate label="stale (no news) · seller actions"><DeliveryTrackingBlock status="in_transit" carrier="G4S Logistics" reference="G4S-77812" windowEnd="2026-10-14T17:00:00+03:00" events={deliveryEvents} stale lastEventAt="2026-10-12T09:45:00+03:00" now={DEMO_NOW} actions={<Button size="sm" variant="secondary">Add update</Button>} /></Plate>
+      <Plate label="no window yet"><DeliveryTrackingBlock status="pending" carrier="Own van" reference="" events={[]} /></Plate>
       <Plate label="unknown (no carrier events)"><DeliveryTrackingBlock status="handed_over" carrier="Coast Haulage" reference="CH-90021" windowStart="2026-10-14T09:00:00+03:00" windowEnd="2026-10-14T17:00:00+03:00" events={[]} /></Plate>
     </Plates>
   )
@@ -544,7 +571,7 @@ function GallerySpecimen() {
 const map: Record<string, () => ReactNode> = {
   'X-01': Onboarding, 'X-02': ProductEditor, 'X-03': Variants, 'X-04': Media, 'X-05': PriceBook, 'X-06': Tiers, 'X-07': Ledger, 'X-08': Stock,
   'X-09': Facets, 'X-10': Cart, 'X-11': CartGroup, 'X-12': QuoteSheet, 'X-13': QuoteDecision, 'X-14': Approvals, 'X-15': Reservations,
-  'X-16': Countdown, 'X-17': Checkout, 'X-18': Payment, 'X-19': OrderTimeline, 'X-20': Delivery, 'X-21': Returns, 'X-22': Reorder,
+  'X-16': Countdown, 'X-17': CheckoutFlows, 'X-18': Payment, 'X-19': OrderTimeline, 'X-20': Delivery, 'X-21': Returns, 'X-22': Reorder,
   'X-23': Analytics, 'X-24': Integrations, 'X-25': Trace, 'X-26': Notifications, 'X-27': Bell, 'X-28': Preferences, 'X-29': CategoryHeroSpecimen, 'X-30': GallerySpecimen,
   'X-31': Buy, 'X-32': Compare, 'X-33': Details,
 }
