@@ -4,6 +4,17 @@
 
 Versioning: **major**: breaking (removed or renamed keys, narrowed constraints, new required fields without a default). **minor**: additive. **patch**: presentational (labels, help text, tones, widgets, messages).
 
+## 0.5.0 — 2026-10-17
+
+Additive.
+
+- `models`: the first registered resources, each declared once in `backend/core/operations/registry.py` and its app's `resources.py`: `organization`, `membership`, `address` (SM-F-01), `seller_profile`, `seller_document` (SM-F-02), `product`, `category` (SM-F-22, readable without signing in), `notification`, `notification_preference` (SM-F-21), and `account`, the signed-in person's own profile (served by `account/profile`, so it has no generated routes). Every model carries `path` (its API path under `meta.apiBase`), `lookup` (`pk`, or `slug` for products) and `public`, plus its fields, list fields, search, ordering and commands (`actions`, with `input`, `confirm`, `tone`, `icon` and `when`). Rich text appears only where the specification allows it: `seller_profile.description` and `product.description`. Records carry `_can`, the commands this person may run on that record.
+- `errors`: `UNAUTHENTICATED` (401, sign in) and `UNVERIFIED` (403, confirm the email address first).
+- `auth.password`: `minLength` and `help`, read from the password validators the server runs, so forms describe the server's rule.
+- `policies.roles`: each role's permissions, now filled in. The web client mirrors them to show or hide controls; the API checks every request.
+- `models` for the Core CRUD features: `category_contract` (SM-F-03; published versions readable without signing in; `publish` and `revise` commands; rich text `seller_guidance` and `buyer_guidance`), `catalog_product` and `variant` (SM-F-04, a seller's own catalogue; `publish`, `unpublish`, `archive`, `restore`), `cart` and `cart_line` (SM-F-10; `accept_prices`, `empty`, `remove`), `order` (SM-F-20, read-only history with the `reorder` command). The public `product` gains `brand`, `short_description`, `in_stock` (filter `eq`), `seller` filter `in` and ordering `-unit_price`; its `sku`, `pack_label` and `unit_price` are now the cheapest variant's and no longer marked required (relaxed). Policies grant the catalogue to seller roles and carts and orders to buyer roles.
+- List responses (all lists): `previous`, the cursor back to the page before (null on the first page), beside `next`. The product list also returns `facets` (counts per choice, seller options, price bounds) and accepts `attr.<key>` filters for the facets of the one category it is narrowed to; their fields come from the category's contract (`category.contract.facets`), not from this file.
+
 ## 0.4.0 — 2026-10-16
 
 Additive.

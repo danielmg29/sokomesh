@@ -52,7 +52,7 @@ import {
   onboardingHistory, orderTransitions, period, preferences, priceRules, pwaniGroup, quoteLines, reorderLines, returnClaim, returnEvidence, riftGroup,
   sellerDocuments, tiers, traceEvents, variantAttributes, variantRows, webhookEndpoints,
 } from './commerce'
-import { ProductRail, heroPanels, statement, buyerValue, categories, compareProducts, comparisonFields, flowSteps, maizeContract, meshRecord, pickLines, sellerValue, trustProofs, tradeTerms } from './divergent'
+import { ProductRail, heroPanels, statement, buyerValue, categories, compareProducts, comparisonFields, contractUnits, flowSteps, maizeDraft, meshRecord, pickLines, sellerValue, trustProofs, tradeTerms } from './divergent'
 import { navItems } from './kernel'
 
 /** Block chain as ordered data, each step linked to its inventory row. */
@@ -112,8 +112,8 @@ function Shell({ nav, current, children, density }: { nav: NavItem[]; current: s
   return (
     <AppShell
       className="min-h-0 overflow-hidden rounded-md border border-border"
-      nav={<AppNav items={nav} current={current} brand={<BrandLogo variant="lockup" width={160} className="-m-2" />} />}
-      header={<div className="flex items-center gap-3 border-b border-border bg-surface px-3 py-2 lg:hidden"><MobileNav items={nav} current={current} brand={<BrandLogo variant="lockup" width={160} className="-m-2" />} /><BrandLogo variant="lockup" width={160} className="-m-3" /></div>}
+      nav={<AppNav items={nav} current={current} brand={<BrandLogo variant="wordmark" width={196} className="-m-2" />} />}
+      header={<div className="flex items-center gap-3 border-b border-border bg-surface px-3 py-2 lg:hidden"><MobileNav items={nav} current={current} brand={<BrandLogo variant="wordmark" width={196} className="-m-2" />} /><BrandLogo variant="wordmark" width={196} className="-m-3" /></div>}
     >
       <div className="@container flex flex-col gap-5 p-4 @xl:p-5" data-density={density}>{children}</div>
     </AppShell>
@@ -437,7 +437,7 @@ function MarketplaceAdmin() {
       <HeaderBlock source="explicit" title="Marketplace" variant="compact" description="Demo data" />
       <StatsBlock metrics={healthMetrics} />
       <SellerOnboardingReviewBlock seller="Lakeside Supplies" location="Kisumu" status="under_review" documents={sellerDocuments} history={onboardingHistory} />
-      <CategoryContractBuilder category="Flour & grains · Maize flour" version={3} attributes={maizeContract} />
+      <CategoryContractBuilder category="Flour & grains" version={3} status="draft" initial={maizeDraft} units={contractUnits} onSave={async () => ({ ok: true })} />
       <ReconciliationTraceBlock correlationId="cor_SM-ORD-004215" events={traceEvents} now={DEMO_NOW} />
     </Shell>
   )
@@ -500,7 +500,7 @@ function Auth() {
   return (
     <div className="@container rounded-md border border-border bg-background p-4 @xl:p-8">
       <div className="mx-auto flex max-w-[26rem] flex-col gap-6">
-        <BrandLogo variant="lockup" width={180} className="-m-3 self-center" />
+        <BrandLogo variant="lockup" width={264} className="-m-3 self-center" />
         <Tabs defaultValue="sign-in">
           <TabsList variant="boxed"><TabsTrigger value="sign-in">Sign in</TabsTrigger><TabsTrigger value="register">Create an account</TabsTrigger></TabsList>
           <TabsContent value="sign-in" className="pt-4"><ProjectedForm meta={signInMeta} mode="command" recipe="auth" onSubmit={ok} submitLabel="Send sign-in code" /></TabsContent>

@@ -63,7 +63,7 @@ export function PhoneInput({ value, onChange, disabled, readOnly }: InputProps) 
       autoComplete="tel-national"
       prefix="+254"
       value={local}
-      maxLength={10}
+      maxLength={13}
       placeholder="712 345 678"
       onChange={e => { const d = e.target.value.replace(/\D/g, '').replace(/^0/, ''); onChange(d ? `+254${d}` : '') }}
       disabled={disabled}
@@ -271,7 +271,8 @@ function useObjectUrl() {
   }
 }
 
-function checkFile(file: File, accept?: readonly string[], maxBytes?: number): string | null {
+/** The contract's accepted types and size for a file field, checked before anything is sent. */
+export function checkFile(file: File, accept?: readonly string[], maxBytes?: number): string | null {
   if (accept?.length && !accept.includes(file.type)) return `This file type is not accepted. Use ${accept.map(a => a.split('/')[1]!.toUpperCase()).join(', ')}.`
   if (maxBytes && file.size > maxBytes) return `This file is ${formatBytes(file.size)}; the limit is ${formatBytes(maxBytes)}.`
   return null
@@ -366,7 +367,8 @@ export function FileInput({ field, value, onChange, disabled }: InputProps) {
   const pick = (file: File) => {
     const p = checkFile(file, field.accept, field.maxBytes)
     setProblem(p)
-    if (!p) onChange({ name: file.name, size: file.size, type: file.type, state: 'uploading', progress: 0 } satisfies FileValue)
+    // Chosen, not yet sent: the form uploads it on submit and the API answers with the stored file.
+    if (!p) onChange({ name: file.name, size: file.size, type: file.type, state: 'ready', file } satisfies FileValue)
   }
   return (
     <div className="flex flex-col gap-2">

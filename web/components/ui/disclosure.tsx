@@ -12,8 +12,10 @@ export function TabsList({ className, variant = 'line', ...props }: ComponentPro
   return (
     <TabsPrimitive.List
       className={cn(
-        'flex max-w-full overflow-x-auto',
-        variant === 'line' ? 'gap-5 border-b border-border' : 'gap-0.5 rounded-sm border border-border-strong bg-sunken p-0.5',
+        'flex max-w-full overflow-x-auto overflow-y-hidden',
+        // The rule is an inset shadow, painted under the triggers, so the active underline covers it without
+        // overflowing the scroll box (a negative margin there showed a vertical scrollbar).
+        variant === 'line' ? 'gap-5 shadow-[inset_0_-1px_0_var(--color-border)]' : 'gap-0.5 rounded-sm border border-border-strong bg-sunken p-0.5',
         className,
       )}
       data-variant={variant}
@@ -27,7 +29,7 @@ export function TabsTrigger({ className, count, ...props }: ComponentProps<typeo
     <TabsPrimitive.Trigger
       className={cn(
         'group inline-flex shrink-0 items-center gap-2 text-md font-semibold whitespace-nowrap text-muted motion-bind transition-colors hover:text-foreground',
-        'in-data-[variant=line]:-mb-px in-data-[variant=line]:border-b-2 in-data-[variant=line]:border-transparent in-data-[variant=line]:pb-2.5 in-data-[variant=line]:pt-1',
+        'in-data-[variant=line]:border-b-2 in-data-[variant=line]:border-transparent in-data-[variant=line]:pb-2.5 in-data-[variant=line]:pt-1',
         'in-data-[variant=line]:data-[state=active]:border-primary in-data-[variant=line]:data-[state=active]:text-foreground',
         'in-data-[variant=boxed]:h-8 in-data-[variant=boxed]:rounded-xs in-data-[variant=boxed]:px-3 in-data-[variant=boxed]:data-[state=active]:bg-surface in-data-[variant=boxed]:data-[state=active]:text-foreground in-data-[variant=boxed]:data-[state=active]:shadow-raised',
         'disabled:cursor-not-allowed disabled:opacity-50',

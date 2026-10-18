@@ -2,6 +2,8 @@
 
 import { Check, ChevronRight } from 'lucide-react'
 import { DropdownMenu as MenuPrimitive, Popover as PopoverPrimitive, Tooltip as TooltipPrimitive } from 'radix-ui'
+import type { Route } from 'next'
+import Link from 'next/link'
 import type { ComponentProps, ReactNode } from 'react'
 import { cn } from '@/lib/cn'
 import { Icon } from './icon'
@@ -59,13 +61,20 @@ export function MenuContent({ className, align = 'end', ...props }: ComponentPro
 
 const item = 'relative flex cursor-default items-center gap-2.5 rounded-xs px-2.5 py-2 text-md outline-none select-none data-disabled:text-muted data-highlighted:bg-primary-soft'
 
-export function MenuItem({ className, tone, icon, hint, ...props }: ComponentProps<typeof MenuPrimitive.Item> & { tone?: 'danger'; icon?: ReactNode; hint?: ReactNode }) {
-  return (
-    <MenuPrimitive.Item className={cn(item, tone === 'danger' && 'text-tone-danger data-highlighted:bg-tone-danger-bg', className)} {...props}>
+/** A menu entry; with `href` it is a link (opens in a new tab with the usual modifier keys). */
+export function MenuItem({ className, tone, icon, hint, href, children, ...props }: ComponentProps<typeof MenuPrimitive.Item> & { tone?: 'danger'; icon?: ReactNode; hint?: ReactNode; href?: Route }) {
+  const body = (
+    <>
       {icon}
-      <span className="flex-1">{props.children}</span>
+      <span className="flex-1">{children}</span>
       {hint ? <span className="text-sm text-muted">{hint}</span> : null}
-    </MenuPrimitive.Item>
+    </>
+  )
+  const classes = cn(item, tone === 'danger' && 'text-tone-danger data-highlighted:bg-tone-danger-bg', href && 'cursor-pointer', className)
+  return href ? (
+    <MenuPrimitive.Item asChild className={classes} {...props}><Link href={href}>{body}</Link></MenuPrimitive.Item>
+  ) : (
+    <MenuPrimitive.Item className={classes} {...props}>{body}</MenuPrimitive.Item>
   )
 }
 

@@ -4,8 +4,36 @@
     {
       "name": "web",
       "runtimeExecutable": "pnpm",
-      "runtimeArgs": ["--dir", "web", "start"],
+      "runtimeArgs": [
+        "--dir",
+        "web",
+        "start"
+      ],
       "port": 3000
+    },
+    {
+      "name": "web-dev",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": [
+        "--dir",
+        "web",
+        "dev"
+      ],
+      "port": 3000
+    },
+    {
+      "name": "api",
+      "runtimeExecutable": "uv",
+      "runtimeArgs": [
+        "run",
+        "--directory",
+        "backend",
+        "uvicorn",
+        "config.asgi:application",
+        "--port",
+        "8000"
+      ],
+      "port": 8000
     }
   ]
 }

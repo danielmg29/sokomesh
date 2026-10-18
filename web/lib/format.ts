@@ -37,7 +37,7 @@ export function formatRelative(iso: string, now: string | Date): string {
   const diff = Math.round((new Date(iso).getTime() - new Date(now).getTime()) / 1000)
   const abs = Math.abs(diff)
   const [value, unit] =
-    abs < 60 ? [abs, 's'] : abs < 3600 ? [Math.round(abs / 60), 'min'] : abs < 86400 ? [Math.round(abs / 3600), 'h'] : [Math.round(abs / 86400), abs < 172800 ? 'day' : 'days']
+    abs < 60 ? [abs, 's'] : abs < 3600 ? [Math.round(abs / 60), 'min'] : abs < 86400 ? [Math.round(abs / 3600), 'h'] : [Math.round(abs / 86400), Math.round(abs / 86400) === 1 ? 'day' : 'days']
   if (abs < 45) return diff < 0 ? 'just now' : 'in a moment'
   return diff < 0 ? `${value} ${unit} ago` : `in ${value} ${unit}`
 }

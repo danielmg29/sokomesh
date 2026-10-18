@@ -17,6 +17,8 @@ class ErrorCode(StrEnum):
     RATE_LIMITED = "RATE_LIMITED"
     LIMIT_EXCEEDED = "LIMIT_EXCEEDED"
     UNAVAILABLE = "UNAVAILABLE"
+    UNAUTHENTICATED = "UNAUTHENTICATED"  # no session
+    UNVERIFIED = "UNVERIFIED"  # email address not confirmed yet
 
 
 @dataclass(frozen=True, slots=True)

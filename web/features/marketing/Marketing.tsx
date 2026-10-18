@@ -6,26 +6,29 @@
 import { ArrowRight } from 'lucide-react'
 import Image from 'next/image'
 import type { ReactNode } from 'react'
+import { Projection } from '@/components/kernel/Projection'
 import { BrandLogo } from '@/components/ui/BrandLogo'
 import { buttonStyles } from '@/components/ui/button'
 import { ThemeSwitch } from '@/components/ui/theme'
 import { Icon } from '@/components/ui/icon'
 import { cn } from '@/lib/cn'
-import { brandName, brandTagline } from '@/lib/brand'
+import type { ModelMeta, Rec } from '@/lib/contract/types'
+import { brandName } from '@/lib/brand'
+import scenes from '@/public/images/scenes/scenes.json'
 
 /**
- * The organic accent (theme blend: 10% organic, which lives in photography and this ribbon, not in the
- * components): one flowing band with the amber thread along it, the THREAD idea drawn as cloth. Used at
- * most twice a page, always behind the grid so square cells cut it into segments. Static: it never loops.
+ * The organic accent, drawn as WOVEN TRADE's thread: two fine strands, forest and amber, crossing like a
+ * weave. It replaces the earlier filled band, which read as a road and weighed down the light pages. The
+ * strands draw themselves as the section scrolls in (a CSS scroll timeline, no listeners); reduced motion
+ * and older browsers show them drawn. `ground="brand"` lifts the forest strand for dark grounds.
  */
 export function TradeRibbon({ ground = 'light', className }: { ground?: 'light' | 'brand'; className?: string }) {
+  const strand = 'fill-none [stroke-linecap:square] [stroke-width:2]'
   return (
-    <svg aria-hidden="true" viewBox="0 0 1200 220" preserveAspectRatio="none" className={cn('pointer-events-none block w-full', className)}>
-      <path
-        d="M0 128C250 128 370 36 640 48C890 59 990 150 1200 104V148C990 194 890 103 640 92C370 80 250 172 0 172Z"
-        className={ground === 'brand' ? 'fill-chrome' : 'fill-brand'}
-      />
-      <path d="M0 150C250 150 370 58 640 70C890 81 990 172 1200 126" fill="none" strokeWidth="2" vectorEffect="non-scaling-stroke" className="stroke-signal" />
+    <svg aria-hidden="true" viewBox="0 0 1200 120" preserveAspectRatio="none" className={cn('thread-weave pointer-events-none block w-full overflow-visible', className)}>
+      <path vectorEffect="non-scaling-stroke" d="M0 74C190 74 300 22 600 40S1010 104 1200 54"
+        className={cn(strand, ground === 'brand' ? 'stroke-brand-foreground/70' : 'stroke-primary')} />
+      <path vectorEffect="non-scaling-stroke" d="M0 50C210 50 330 102 600 82S990 18 1200 70" className={cn(strand, 'stroke-signal')} />
     </svg>
   )
 }
@@ -36,18 +39,38 @@ export type Scene = { src: string; width: number; height: number; alt: string; b
 /** The scene's focal point as object-position, so any crop keeps its subject in frame. */
 export const focusOf = (scene: Scene) => (scene.focus ? { objectPosition: `${scene.focus[0]! * 100}% ${scene.focus[1]! * 100}%` } : undefined)
 
-/** One label per intent across header, hero, CTA and footer. */
+/** One label and route per intent across header, hero, CTA and footer. */
 export const cta = {
-  browse: { label: 'All categories', href: '#catalogue' },
-  buy: { label: 'Start buying', href: '#buy' },
-  sell: { label: 'Apply to sell', href: '#sell' },
-  flow: { label: 'How ordering works', href: '#flow' },
-  manage: { label: 'What sellers manage', href: '#value' },
+  browse: { label: 'All categories', href: '/catalogue' },
+  buy: { label: 'Start buying', href: '/register?as=buyer' },
+  sell: { label: 'Apply to sell', href: '/register?as=seller' },
+  flow: { label: 'How ordering works', href: '/#flow' },
+  manage: { label: 'What sellers manage', href: '/#value' },
 } as const
+
+// The value each side of the market is promised, from PRODUCT.md: what the finished product does.
+export const buyerValue = [
+  { title: 'One cart, several wholesalers', body: 'Lines are grouped by seller, each with its own delivery fee and dispatch day.' },
+  { title: 'Stock held while you pay', body: 'Checkout reserves the units for 15 minutes so nobody else takes them mid-payment.' },
+  { title: 'Prices you can explain', body: 'Every price says which rule set it: base, your buyer group or a quantity tier.' },
+  { title: 'Approvals before money moves', body: 'Owners set a limit; larger orders wait for approval and the API enforces it.' },
+]
+export const sellerValue = [
+  { title: 'Categories that build your forms', body: 'Publish against a category contract and its fields, filters and comparison rows appear everywhere.' },
+  { title: 'A stock ledger, not a stock number', body: 'Receipts, holds, releases and shipments are kept as movements, so availability is always explainable.' },
+  { title: 'Quotes and price books', body: 'Buyer-group and volume prices with conflicts flagged before buyers see them.' },
+  { title: 'Pick, pack and hand over', body: 'Short-ship, substitute and attach evidence from the same order record.' },
+]
+
+/** The page's one oversized statement; pages put a product photograph in front of it. */
+export const statementCopy = {
+  lines: ['Trade without', 'the tangle.'] as const,
+  body: 'One record of stock, price and order sits between every buyer and seller, so nobody restocks against a guess.',
+}
 
 export type HeroEmphasis = 'default' | 'buyer' | 'seller'
 
-type Link = (typeof cta)[keyof typeof cta]
+type Link = { label: string; href: string }
 const heroCopy: Record<HeroEmphasis, { line: string; body: string; primary: Link; secondary: Link }> = {
   default: {
     line: 'Order wholesale against real stock.',
@@ -83,6 +106,12 @@ export type HeroPanel = {
   place: 'top' | 'bottom'
 }
 
+/** The two doors of the landing hero: one per side of the market, each with its own photograph and action. */
+export const heroPanels: readonly [HeroPanel, HeroPanel] = [
+  { scene: scenes['hero-retail'], heading: 'Order wholesale against real stock.', body: 'One cart across several wholesalers. Stock is held for you while you pay by M-Pesa.', cta: cta.buy, text: 'light', place: 'bottom' },
+  { scene: scenes['hero-warehouse'], heading: 'Sell to every retailer from one stock ledger.', body: 'Publish against category contracts, price by buyer group and quantity, and fulfil from the order record.', cta: cta.sell, text: 'dark', place: 'top' },
+]
+
 /** The trade terms as a ruled row of figures: the market's numbers, not claims. */
 function HeroTerms({ wide }: { wide?: boolean }) {
   return (
@@ -115,15 +144,15 @@ export function MercantileHero({ emphasis = 'default', compact = false, board, p
               // Wide: the words sit on the photograph's prepared area (darkened below, veiled above). Narrow: the
               // photograph sits above the words, which stand on a solid ground matching their tone, so contrast never
               // depends on the crop. The same ground shows while the photograph loads or if it fails.
-              <div key={panel.heading} className={cn('relative isolate flex flex-col overflow-hidden @3xl:min-h-[38rem]', light ? 'bg-chrome' : 'bg-well')}>
+              <div key={panel.heading} className={cn('relative isolate flex flex-col overflow-hidden bg-background @3xl:min-h-[38rem]', light ? '@3xl:bg-chrome' : '@3xl:bg-well')}>
                 <div className="relative aspect-[4/3] @3xl:absolute @3xl:inset-0 @3xl:-z-10 @3xl:aspect-auto">
                   <Image src={panel.scene.src} alt={panel.scene.alt} fill sizes="(min-width: 768px) 50vw, 100vw" preload={i === 0}
                     placeholder={panel.scene.blurDataURL ? 'blur' : 'empty'} blurDataURL={panel.scene.blurDataURL} style={focusOf(panel.scene)} className="object-cover" />
                 </div>
-                <div className={cn('flex max-w-xl flex-col gap-4 p-6 @xl:p-10', panel.place === 'bottom' ? '@3xl:mt-auto' : '', light ? 'on-chrome text-chrome-foreground' : 'text-foreground')}>
+                <div className={cn('flex max-w-xl flex-col gap-4 p-6 text-foreground @xl:p-10', panel.place === 'bottom' ? '@3xl:mt-auto' : '', light && '@3xl:text-chrome-foreground')}>
                   <Heading id={i === 0 ? 'hero-title' : undefined} className={cn('font-extrabold tracking-display', i === 0 ? 'text-3xl @md:text-4xl @6xl:text-5xl' : 'text-3xl @6xl:text-4xl')}>{panel.heading}</Heading>
-                  <p className={cn('max-w-[40ch] text-lg', light ? 'text-chrome-foreground/90' : 'text-foreground')}>{panel.body}</p>
-                  <a href={panel.cta.href} className={cn(buttonStyles({ variant: light ? 'signal' : 'primary', size: 'lg' }), 'self-start')}>{panel.cta.label}<Icon icon={ArrowRight} /></a>
+                  <p className={cn('max-w-[40ch] text-lg text-foreground', light && '@3xl:text-chrome-foreground/90')}>{panel.body}</p>
+                  <a href={panel.cta.href} className={cn(buttonStyles({ variant: light ? 'signal' : 'primary', size: 'lg' }), 'group self-start active:scale-[0.98]')}>{panel.cta.label}<Icon icon={ArrowRight} className="motion-bind transition-transform group-hover:translate-x-1" /></a>
                 </div>
               </div>
             )
@@ -155,7 +184,7 @@ export function MercantileHero({ emphasis = 'default', compact = false, board, p
   )
 }
 
-export type Category = { key: string; name: string; products: number; image: string; alt: string; scene?: Scene }
+export type Category = { key: string; name: string; products: number; image: string; alt: string; scene?: Scene; href?: string }
 
 /**
  * Category discovery. `photo` leads with a scene photograph per category in tall tiles (after Faire and
@@ -172,7 +201,7 @@ export function CategoryShowcase({ categories, layout = 'grid' }: { categories: 
         <ul className="grid grid-cols-2 gap-x-3 gap-y-7 @3xl:grid-cols-3 @3xl:gap-x-4">
           {categories.map(cat => (
             <li key={cat.key} className="scroll-reveal">
-              <a href={`#${cat.key}`} className="group flex flex-col gap-3">
+              <a href={cat.href ?? `#${cat.key}`} className="group flex flex-col gap-3">
                 <span className="relative block aspect-[4/5] overflow-hidden bg-well">
                   {cat.scene ? (
                     <Image src={cat.scene.src} alt="" fill sizes="(min-width: 768px) 33vw, 50vw" placeholder={cat.scene.blurDataURL ? 'blur' : 'empty'} blurDataURL={cat.scene.blurDataURL}
@@ -181,7 +210,7 @@ export function CategoryShowcase({ categories, layout = 'grid' }: { categories: 
                 </span>
                 <span className="flex items-baseline justify-between gap-3">
                   <span className="text-lg font-semibold group-hover:underline">{cat.name}</span>
-                  <span className="shrink-0 text-sm text-muted tabular">{cat.products} products</span>
+                  <span className="shrink-0 text-sm text-muted tabular">{cat.products} {cat.products === 1 ? 'product' : 'products'}</span>
                 </span>
               </a>
             </li>
@@ -203,16 +232,37 @@ export function CategoryShowcase({ categories, layout = 'grid' }: { categories: 
       )}>
         {categories.map(cat => (
           <li key={cat.key} className={cn(layout === 'carousel' && 'w-48 shrink-0 snap-start', layout !== 'stacked' && 'border-r border-b border-border', 'bg-surface')}>
-            <a href={`#${cat.key}`} className={cn('group flex h-full motion-bind transition-colors hover:bg-sunken active:bg-sunken', layout === 'stacked' ? 'items-center gap-4 p-3' : 'flex-col')}>
+            <a href={cat.href ?? `#${cat.key}`} className={cn('group flex h-full motion-bind transition-colors hover:bg-sunken active:bg-sunken', layout === 'stacked' ? 'items-center gap-4 p-3' : 'flex-col')}>
               {/* Photographs are cut-outs on the theme's well, the same treatment as product cells. */}
               <span className={cn('block bg-well', layout === 'stacked' ? 'size-16 shrink-0' : 'border-b border-border')}>
                 <Image src={cat.image} alt={cat.alt} width={240} height={180} className={cn('object-contain', layout === 'stacked' ? 'size-16 p-1.5' : 'aspect-[4/3] w-full p-[10%]')} />
               </span>
               <span className={cn('flex flex-col', layout !== 'stacked' && 'gap-0.5 p-3')}>
                 <span className="font-semibold group-hover:text-primary group-hover:underline">{cat.name}</span>
-                <span className="text-sm text-muted tabular">{cat.products} products</span>
+                <span className="text-sm text-muted tabular">{cat.products} {cat.products === 1 ? 'product' : 'products'}</span>
               </span>
             </a>
+          </li>
+        ))}
+      </ul>
+    </section>
+  )
+}
+
+/** A merchandised row of product cells from the real projection (after Tanini Home and Bélanger listings). */
+export function ProductRail({ title, meta, records, href, all, now }: {
+  title: string; meta: ModelMeta; records: readonly Rec[]; href: (r: Rec) => string; all?: { label: string; href: string }; now?: string
+}) {
+  return (
+    <section aria-labelledby="rail-title" className="@container scroll-reveal flex flex-col gap-6">
+      <div className="flex flex-wrap items-baseline justify-between gap-3">
+        <h2 id="rail-title" className="text-3xl font-semibold @5xl:text-4xl">{title}</h2>
+        {all ? <a href={all.href} className="inline-flex items-center gap-1 text-md font-semibold text-primary hover:underline">{all.label}<Icon icon={ArrowRight} /></a> : null}
+      </div>
+      <ul className="grid grid-cols-2 border-t border-l border-border @4xl:grid-cols-4">
+        {records.map(p => (
+          <li key={p.id} className="flex border-r border-b border-border bg-surface">
+            <Projection meta={meta} record={p} context="list" override={{ intent: 'media', surface: 'flat' }} now={now} href={href(p)} className="w-full" />
           </li>
         ))}
       </ul>
@@ -308,7 +358,7 @@ export function WholesaleMetricsStrip({ metrics, compact = false, label = 'At a 
 
 /** Conversion close. Dual offers both sides; full sits on the brand ground with the ribbon, compact is a ruled band. */
 export function MarketingCTA({ audience = 'dual', size = 'full', scene }: { audience?: 'buyer' | 'seller' | 'dual'; size?: 'full' | 'compact'; scene?: Scene }) {
-  const buyer = <a href={cta.buy.href} className={buttonStyles({ variant: size === 'full' ? 'signal' : 'primary', size: 'lg' })}>{cta.buy.label}</a>
+  const buyer = <a href={cta.buy.href} className={buttonStyles({ variant: 'primary', size: 'lg' })}>{cta.buy.label}</a>
   const seller = <a href={cta.sell.href} className={buttonStyles({ variant: 'secondary', size: 'lg' })}>{cta.sell.label}</a>
   if (size === 'compact') {
     return (
@@ -318,27 +368,67 @@ export function MarketingCTA({ audience = 'dual', size = 'full', scene }: { audi
       </section>
     )
   }
+  // The close (after the editorial splits of the references): the statement set large on the warm ground,
+  // forest and amber kept to type, rules and the woven thread, and a photograph carrying the colour.
+  const [first, second] = closeLines[audience]
+  const arrow = <Icon icon={ArrowRight} className="motion-bind transition-transform group-hover:translate-x-1" />
   return (
-    <section className={cn('@container', scene && 'grid grid-cols-1 @4xl:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]')} aria-labelledby="cta-title">
-      {scene ? (
-        <div className="relative aspect-[16/9] overflow-hidden bg-chrome @4xl:order-2 @4xl:aspect-auto">
-          <Image src={scene.src} alt={scene.alt} fill sizes="(min-width: 1024px) 45vw, 100vw" placeholder={scene.blurDataURL ? 'blur' : 'empty'} blurDataURL={scene.blurDataURL} style={focusOf(scene)} className="object-cover" />
+    <section className="@container scroll-reveal flex flex-col gap-8" aria-labelledby="cta-title">
+      <TradeRibbon className="h-12 @4xl:h-16" />
+      <div className={cn('grid grid-cols-1 gap-10 border-t border-foreground pt-8 @4xl:gap-16', scene && '@4xl:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]')}>
+        <div className="flex flex-col gap-8 @4xl:justify-between">
+          <div className="flex flex-col gap-6">
+            <h2 id="cta-title" className="font-extrabold tracking-display text-[clamp(2.5rem,5.4cqw,5.25rem)] leading-[0.95] text-balance">
+              <span className="block">{first}</span>
+              <span className="block text-primary">{second}</span>
+            </h2>
+            <p className="max-w-[46ch] text-lg text-muted text-pretty">
+              Stock, price and order are kept once and shown to both sides. Accounts are reviewed before trading starts, and payment is by M-Pesa through SellaPay.
+            </p>
+            <div className="flex flex-wrap gap-3">
+              {audience !== 'seller' ? <a href={cta.buy.href} className={cn(buttonStyles({ variant: 'signal', size: 'lg' }), 'group active:scale-[0.98]')}>{cta.buy.label}{arrow}</a> : null}
+              {audience !== 'buyer' ? <a href={cta.sell.href} className={cn(buttonStyles({ variant: audience === 'seller' ? 'primary' : 'secondary', size: 'lg' }), 'group active:scale-[0.98]')}>{cta.sell.label}{arrow}</a> : null}
+            </div>
+          </div>
+          <ol className="grid grid-cols-1 border-t border-border-strong @xl:grid-cols-3" aria-label="How joining works">
+            {joinSteps.map((step, i) => (
+              <li key={step.title} className="flex flex-col gap-1.5 border-b border-border py-4 @xl:border-b-0 @xl:border-r @xl:px-4 @xl:first:pl-0 @xl:last:border-r-0">
+                <span className="font-display text-2xl font-extrabold text-primary tabular">{String(i + 1).padStart(2, '0')}</span>
+                <span className="font-semibold">{step.title}</span>
+                <span className="text-md text-muted">{step.body}</span>
+              </li>
+            ))}
+          </ol>
         </div>
-      ) : null}
-      <div className={cn('on-chrome relative isolate flex flex-col gap-6 overflow-hidden bg-brand px-6 pt-10 pb-24 text-brand-foreground @xl:px-10 @4xl:pb-10', scene && '@4xl:justify-center @4xl:py-16 @4xl:pb-28')}>
-        <TradeRibbon ground="brand" className={cn('absolute bottom-0 left-0 -z-10 h-20', scene ? '@4xl:h-28' : '@4xl:left-1/2 @4xl:h-36 @4xl:w-1/2')} />
-        <h2 id="cta-title" className="max-w-2xl text-3xl font-semibold @xl:text-4xl">{audience === 'seller' ? 'Sell to retailers who order against your real stock.' : audience === 'buyer' ? 'Restock without phoning five wholesalers.' : 'Buyers and sellers on one record of stock, price and order.'}</h2>
-        <p className="max-w-xl text-lg text-brand-foreground/85">Accounts are reviewed before trading starts. Payment is by M-Pesa through SellaPay.</p>
-        <div className="flex flex-wrap gap-3">{audience !== 'seller' ? buyer : null}{audience !== 'buyer' ? seller : null}</div>
+        {scene ? (
+          <div className="relative aspect-[4/5] overflow-hidden bg-well @4xl:aspect-auto @4xl:min-h-[34rem]">
+            {/* Settles from a slight zoom as it scrolls in: transform only, off for reduced motion. */}
+            <Image src={scene.src} alt={scene.alt} fill sizes="(min-width: 1024px) 45vw, 100vw" placeholder={scene.blurDataURL ? 'blur' : 'empty'} blurDataURL={scene.blurDataURL} style={focusOf(scene)} className="scroll-settle object-cover" />
+          </div>
+        ) : null}
       </div>
     </section>
   )
 }
 
+const closeLines: Record<'buyer' | 'seller' | 'dual', readonly [string, string]> = {
+  dual: ['Buyers and sellers,', 'on one record.'],
+  buyer: ['Restock from every', 'wholesaler at once.'],
+  seller: ['Sell to retailers who', 'order real stock.'],
+}
+
+/** How an account starts, as the product works today (registration, review), then what trading means. */
+const joinSteps = [
+  { title: 'Register', body: 'A shop or a wholesaler signs up and confirms its email with a code.' },
+  { title: 'Get reviewed', body: 'The marketplace checks the documents before any trading starts.' },
+  { title: 'Trade on one record', body: 'Prices in KES, stock you can see, payment by M-Pesa through SellaPay.' },
+] as const
+
+// Only pages that exist are linked; the rest of the specification's pages join as their features land.
 const footerLinks = [
-  { title: 'Buy', links: [cta.browse.label, cta.flow.label, 'Purchase approvals', 'Delivery and returns'] },
-  { title: 'Sell', links: [cta.sell.label, 'Category contracts', 'Price books', 'Fulfilment'] },
-  { title: 'Project', links: ['Design system', 'Contract changelog'] },
+  { title: 'Buy', links: [cta.browse, cta.flow, cta.buy] },
+  { title: 'Sell', links: [cta.sell, cta.manage, { label: 'Sign in', href: '/login' }] },
+  { title: 'Project', links: [{ label: 'Design system', href: '/design-system' }] },
 ] as const
 
 /**
@@ -347,24 +437,25 @@ const footerLinks = [
  */
 export function MarketingFooter({ variant = 'full' }: { variant?: 'full' | 'minimal' }) {
   return (
-    <footer className="@container on-chrome bg-chrome text-chrome-foreground">
+    // On the page's own warm ground, ruled off by the ink line: the colour stays in the type, not a slab.
+    <footer className="@container border-t-2 border-foreground bg-background text-foreground">
       {variant === 'full' ? (
-        <div className="grid grid-cols-2 gap-x-6 gap-y-10 px-6 pt-12 pb-10 @xl:px-10 @4xl:grid-cols-[minmax(0,1.4fr)_repeat(3,minmax(0,1fr))]">
+        <div className="grid grid-cols-2 gap-x-6 gap-y-10 px-4 pt-12 pb-10 @xl:px-10 @4xl:grid-cols-[minmax(0,1.4fr)_repeat(3,minmax(0,1fr))]">
           <div className="col-span-2 flex flex-col gap-4 @4xl:col-span-1">
-            <BrandLogo variant="lockup" width={200} ground="dark" className="-m-3 self-start" />
-            <p className="max-w-xs text-md text-chrome-muted">{brandTagline}. Multi-vendor wholesale ordering and inventory for Kenyan retailers and wholesalers.</p>
+            <BrandLogo variant="lockup" width={300} className="-m-3 self-start" />
+            <p className="max-w-xs text-md text-muted">Multi-vendor wholesale ordering and inventory for Kenyan retailers and wholesalers.</p>
           </div>
           {footerLinks.map(col => (
-            <nav key={col.title} aria-label={col.title} className="flex flex-col gap-3 border-t border-chrome-muted/40 pt-3">
-              <h2 className="caps font-sans text-chrome-muted">{col.title}</h2>
-              <ul className="flex flex-col gap-2">{col.links.map(l => <li key={l}><a href={l === 'Design system' ? '/design-system' : '#'} className="text-md hover:text-signal hover:underline">{l}</a></li>)}</ul>
+            <nav key={col.title} aria-label={col.title} className="flex flex-col gap-3 border-t border-border-strong pt-3">
+              <h2 className="caps font-sans text-muted">{col.title}</h2>
+              <ul className="flex flex-col gap-2">{col.links.map(l => <li key={l.label}><a href={l.href} className="text-md underline-offset-4 hover:text-primary hover:underline">{l.label}</a></li>)}</ul>
             </nav>
           ))}
         </div>
       ) : null}
-      <div className={cn('flex flex-wrap items-center justify-between gap-3 px-6 py-4 text-sm text-chrome-muted @xl:px-10', variant === 'full' && 'border-t border-chrome-muted/40')}>
+      <div className={cn('flex flex-wrap items-center justify-between gap-3 px-4 py-4 text-sm text-muted @xl:px-10', variant === 'full' && 'border-t border-border')}>
         <span>&copy; 2026 {brandName}. Portfolio concept; name and identity not yet cleared for commercial use.</span>
-        <span className="flex flex-wrap items-center gap-3">Prices in KES, times in East Africa Time<ThemeSwitch tone="chrome" /></span>
+        <span className="flex flex-wrap items-center gap-3">Prices in KES, times in East Africa Time<ThemeSwitch /></span>
       </div>
     </footer>
   )

@@ -50,7 +50,11 @@ export type RichTextValue = { html: string; text: string }
 export type ImageValue = { url: string; alt: string; width?: number; height?: number }
 export type UploadState = 'empty' | 'uploading' | 'processing' | 'scanning' | 'ready' | 'rejected' | 'restricted' | 'error'
 export type ImageUpload = { state: UploadState; image?: ImageValue; progress?: number; reason?: string; fileName?: string }
-export type FileValue = { name: string; size: number; type: string; state: UploadState; progress?: number; reason?: string; url?: string }
+export type FileValue = {
+  name: string; size: number; type: string; state: UploadState; progress?: number; reason?: string; url?: string
+  /** The file chosen in this browser and not yet uploaded; the form's submit sends it. */
+  file?: File
+}
 export type AddressValue = { label?: string; line1: string; line2?: string; city: string; region?: string; postalCode?: string; countryCode: string; validated?: boolean }
 export type LocationValue = { lat: number; lng: number; label?: string }
 export type SecretValue = { set: boolean; last4?: string; rotatedAt?: string }

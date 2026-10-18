@@ -1,8 +1,15 @@
-// AUTO-GENERATED from contract/ac-contract.json (contract 0.4.0) by tools/gen-contract.mts — do not edit.
-export const CONTRACT_VERSION = "0.4.0"
+// AUTO-GENERATED from contract/ac-contract.json (contract 0.5.0) by tools/gen-contract.mts — do not edit.
+import { z } from 'zod'
+import type { ModelMeta } from '@/lib/contract/types'
+import { decimalString } from '@/lib/contract/decimal'
+export const CONTRACT_VERSION = "0.5.0"
 export const API_BASE = "/api/v1/"
 export const auth = {
   "mode": "multi",
+  "password": {
+    "help": "At least 8 characters, not close to your name or email, not a common password and not only numbers.",
+    "minLength": 8
+  },
   "session": "cookie",
   "verification": [
     "email"
@@ -147,10 +154,20 @@ export const errors = {
     "retryable": true,
     "status": 429
   },
+  "UNAUTHENTICATED": {
+    "message": "Sign in to continue.",
+    "retryable": false,
+    "status": 401
+  },
   "UNAVAILABLE": {
     "message": "The service is temporarily unavailable. Try again shortly.",
     "retryable": true,
     "status": 503
+  },
+  "UNVERIFIED": {
+    "message": "Confirm your email address to continue.",
+    "retryable": false,
+    "status": 403
   },
   "VALIDATION": {
     "message": "Some details need attention before this can be saved.",
@@ -167,5 +184,3203 @@ export const roles = [
   "warehouse_operator"
 ] as const
 export type Role = (typeof roles)[number]
-export const registry = {} as const
+export const rolePermissions = {
+  "buyer_owner": [
+    "address.create",
+    "address.delete",
+    "address.list",
+    "address.update",
+    "cart.get",
+    "cart.list",
+    "cart.update",
+    "cart_line.create",
+    "cart_line.get",
+    "cart_line.list",
+    "cart_line.remove",
+    "cart_line.update",
+    "membership.invite",
+    "membership.list",
+    "membership.update",
+    "order.get",
+    "order.list",
+    "order.reorder",
+    "organization.get",
+    "organization.update"
+  ],
+  "buyer_purchaser": [
+    "address.list",
+    "cart.get",
+    "cart.list",
+    "cart.update",
+    "cart_line.create",
+    "cart_line.get",
+    "cart_line.list",
+    "cart_line.remove",
+    "cart_line.update",
+    "membership.list",
+    "order.get",
+    "order.list",
+    "order.reorder",
+    "organization.get"
+  ],
+  "marketplace_admin": [
+    "*"
+  ],
+  "seller_manager": [
+    "address.create",
+    "address.delete",
+    "address.list",
+    "address.update",
+    "catalog_product.archive",
+    "catalog_product.create",
+    "catalog_product.get",
+    "catalog_product.list",
+    "catalog_product.publish",
+    "catalog_product.update",
+    "membership.invite",
+    "membership.list",
+    "membership.update",
+    "organization.get",
+    "organization.update",
+    "seller_document.create",
+    "seller_document.delete",
+    "seller_document.list",
+    "seller_profile.get",
+    "seller_profile.submit",
+    "seller_profile.update",
+    "variant.create",
+    "variant.get",
+    "variant.list",
+    "variant.update"
+  ],
+  "warehouse_operator": [
+    "address.list",
+    "catalog_product.get",
+    "catalog_product.list",
+    "membership.list",
+    "organization.get",
+    "seller_document.list",
+    "seller_profile.get",
+    "variant.get",
+    "variant.list"
+  ]
+} as const
+export const AccountSchema = z.object({
+  id: z.uuid().nullish(),
+  display_name: z.string().max(150).min(1),
+  email: z.email(),
+  phone: z.string().max(20).nullish(),
+  date_joined: z.iso.datetime({ offset: true }).nullish(),
+  avatar: z.unknown().nullish(),
+})
+export type Account = z.infer<typeof AccountSchema>
+export const AccountWriteSchema = AccountSchema.omit({ email: true, date_joined: true, avatar: true })
+export const AccountMeta = {
+  "key": "account",
+  "actions": [],
+  "displayField": "display_name",
+  "fields": [
+    {
+      "label": "Id",
+      "name": "id",
+      "type": "uuid",
+      "widget": "hidden"
+    },
+    {
+      "help": "Shown to your team and on the orders, quotes and reviews you send.",
+      "label": "Your name",
+      "maxLength": 150,
+      "name": "display_name",
+      "required": true,
+      "type": "string",
+      "weight": 10,
+      "widget": "text"
+    },
+    {
+      "help": "Sign-in address. Write to support to change it.",
+      "label": "Email",
+      "maxLength": 254,
+      "name": "email",
+      "readOnly": true,
+      "required": true,
+      "type": "email",
+      "weight": 20,
+      "widget": "email"
+    },
+    {
+      "help": "For delivery calls and M-Pesa prompts, for example +254 712 345 678.",
+      "label": "Phone",
+      "maxLength": 20,
+      "name": "phone",
+      "type": "string",
+      "weight": 30,
+      "widget": "phone"
+    },
+    {
+      "label": "Member since",
+      "name": "date_joined",
+      "readOnly": true,
+      "type": "datetime",
+      "weight": 40,
+      "widget": "date"
+    },
+    {
+      "accept": [
+        "image/jpeg",
+        "image/png",
+        "image/webp"
+      ],
+      "help": "Square photos work best.",
+      "label": "Photo",
+      "maxBytes": 2097152,
+      "name": "avatar",
+      "readOnly": true,
+      "type": "image",
+      "weight": 5,
+      "widget": "image"
+    }
+  ],
+  "label": "Account",
+  "labelPlural": "Accounts",
+  "list": {
+    "defaultPageSize": 25,
+    "fields": [
+      "display_name",
+      "email"
+    ],
+    "maxPageSize": 100
+  },
+  "lookup": "pk",
+  "ordering": [],
+  "path": "account/profile",
+  "primaryKey": "id",
+  "public": false,
+  "search": [],
+  "tenantScoped": false,
+  "versioned": false
+} as const satisfies ModelMeta
+export const AddressSchema = z.object({
+  id: z.uuid().nullish(),
+  label: z.string().max(80).min(1),
+  line1: z.string().max(200).min(1),
+  line2: z.string().max(200).nullish(),
+  city: z.string().max(100).min(1),
+  region: z.string().max(100).nullish(),
+  postal_code: z.string().max(20).nullish(),
+  country_code: z.enum(["KE", "UG", "TZ", "RW"]).nullish(),
+  location_point: z.unknown().nullish(),
+  created_at: z.iso.datetime({ offset: true }).nullish(),
+})
+export type Address = z.infer<typeof AddressSchema>
+export const AddressWriteSchema = AddressSchema.omit({ created_at: true })
+export const AddressMeta = {
+  "key": "address",
+  "actions": [
+    {
+      "confirm": true,
+      "kind": "archive",
+      "label": "Delete address",
+      "name": "delete",
+      "policy": "address.delete",
+      "tone": "danger"
+    }
+  ],
+  "displayField": "label",
+  "fields": [
+    {
+      "label": "Id",
+      "name": "id",
+      "type": "uuid",
+      "widget": "hidden"
+    },
+    {
+      "help": "Warehouse, Head office, Shop 1.",
+      "label": "Label",
+      "maxLength": 80,
+      "name": "label",
+      "required": true,
+      "type": "string",
+      "weight": 10,
+      "widget": "text"
+    },
+    {
+      "label": "Address line 1",
+      "maxLength": 200,
+      "name": "line1",
+      "required": true,
+      "type": "string",
+      "weight": 20,
+      "widget": "text"
+    },
+    {
+      "label": "Address line 2",
+      "maxLength": 200,
+      "name": "line2",
+      "type": "string",
+      "weight": 30,
+      "widget": "text"
+    },
+    {
+      "label": "Town or city",
+      "maxLength": 100,
+      "name": "city",
+      "required": true,
+      "type": "string",
+      "weight": 40,
+      "widget": "text"
+    },
+    {
+      "label": "County",
+      "maxLength": 100,
+      "name": "region",
+      "type": "string",
+      "weight": 50,
+      "widget": "text"
+    },
+    {
+      "label": "Postal code",
+      "maxLength": 20,
+      "name": "postal_code",
+      "type": "string",
+      "weight": 60,
+      "widget": "text"
+    },
+    {
+      "choices": [
+        {
+          "label": "Kenya",
+          "value": "KE"
+        },
+        {
+          "label": "Uganda",
+          "value": "UG"
+        },
+        {
+          "label": "Tanzania",
+          "value": "TZ"
+        },
+        {
+          "label": "Rwanda",
+          "value": "RW"
+        }
+      ],
+      "label": "Country",
+      "maxLength": 2,
+      "name": "country_code",
+      "type": "enum",
+      "weight": 70,
+      "widget": "select"
+    },
+    {
+      "label": "Map point",
+      "name": "location_point",
+      "type": "location",
+      "weight": 80,
+      "widget": "location"
+    },
+    {
+      "label": "Created at",
+      "name": "created_at",
+      "readOnly": true,
+      "type": "datetime",
+      "widget": "relative-time"
+    }
+  ],
+  "label": "Address",
+  "labelPlural": "Addresses",
+  "list": {
+    "defaultPageSize": 25,
+    "fields": [
+      "label",
+      "line1",
+      "city",
+      "region"
+    ],
+    "maxPageSize": 100
+  },
+  "lookup": "pk",
+  "ordering": [
+    "label"
+  ],
+  "path": "addresses",
+  "primaryKey": "id",
+  "public": false,
+  "search": [
+    "label",
+    "line1",
+    "city"
+  ],
+  "tenantScoped": true,
+  "versioned": false
+} as const satisfies ModelMeta
+export const CartSchema = z.object({
+  id: z.uuid().nullish(),
+  buyer_organization: z.uuid(),
+  created_by: z.uuid(),
+  status: z.enum(["active", "submitted", "abandoned", "converted"]).nullish(),
+  currency: z.string().max(3).nullish(),
+  updated_at: z.iso.datetime({ offset: true }).nullish(),
+})
+export type Cart = z.infer<typeof CartSchema>
+export const CartWriteSchema = CartSchema.omit({ buyer_organization: true, created_by: true, status: true, currency: true, updated_at: true })
+export const CartMeta = {
+  "key": "cart",
+  "actions": [
+    {
+      "icon": "check",
+      "kind": "command",
+      "label": "Accept new prices",
+      "name": "accept_prices",
+      "policy": "cart.update",
+      "when": {
+        "status": [
+          "active"
+        ]
+      }
+    },
+    {
+      "confirm": true,
+      "icon": "trash",
+      "kind": "command",
+      "label": "Empty cart",
+      "name": "empty",
+      "policy": "cart.update",
+      "tone": "danger",
+      "when": {
+        "status": [
+          "active"
+        ]
+      }
+    }
+  ],
+  "displayField": "id",
+  "fields": [
+    {
+      "label": "Id",
+      "name": "id",
+      "type": "uuid",
+      "widget": "hidden"
+    },
+    {
+      "label": "Buyer",
+      "name": "buyer_organization",
+      "readOnly": true,
+      "relation": {
+        "display": "name",
+        "model": "organization"
+      },
+      "required": true,
+      "type": "relation",
+      "widget": "relation"
+    },
+    {
+      "label": "Started by",
+      "name": "created_by",
+      "readOnly": true,
+      "relation": {
+        "display": "display_name",
+        "model": "user"
+      },
+      "required": true,
+      "type": "relation",
+      "widget": "relation"
+    },
+    {
+      "choices": [
+        {
+          "label": "Active",
+          "tone": "info",
+          "value": "active"
+        },
+        {
+          "label": "Submitted",
+          "tone": "success",
+          "value": "submitted"
+        },
+        {
+          "label": "Set aside",
+          "tone": "neutral",
+          "value": "abandoned"
+        },
+        {
+          "label": "Ordered",
+          "tone": "success",
+          "value": "converted"
+        }
+      ],
+      "filter": [
+        "in"
+      ],
+      "label": "Status",
+      "name": "status",
+      "readOnly": true,
+      "type": "enum",
+      "widget": "status"
+    },
+    {
+      "label": "Currency",
+      "maxLength": 3,
+      "name": "currency",
+      "readOnly": true,
+      "type": "string",
+      "widget": "text"
+    },
+    {
+      "label": "Updated",
+      "name": "updated_at",
+      "readOnly": true,
+      "type": "datetime",
+      "widget": "relative-time"
+    }
+  ],
+  "label": "Cart",
+  "labelPlural": "Carts",
+  "list": {
+    "defaultPageSize": 10,
+    "fields": [
+      "status",
+      "updated_at"
+    ],
+    "maxPageSize": 100
+  },
+  "lookup": "pk",
+  "ordering": [
+    "-updated_at"
+  ],
+  "path": "carts",
+  "primaryKey": "id",
+  "public": false,
+  "search": [],
+  "tenantScoped": true,
+  "versioned": true
+} as const satisfies ModelMeta
+export const CartLineSchema = z.object({
+  id: z.uuid().nullish(),
+  cart: z.uuid(),
+  variant: z.uuid(),
+  quantity: z.number().int(),
+  unit: z.string().max(20).nullish(),
+  quoted_unit_price: decimalString(12, 2).nullish(),
+  price_validated_at: z.iso.datetime({ offset: true }).nullish(),
+  stock_status: z.enum(["available", "limited", "unavailable", "unknown"]).nullish(),
+  seller: z.uuid().nullish(),
+  updated_at: z.iso.datetime({ offset: true }).nullish(),
+})
+export type CartLine = z.infer<typeof CartLineSchema>
+export const CartLineWriteSchema = CartLineSchema.omit({ cart: true, unit: true, quoted_unit_price: true, price_validated_at: true, stock_status: true, seller: true, updated_at: true })
+export const CartLineMeta = {
+  "key": "cart_line",
+  "actions": [
+    {
+      "icon": "trash",
+      "kind": "archive",
+      "label": "Remove",
+      "name": "remove",
+      "policy": "cart_line.remove"
+    }
+  ],
+  "displayField": "id",
+  "fields": [
+    {
+      "label": "Id",
+      "name": "id",
+      "type": "uuid",
+      "widget": "hidden"
+    },
+    {
+      "label": "Cart",
+      "name": "cart",
+      "readOnly": true,
+      "relation": {
+        "display": "id",
+        "model": "cart"
+      },
+      "required": true,
+      "type": "relation",
+      "widget": "relation"
+    },
+    {
+      "label": "Product",
+      "name": "variant",
+      "relation": {
+        "display": "sku",
+        "model": "variant"
+      },
+      "required": true,
+      "type": "relation",
+      "widget": "relation"
+    },
+    {
+      "help": "In packs; at least the minimum order.",
+      "label": "Quantity",
+      "name": "quantity",
+      "required": true,
+      "type": "integer",
+      "widget": "integer"
+    },
+    {
+      "label": "Unit",
+      "maxLength": 20,
+      "name": "unit",
+      "readOnly": true,
+      "type": "string",
+      "widget": "text"
+    },
+    {
+      "currency": "KES",
+      "decimalPlaces": 2,
+      "label": "Price when added",
+      "maxDigits": 12,
+      "name": "quoted_unit_price",
+      "readOnly": true,
+      "type": "decimal",
+      "widget": "currency"
+    },
+    {
+      "label": "Price checked",
+      "name": "price_validated_at",
+      "readOnly": true,
+      "type": "datetime",
+      "widget": "relative-time"
+    },
+    {
+      "choices": [
+        {
+          "label": "Available",
+          "tone": "success",
+          "value": "available"
+        },
+        {
+          "label": "Limited",
+          "tone": "warning",
+          "value": "limited"
+        },
+        {
+          "label": "Unavailable",
+          "tone": "danger",
+          "value": "unavailable"
+        },
+        {
+          "label": "Not reported",
+          "tone": "neutral",
+          "value": "unknown"
+        }
+      ],
+      "label": "Stock",
+      "name": "stock_status",
+      "readOnly": true,
+      "type": "enum",
+      "widget": "status"
+    },
+    {
+      "label": "Seller",
+      "name": "seller",
+      "readOnly": true,
+      "relation": {
+        "display": "name",
+        "model": "organization"
+      },
+      "type": "relation",
+      "widget": "relation"
+    },
+    {
+      "label": "Updated",
+      "name": "updated_at",
+      "readOnly": true,
+      "type": "datetime",
+      "widget": "relative-time"
+    }
+  ],
+  "label": "Cart line",
+  "labelPlural": "Cart lines",
+  "list": {
+    "defaultPageSize": 100,
+    "fields": [
+      "variant",
+      "quantity",
+      "quoted_unit_price",
+      "stock_status"
+    ],
+    "maxPageSize": 100
+  },
+  "lookup": "pk",
+  "ordering": [
+    "-updated_at"
+  ],
+  "path": "cart-lines",
+  "primaryKey": "id",
+  "public": false,
+  "search": [],
+  "tenantScoped": true,
+  "versioned": false
+} as const satisfies ModelMeta
+export const CatalogProductSchema = z.object({
+  id: z.uuid().nullish(),
+  primary_image: z.unknown().nullish(),
+  name: z.string().max(160).min(1),
+  category_contract: z.uuid(),
+  category: z.uuid(),
+  brand: z.string().max(80).nullish(),
+  short_description: z.string().nullish(),
+  description: z.unknown().nullish(),
+  attributes: z.unknown().nullish(),
+  slug: z.string().max(160).nullish(),
+  available_from: z.iso.datetime({ offset: true }).nullish(),
+  available_until: z.iso.datetime({ offset: true }).nullish(),
+  seo_title: z.string().max(70).nullish(),
+  seo_description: z.string().nullish(),
+  status: z.enum(["draft", "published", "suspended", "archived"]).nullish(),
+  variant_count: z.number().int().nullish(),
+  published_at: z.iso.datetime({ offset: true }).nullish(),
+  updated_at: z.iso.datetime({ offset: true }).nullish(),
+})
+export type CatalogProduct = z.infer<typeof CatalogProductSchema>
+export const CatalogProductWriteSchema = CatalogProductSchema.omit({ primary_image: true, category: true, status: true, variant_count: true, published_at: true, updated_at: true })
+export const CatalogProductMeta = {
+  "key": "catalog_product",
+  "actions": [
+    {
+      "icon": "check",
+      "kind": "command",
+      "label": "Publish",
+      "name": "publish",
+      "policy": "catalog_product.publish",
+      "when": {
+        "status": [
+          "draft"
+        ]
+      }
+    },
+    {
+      "confirm": true,
+      "kind": "command",
+      "label": "Take off sale",
+      "name": "unpublish",
+      "policy": "catalog_product.publish",
+      "tone": "warning",
+      "when": {
+        "status": [
+          "published"
+        ]
+      }
+    },
+    {
+      "confirm": true,
+      "icon": "archive",
+      "kind": "command",
+      "label": "Archive",
+      "name": "archive",
+      "policy": "catalog_product.archive",
+      "tone": "danger",
+      "when": {
+        "status": [
+          "draft",
+          "published"
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "label": "Restore as draft",
+      "name": "restore",
+      "policy": "catalog_product.archive",
+      "when": {
+        "status": [
+          "archived"
+        ]
+      }
+    }
+  ],
+  "displayField": "name",
+  "fields": [
+    {
+      "label": "Id",
+      "name": "id",
+      "type": "uuid",
+      "widget": "hidden"
+    },
+    {
+      "label": "Photo",
+      "name": "primary_image",
+      "readOnly": true,
+      "type": "image",
+      "weight": 5,
+      "widget": "image"
+    },
+    {
+      "label": "Product",
+      "maxLength": 160,
+      "name": "name",
+      "required": true,
+      "type": "string",
+      "weight": 10,
+      "widget": "text"
+    },
+    {
+      "help": "The category's published contract decides which details the product needs.",
+      "label": "Category",
+      "name": "category_contract",
+      "relation": {
+        "display": "name",
+        "model": "category_contract"
+      },
+      "required": true,
+      "type": "relation",
+      "weight": 12,
+      "widget": "relation"
+    },
+    {
+      "filter": [
+        "eq",
+        "in"
+      ],
+      "label": "Category",
+      "name": "category",
+      "readOnly": true,
+      "relation": {
+        "display": "name",
+        "model": "category"
+      },
+      "required": true,
+      "type": "relation",
+      "weight": 13,
+      "widget": "relation"
+    },
+    {
+      "label": "Brand",
+      "maxLength": 80,
+      "name": "brand",
+      "type": "string",
+      "weight": 14,
+      "widget": "text"
+    },
+    {
+      "help": "One or two plain sentences for product cards and search.",
+      "label": "Summary",
+      "name": "short_description",
+      "type": "text",
+      "weight": 15,
+      "widget": "textarea"
+    },
+    {
+      "label": "Description",
+      "name": "description",
+      "type": "richtext",
+      "weight": 20,
+      "widget": "richtext"
+    },
+    {
+      "label": "Details",
+      "name": "attributes",
+      "type": "json",
+      "weight": 25,
+      "widget": "json"
+    },
+    {
+      "group": "listing",
+      "help": "The public address. Leave empty to make one from the name.",
+      "label": "Slug",
+      "maxLength": 160,
+      "name": "slug",
+      "type": "string",
+      "weight": 30,
+      "widget": "text"
+    },
+    {
+      "group": "listing",
+      "label": "Listed from",
+      "name": "available_from",
+      "type": "datetime",
+      "weight": 31,
+      "widget": "datetime"
+    },
+    {
+      "group": "listing",
+      "label": "Listed until",
+      "name": "available_until",
+      "type": "datetime",
+      "weight": 32,
+      "widget": "datetime"
+    },
+    {
+      "group": "search",
+      "label": "Search title",
+      "maxLength": 70,
+      "name": "seo_title",
+      "type": "string",
+      "weight": 40,
+      "widget": "text"
+    },
+    {
+      "group": "search",
+      "label": "Search description",
+      "name": "seo_description",
+      "type": "text",
+      "weight": 41,
+      "widget": "textarea"
+    },
+    {
+      "choices": [
+        {
+          "label": "Draft",
+          "tone": "neutral",
+          "value": "draft"
+        },
+        {
+          "label": "Published",
+          "tone": "success",
+          "value": "published"
+        },
+        {
+          "label": "Suspended",
+          "tone": "warning",
+          "value": "suspended"
+        },
+        {
+          "label": "Archived",
+          "tone": "neutral",
+          "value": "archived"
+        }
+      ],
+      "filter": [
+        "in"
+      ],
+      "label": "Status",
+      "name": "status",
+      "readOnly": true,
+      "type": "enum",
+      "widget": "status"
+    },
+    {
+      "label": "Variants",
+      "name": "variant_count",
+      "readOnly": true,
+      "type": "integer",
+      "widget": "integer"
+    },
+    {
+      "label": "Published",
+      "name": "published_at",
+      "readOnly": true,
+      "type": "datetime",
+      "widget": "relative-time"
+    },
+    {
+      "label": "Updated",
+      "name": "updated_at",
+      "readOnly": true,
+      "type": "datetime",
+      "widget": "relative-time"
+    }
+  ],
+  "label": "Product",
+  "labelPlural": "Products",
+  "list": {
+    "defaultPageSize": 25,
+    "fields": [
+      "primary_image",
+      "name",
+      "category",
+      "status",
+      "variant_count",
+      "updated_at"
+    ],
+    "maxPageSize": 100
+  },
+  "lookup": "pk",
+  "ordering": [
+    "-updated_at",
+    "name"
+  ],
+  "path": "catalog/products",
+  "primaryKey": "id",
+  "public": false,
+  "search": [
+    "name",
+    "brand"
+  ],
+  "tenantScoped": true,
+  "versioned": false
+} as const satisfies ModelMeta
+export const CategorySchema = z.object({
+  id: z.uuid().nullish(),
+  name: z.string().max(80).min(1),
+  slug: z.string().max(80).min(1),
+  parent: z.uuid().nullish(),
+  description: z.string().nullish(),
+  position: z.number().int().nullish(),
+  product_count: z.number().int().nullish(),
+})
+export type Category = z.infer<typeof CategorySchema>
+export const CategoryWriteSchema = CategorySchema.omit({ name: true, slug: true, parent: true, description: true, position: true, product_count: true })
+export const CategoryMeta = {
+  "key": "category",
+  "actions": [],
+  "displayField": "name",
+  "fields": [
+    {
+      "label": "Id",
+      "name": "id",
+      "type": "uuid",
+      "widget": "hidden"
+    },
+    {
+      "label": "Name",
+      "maxLength": 80,
+      "name": "name",
+      "readOnly": true,
+      "required": true,
+      "type": "string",
+      "widget": "text"
+    },
+    {
+      "label": "Slug",
+      "maxLength": 80,
+      "name": "slug",
+      "readOnly": true,
+      "required": true,
+      "type": "string",
+      "widget": "hidden"
+    },
+    {
+      "filter": [
+        "eq",
+        "isnull"
+      ],
+      "label": "Parent",
+      "name": "parent",
+      "readOnly": true,
+      "relation": {
+        "display": "name",
+        "model": "category"
+      },
+      "type": "relation",
+      "widget": "relation"
+    },
+    {
+      "label": "Description",
+      "name": "description",
+      "readOnly": true,
+      "type": "text",
+      "widget": "textarea"
+    },
+    {
+      "label": "Position",
+      "name": "position",
+      "readOnly": true,
+      "type": "integer",
+      "widget": "hidden"
+    },
+    {
+      "label": "Products",
+      "name": "product_count",
+      "readOnly": true,
+      "type": "integer",
+      "widget": "integer"
+    }
+  ],
+  "label": "Category",
+  "labelPlural": "Categories",
+  "list": {
+    "defaultPageSize": 50,
+    "fields": [
+      "name",
+      "product_count"
+    ],
+    "maxPageSize": 100
+  },
+  "lookup": "slug",
+  "ordering": [
+    "position",
+    "name"
+  ],
+  "path": "categories",
+  "primaryKey": "id",
+  "public": true,
+  "search": [
+    "name"
+  ],
+  "tenantScoped": false,
+  "versioned": false
+} as const satisfies ModelMeta
+export const CategoryContractSchema = z.object({
+  id: z.uuid().nullish(),
+  category: z.uuid(),
+  name: z.string().max(80).min(1),
+  version: z.number().int().nullish(),
+  status: z.enum(["draft", "published", "retired"]).nullish(),
+  attribute_schema: z.unknown().nullish(),
+  unit_rules: z.unknown().nullish(),
+  facet_keys: z.unknown().nullish(),
+  comparison_keys: z.unknown().nullish(),
+  display_recipe: z.unknown().nullish(),
+  seller_guidance: z.unknown().nullish(),
+  buyer_guidance: z.unknown().nullish(),
+  predecessor: z.uuid().nullish(),
+  published_by: z.uuid().nullish(),
+  published_at: z.iso.datetime({ offset: true }).nullish(),
+  updated_at: z.iso.datetime({ offset: true }).nullish(),
+})
+export type CategoryContract = z.infer<typeof CategoryContractSchema>
+export const CategoryContractWriteSchema = CategoryContractSchema.omit({ version: true, status: true, predecessor: true, published_by: true, published_at: true, updated_at: true })
+export const CategoryContractMeta = {
+  "key": "category_contract",
+  "actions": [
+    {
+      "confirm": true,
+      "icon": "check",
+      "kind": "command",
+      "label": "Publish",
+      "name": "publish",
+      "policy": "category_contract.publish",
+      "when": {
+        "status": [
+          "draft"
+        ]
+      }
+    },
+    {
+      "icon": "copy",
+      "kind": "command",
+      "label": "New draft",
+      "name": "revise",
+      "policy": "category_contract.revise",
+      "when": {
+        "status": [
+          "published"
+        ]
+      }
+    }
+  ],
+  "displayField": "name",
+  "fields": [
+    {
+      "label": "Id",
+      "name": "id",
+      "type": "uuid",
+      "widget": "hidden"
+    },
+    {
+      "filter": [
+        "eq",
+        "in"
+      ],
+      "label": "Category",
+      "name": "category",
+      "relation": {
+        "display": "name",
+        "model": "category"
+      },
+      "required": true,
+      "type": "relation",
+      "weight": 5,
+      "widget": "relation"
+    },
+    {
+      "help": "What buyers see; publishing renames the category.",
+      "label": "Name",
+      "maxLength": 80,
+      "name": "name",
+      "required": true,
+      "type": "string",
+      "weight": 10,
+      "widget": "text"
+    },
+    {
+      "label": "Version",
+      "name": "version",
+      "readOnly": true,
+      "type": "integer",
+      "weight": 15,
+      "widget": "integer"
+    },
+    {
+      "choices": [
+        {
+          "label": "Draft",
+          "tone": "info",
+          "value": "draft"
+        },
+        {
+          "label": "Published",
+          "tone": "success",
+          "value": "published"
+        },
+        {
+          "label": "Retired",
+          "tone": "neutral",
+          "value": "retired"
+        }
+      ],
+      "filter": [
+        "in"
+      ],
+      "label": "Status",
+      "name": "status",
+      "readOnly": true,
+      "type": "enum",
+      "weight": 20,
+      "widget": "status"
+    },
+    {
+      "label": "Attributes",
+      "name": "attribute_schema",
+      "type": "json",
+      "weight": 30,
+      "widget": "json"
+    },
+    {
+      "label": "Units",
+      "name": "unit_rules",
+      "type": "json",
+      "weight": 31,
+      "widget": "json"
+    },
+    {
+      "label": "Buyer filters",
+      "name": "facet_keys",
+      "type": "json",
+      "weight": 32,
+      "widget": "json"
+    },
+    {
+      "label": "Compared attributes",
+      "name": "comparison_keys",
+      "type": "json",
+      "weight": 33,
+      "widget": "json"
+    },
+    {
+      "label": "Display",
+      "name": "display_recipe",
+      "type": "json",
+      "weight": 34,
+      "widget": "json"
+    },
+    {
+      "label": "Guidance for sellers",
+      "name": "seller_guidance",
+      "type": "richtext",
+      "weight": 40,
+      "widget": "richtext"
+    },
+    {
+      "label": "Guidance for buyers",
+      "name": "buyer_guidance",
+      "type": "richtext",
+      "weight": 41,
+      "widget": "richtext"
+    },
+    {
+      "label": "Previous version",
+      "name": "predecessor",
+      "readOnly": true,
+      "relation": {
+        "display": "name",
+        "model": "category_contract"
+      },
+      "type": "relation",
+      "widget": "relation"
+    },
+    {
+      "label": "Published by",
+      "name": "published_by",
+      "readOnly": true,
+      "relation": {
+        "display": "display_name",
+        "model": "user"
+      },
+      "type": "relation",
+      "widget": "relation"
+    },
+    {
+      "label": "Published",
+      "name": "published_at",
+      "readOnly": true,
+      "type": "datetime",
+      "widget": "relative-time"
+    },
+    {
+      "label": "Updated",
+      "name": "updated_at",
+      "readOnly": true,
+      "type": "datetime",
+      "widget": "relative-time"
+    }
+  ],
+  "label": "Category contract",
+  "labelPlural": "Category contracts",
+  "list": {
+    "defaultPageSize": 25,
+    "fields": [
+      "name",
+      "category",
+      "version",
+      "status",
+      "updated_at"
+    ],
+    "maxPageSize": 100
+  },
+  "lookup": "pk",
+  "ordering": [
+    "-updated_at",
+    "name",
+    "-version"
+  ],
+  "path": "category-contracts",
+  "primaryKey": "id",
+  "public": true,
+  "search": [
+    "name"
+  ],
+  "tenantScoped": false,
+  "versioned": false
+} as const satisfies ModelMeta
+export const MembershipSchema = z.object({
+  id: z.uuid().nullish(),
+  name: z.string().nullish(),
+  email: z.email(),
+  user: z.uuid(),
+  organization: z.uuid(),
+  role_key: z.enum(["buyer_owner", "buyer_purchaser", "seller_manager", "warehouse_operator", "marketplace_admin"]),
+  status: z.enum(["invited", "active", "suspended", "removed"]).nullish(),
+  created_at: z.iso.datetime({ offset: true }).nullish(),
+})
+export type Membership = z.infer<typeof MembershipSchema>
+export const MembershipWriteSchema = MembershipSchema.omit({ name: true, user: true, organization: true, status: true, created_at: true })
+export const MembershipMeta = {
+  "key": "membership",
+  "actions": [
+    {
+      "icon": "pencil",
+      "input": [
+        "role_key"
+      ],
+      "kind": "update",
+      "label": "Change role",
+      "name": "change_role",
+      "policy": "membership.update",
+      "when": {
+        "status": [
+          "invited",
+          "active",
+          "suspended"
+        ]
+      }
+    },
+    {
+      "icon": "mail",
+      "kind": "command",
+      "label": "Resend invitation",
+      "name": "resend",
+      "policy": "membership.invite",
+      "when": {
+        "status": [
+          "invited"
+        ]
+      }
+    },
+    {
+      "confirm": true,
+      "kind": "command",
+      "label": "Suspend",
+      "name": "suspend",
+      "policy": "membership.update",
+      "tone": "warning",
+      "when": {
+        "status": [
+          "active"
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "label": "Reactivate",
+      "name": "reactivate",
+      "policy": "membership.update",
+      "when": {
+        "status": [
+          "suspended"
+        ]
+      }
+    },
+    {
+      "confirm": true,
+      "kind": "archive",
+      "label": "Remove from organization",
+      "name": "remove",
+      "policy": "membership.update",
+      "tone": "danger",
+      "when": {
+        "status": [
+          "invited",
+          "active",
+          "suspended"
+        ]
+      }
+    }
+  ],
+  "displayField": "name",
+  "fields": [
+    {
+      "label": "Id",
+      "name": "id",
+      "type": "uuid",
+      "widget": "hidden"
+    },
+    {
+      "label": "Name",
+      "name": "name",
+      "readOnly": true,
+      "type": "string",
+      "weight": 10,
+      "widget": "text"
+    },
+    {
+      "label": "Email",
+      "name": "email",
+      "required": true,
+      "type": "email",
+      "weight": 20,
+      "widget": "email"
+    },
+    {
+      "label": "User",
+      "name": "user",
+      "readOnly": true,
+      "relation": {
+        "display": "display_name",
+        "model": "user"
+      },
+      "required": true,
+      "type": "relation",
+      "widget": "hidden"
+    },
+    {
+      "filter": [
+        "eq"
+      ],
+      "label": "Organization",
+      "name": "organization",
+      "readOnly": true,
+      "relation": {
+        "display": "name",
+        "model": "organization"
+      },
+      "required": true,
+      "type": "relation",
+      "widget": "hidden"
+    },
+    {
+      "choices": [
+        {
+          "label": "Buyer owner",
+          "value": "buyer_owner"
+        },
+        {
+          "label": "Buyer purchaser",
+          "value": "buyer_purchaser"
+        },
+        {
+          "label": "Seller manager",
+          "value": "seller_manager"
+        },
+        {
+          "label": "Warehouse operator",
+          "value": "warehouse_operator"
+        },
+        {
+          "label": "Marketplace administrator",
+          "value": "marketplace_admin"
+        }
+      ],
+      "filter": [
+        "in"
+      ],
+      "label": "Role",
+      "name": "role_key",
+      "required": true,
+      "type": "enum",
+      "weight": 30,
+      "widget": "select"
+    },
+    {
+      "choices": [
+        {
+          "label": "Invited",
+          "tone": "info",
+          "value": "invited"
+        },
+        {
+          "label": "Active",
+          "tone": "success",
+          "value": "active"
+        },
+        {
+          "label": "Suspended",
+          "tone": "warning",
+          "value": "suspended"
+        },
+        {
+          "label": "Removed",
+          "tone": "neutral",
+          "value": "removed"
+        }
+      ],
+      "filter": [
+        "in"
+      ],
+      "label": "Status",
+      "name": "status",
+      "readOnly": true,
+      "type": "enum",
+      "weight": 40,
+      "widget": "status"
+    },
+    {
+      "label": "Joined",
+      "name": "created_at",
+      "readOnly": true,
+      "type": "datetime",
+      "weight": 50,
+      "widget": "relative-time"
+    }
+  ],
+  "label": "Member",
+  "labelPlural": "Members",
+  "list": {
+    "defaultPageSize": 25,
+    "fields": [
+      "name",
+      "email",
+      "role_key",
+      "status",
+      "created_at"
+    ],
+    "maxPageSize": 100
+  },
+  "lookup": "pk",
+  "ordering": [
+    "name",
+    "-created_at"
+  ],
+  "path": "memberships",
+  "primaryKey": "id",
+  "public": false,
+  "search": [
+    "name",
+    "email"
+  ],
+  "tenantScoped": true,
+  "versioned": false
+} as const satisfies ModelMeta
+export const NotificationSchema = z.object({
+  id: z.uuid().nullish(),
+  event_key: z.enum(["order", "approval", "quote", "payment", "delivery", "account"]),
+  title: z.string().max(160).min(1),
+  body_text: z.string().min(1),
+  deep_link: z.string().max(300).nullish(),
+  status: z.enum(["queued", "sent", "failed", "read"]).nullish(),
+  created_at: z.iso.datetime({ offset: true }).nullish(),
+  read_at: z.iso.datetime({ offset: true }).nullish(),
+})
+export type Notification = z.infer<typeof NotificationSchema>
+export const NotificationWriteSchema = NotificationSchema.omit({ event_key: true, title: true, body_text: true, deep_link: true, status: true, created_at: true, read_at: true })
+export const NotificationMeta = {
+  "key": "notification",
+  "actions": [
+    {
+      "icon": "check",
+      "kind": "command",
+      "label": "Mark as read",
+      "name": "read",
+      "policy": "self",
+      "when": {
+        "status": [
+          "queued",
+          "sent"
+        ]
+      }
+    }
+  ],
+  "displayField": "title",
+  "fields": [
+    {
+      "label": "Id",
+      "name": "id",
+      "type": "uuid",
+      "widget": "hidden"
+    },
+    {
+      "choices": [
+        {
+          "label": "Orders",
+          "value": "order"
+        },
+        {
+          "label": "Approvals",
+          "value": "approval"
+        },
+        {
+          "label": "Quotes",
+          "value": "quote"
+        },
+        {
+          "label": "Payments",
+          "value": "payment"
+        },
+        {
+          "label": "Deliveries",
+          "value": "delivery"
+        },
+        {
+          "label": "Account and team",
+          "value": "account"
+        }
+      ],
+      "filter": [
+        "in"
+      ],
+      "label": "Event",
+      "name": "event_key",
+      "readOnly": true,
+      "required": true,
+      "type": "enum",
+      "widget": "select"
+    },
+    {
+      "label": "Title",
+      "maxLength": 160,
+      "name": "title",
+      "readOnly": true,
+      "required": true,
+      "type": "string",
+      "widget": "text"
+    },
+    {
+      "label": "Message",
+      "name": "body_text",
+      "readOnly": true,
+      "required": true,
+      "type": "text",
+      "widget": "textarea"
+    },
+    {
+      "label": "Link",
+      "maxLength": 300,
+      "name": "deep_link",
+      "readOnly": true,
+      "type": "string",
+      "widget": "url"
+    },
+    {
+      "choices": [
+        {
+          "label": "Queued",
+          "tone": "neutral",
+          "value": "queued"
+        },
+        {
+          "label": "Sent",
+          "tone": "signal",
+          "value": "sent"
+        },
+        {
+          "label": "Failed",
+          "tone": "danger",
+          "value": "failed"
+        },
+        {
+          "label": "Read",
+          "tone": "neutral",
+          "value": "read"
+        }
+      ],
+      "filter": [
+        "in"
+      ],
+      "label": "Status",
+      "name": "status",
+      "readOnly": true,
+      "type": "enum",
+      "widget": "status"
+    },
+    {
+      "filter": [
+        "range"
+      ],
+      "label": "Received",
+      "name": "created_at",
+      "readOnly": true,
+      "type": "datetime",
+      "widget": "relative-time"
+    },
+    {
+      "label": "Read",
+      "name": "read_at",
+      "readOnly": true,
+      "type": "datetime",
+      "widget": "relative-time"
+    }
+  ],
+  "label": "Notification",
+  "labelPlural": "Notifications",
+  "list": {
+    "defaultPageSize": 25,
+    "fields": [
+      "title",
+      "event_key",
+      "status",
+      "created_at"
+    ],
+    "maxPageSize": 100
+  },
+  "lookup": "pk",
+  "ordering": [
+    "-created_at"
+  ],
+  "path": "notifications",
+  "primaryKey": "id",
+  "public": false,
+  "search": [
+    "title",
+    "body_text"
+  ],
+  "tenantScoped": false,
+  "versioned": false
+} as const satisfies ModelMeta
+export const NotificationPreferenceSchema = z.object({
+  id: z.uuid().nullish(),
+  event_key: z.enum(["order", "approval", "quote", "payment", "delivery", "account"]),
+  channel: z.enum(["in_app", "email"]),
+  enabled: z.boolean().nullish(),
+  locale: z.enum(["en-KE", "sw-KE"]).nullish(),
+})
+export type NotificationPreference = z.infer<typeof NotificationPreferenceSchema>
+export const NotificationPreferenceWriteSchema = NotificationPreferenceSchema.omit({ event_key: true, channel: true, locale: true })
+export const NotificationPreferenceMeta = {
+  "key": "notification_preference",
+  "actions": [],
+  "displayField": "event_key",
+  "fields": [
+    {
+      "label": "Id",
+      "name": "id",
+      "type": "uuid",
+      "widget": "hidden"
+    },
+    {
+      "choices": [
+        {
+          "label": "Orders",
+          "value": "order"
+        },
+        {
+          "label": "Approvals",
+          "value": "approval"
+        },
+        {
+          "label": "Quotes",
+          "value": "quote"
+        },
+        {
+          "label": "Payments",
+          "value": "payment"
+        },
+        {
+          "label": "Deliveries",
+          "value": "delivery"
+        },
+        {
+          "label": "Account and team",
+          "value": "account"
+        }
+      ],
+      "filter": [
+        "in"
+      ],
+      "label": "Event",
+      "name": "event_key",
+      "readOnly": true,
+      "required": true,
+      "type": "enum",
+      "widget": "select"
+    },
+    {
+      "choices": [
+        {
+          "label": "In the app",
+          "value": "in_app"
+        },
+        {
+          "label": "Email",
+          "value": "email"
+        }
+      ],
+      "filter": [
+        "in"
+      ],
+      "label": "Channel",
+      "name": "channel",
+      "readOnly": true,
+      "required": true,
+      "type": "enum",
+      "widget": "select"
+    },
+    {
+      "label": "Enabled",
+      "name": "enabled",
+      "type": "boolean",
+      "widget": "boolean"
+    },
+    {
+      "choices": [
+        {
+          "label": "English",
+          "value": "en-KE"
+        },
+        {
+          "label": "Kiswahili",
+          "value": "sw-KE"
+        }
+      ],
+      "label": "Language",
+      "maxLength": 10,
+      "name": "locale",
+      "readOnly": true,
+      "type": "enum",
+      "widget": "select"
+    }
+  ],
+  "label": "Notification preference",
+  "labelPlural": "Notification preferences",
+  "list": {
+    "defaultPageSize": 50,
+    "fields": [
+      "event_key",
+      "channel",
+      "enabled"
+    ],
+    "maxPageSize": 100
+  },
+  "lookup": "pk",
+  "ordering": [
+    "event_key"
+  ],
+  "path": "notification-preferences",
+  "primaryKey": "id",
+  "public": false,
+  "search": [],
+  "tenantScoped": false,
+  "versioned": false
+} as const satisfies ModelMeta
+export const OrderSchema = z.object({
+  id: z.uuid().nullish(),
+  order_number: z.string().max(20).min(1),
+  seller_organization: z.uuid(),
+  buyer_organization: z.uuid(),
+  submitted_by: z.uuid().nullish(),
+  delivery_address: z.uuid().nullish(),
+  status: z.enum(["submitted", "confirmed", "picking", "partially_fulfilled", "shipped", "delivered", "cancelled", "disputed"]).nullish(),
+  submitted_at: z.iso.datetime({ offset: true }),
+  subtotal: decimalString(14, 2),
+  total: decimalString(14, 2),
+  special_instructions: z.string().nullish(),
+})
+export type Order = z.infer<typeof OrderSchema>
+export const OrderWriteSchema = OrderSchema.omit({ order_number: true, seller_organization: true, buyer_organization: true, submitted_by: true, delivery_address: true, status: true, submitted_at: true, subtotal: true, total: true, special_instructions: true })
+export const OrderMeta = {
+  "key": "order",
+  "actions": [
+    {
+      "icon": "copy",
+      "kind": "command",
+      "label": "Reorder",
+      "name": "reorder",
+      "policy": "order.reorder"
+    }
+  ],
+  "displayField": "order_number",
+  "fields": [
+    {
+      "label": "Id",
+      "name": "id",
+      "type": "uuid",
+      "widget": "hidden"
+    },
+    {
+      "label": "Order",
+      "maxLength": 20,
+      "name": "order_number",
+      "readOnly": true,
+      "required": true,
+      "type": "string",
+      "widget": "code"
+    },
+    {
+      "filter": [
+        "eq",
+        "in"
+      ],
+      "label": "Seller",
+      "name": "seller_organization",
+      "readOnly": true,
+      "relation": {
+        "display": "name",
+        "model": "organization"
+      },
+      "required": true,
+      "type": "relation",
+      "widget": "relation"
+    },
+    {
+      "label": "Buyer",
+      "name": "buyer_organization",
+      "readOnly": true,
+      "relation": {
+        "display": "name",
+        "model": "organization"
+      },
+      "required": true,
+      "type": "relation",
+      "widget": "relation"
+    },
+    {
+      "label": "Placed by",
+      "name": "submitted_by",
+      "readOnly": true,
+      "relation": {
+        "display": "display_name",
+        "model": "user"
+      },
+      "type": "relation",
+      "widget": "relation"
+    },
+    {
+      "label": "Deliver to",
+      "name": "delivery_address",
+      "readOnly": true,
+      "relation": {
+        "display": "label",
+        "model": "address"
+      },
+      "type": "relation",
+      "widget": "relation"
+    },
+    {
+      "choices": [
+        {
+          "label": "Submitted",
+          "tone": "info",
+          "value": "submitted"
+        },
+        {
+          "label": "Confirmed",
+          "tone": "info",
+          "value": "confirmed"
+        },
+        {
+          "label": "Picking",
+          "tone": "info",
+          "value": "picking"
+        },
+        {
+          "label": "Partly fulfilled",
+          "tone": "warning",
+          "value": "partially_fulfilled"
+        },
+        {
+          "label": "Shipped",
+          "tone": "signal",
+          "value": "shipped"
+        },
+        {
+          "label": "Delivered",
+          "tone": "success",
+          "value": "delivered"
+        },
+        {
+          "label": "Cancelled",
+          "tone": "neutral",
+          "value": "cancelled"
+        },
+        {
+          "label": "Disputed",
+          "tone": "danger",
+          "value": "disputed"
+        }
+      ],
+      "filter": [
+        "in"
+      ],
+      "label": "Status",
+      "name": "status",
+      "readOnly": true,
+      "type": "enum",
+      "widget": "status"
+    },
+    {
+      "filter": [
+        "range"
+      ],
+      "label": "Placed",
+      "name": "submitted_at",
+      "readOnly": true,
+      "required": true,
+      "type": "datetime",
+      "widget": "datetime"
+    },
+    {
+      "currency": "KES",
+      "decimalPlaces": 2,
+      "label": "Subtotal",
+      "maxDigits": 14,
+      "name": "subtotal",
+      "readOnly": true,
+      "required": true,
+      "type": "decimal",
+      "widget": "currency"
+    },
+    {
+      "currency": "KES",
+      "decimalPlaces": 2,
+      "label": "Total",
+      "maxDigits": 14,
+      "name": "total",
+      "readOnly": true,
+      "required": true,
+      "type": "decimal",
+      "widget": "currency"
+    },
+    {
+      "label": "Delivery notes",
+      "name": "special_instructions",
+      "readOnly": true,
+      "type": "text",
+      "widget": "textarea"
+    }
+  ],
+  "label": "Order",
+  "labelPlural": "Orders",
+  "list": {
+    "defaultPageSize": 25,
+    "fields": [
+      "order_number",
+      "seller_organization",
+      "status",
+      "submitted_at",
+      "total"
+    ],
+    "maxPageSize": 100
+  },
+  "lookup": "pk",
+  "ordering": [
+    "-submitted_at",
+    "submitted_at",
+    "-total"
+  ],
+  "path": "orders",
+  "primaryKey": "id",
+  "public": false,
+  "search": [
+    "order_number"
+  ],
+  "tenantScoped": true,
+  "versioned": false
+} as const satisfies ModelMeta
+export const OrganizationSchema = z.object({
+  id: z.uuid().nullish(),
+  name: z.string().max(160).min(1),
+  organization_type: z.enum(["seller", "buyer", "marketplace_admin"]),
+  legal_name: z.string().max(200).nullish(),
+  tax_identifier: z.string().max(40).nullish(),
+  default_currency: z.enum(["KES"]).nullish(),
+  timezone: z.enum(["Africa/Nairobi", "Africa/Kampala", "Africa/Dar_es_Salaam", "Africa/Kigali"]).nullish(),
+  status: z.enum(["active", "suspended", "archived"]).nullish(),
+  approval_state: z.enum(["pending", "approved", "rejected", "suspended"]).nullish(),
+  created_at: z.iso.datetime({ offset: true }).nullish(),
+  updated_at: z.iso.datetime({ offset: true }).nullish(),
+})
+export type Organization = z.infer<typeof OrganizationSchema>
+export const OrganizationWriteSchema = OrganizationSchema.omit({ organization_type: true, status: true, approval_state: true, created_at: true, updated_at: true })
+export const OrganizationMeta = {
+  "key": "organization",
+  "actions": [
+    {
+      "icon": "check",
+      "kind": "command",
+      "label": "Approve",
+      "name": "approve",
+      "policy": "organization.review",
+      "tone": "primary",
+      "when": {
+        "approval_state": [
+          "pending",
+          "rejected",
+          "suspended"
+        ]
+      }
+    },
+    {
+      "confirm": true,
+      "kind": "command",
+      "label": "Reject",
+      "name": "reject",
+      "policy": "organization.review",
+      "tone": "danger",
+      "when": {
+        "approval_state": [
+          "pending"
+        ]
+      }
+    },
+    {
+      "confirm": true,
+      "kind": "command",
+      "label": "Suspend",
+      "name": "suspend",
+      "policy": "organization.review",
+      "tone": "warning",
+      "when": {
+        "approval_state": [
+          "approved"
+        ]
+      }
+    }
+  ],
+  "displayField": "name",
+  "fields": [
+    {
+      "label": "Id",
+      "name": "id",
+      "type": "uuid",
+      "widget": "hidden"
+    },
+    {
+      "help": "The name buyers and sellers see.",
+      "label": "Trading name",
+      "maxLength": 160,
+      "name": "name",
+      "required": true,
+      "type": "string",
+      "weight": 10,
+      "widget": "text"
+    },
+    {
+      "choices": [
+        {
+          "label": "Seller",
+          "value": "seller"
+        },
+        {
+          "label": "Buyer",
+          "value": "buyer"
+        },
+        {
+          "label": "Marketplace administration",
+          "value": "marketplace_admin"
+        }
+      ],
+      "filter": [
+        "in"
+      ],
+      "label": "Organization type",
+      "name": "organization_type",
+      "readOnly": true,
+      "required": true,
+      "type": "enum",
+      "weight": 5,
+      "widget": "select"
+    },
+    {
+      "label": "Registered legal name",
+      "maxLength": 200,
+      "name": "legal_name",
+      "type": "string",
+      "weight": 20,
+      "widget": "text"
+    },
+    {
+      "fieldPolicy": {
+        "read": "organization.update",
+        "write": "organization.update"
+      },
+      "help": "Tax identifier. Visible only to people who manage this organization.",
+      "label": "KRA PIN",
+      "maxLength": 40,
+      "name": "tax_identifier",
+      "type": "string",
+      "weight": 30,
+      "widget": "text"
+    },
+    {
+      "choices": [
+        {
+          "label": "Kenyan shilling (KES)",
+          "value": "KES"
+        }
+      ],
+      "label": "Currency",
+      "maxLength": 3,
+      "name": "default_currency",
+      "type": "enum",
+      "weight": 40,
+      "widget": "select"
+    },
+    {
+      "choices": [
+        {
+          "label": "East Africa Time, Nairobi",
+          "value": "Africa/Nairobi"
+        },
+        {
+          "label": "East Africa Time, Kampala",
+          "value": "Africa/Kampala"
+        },
+        {
+          "label": "East Africa Time, Dar es Salaam",
+          "value": "Africa/Dar_es_Salaam"
+        },
+        {
+          "label": "Central Africa Time, Kigali",
+          "value": "Africa/Kigali"
+        }
+      ],
+      "label": "Time zone",
+      "maxLength": 64,
+      "name": "timezone",
+      "type": "enum",
+      "weight": 50,
+      "widget": "select"
+    },
+    {
+      "choices": [
+        {
+          "label": "Active",
+          "tone": "success",
+          "value": "active"
+        },
+        {
+          "label": "Suspended",
+          "tone": "warning",
+          "value": "suspended"
+        },
+        {
+          "label": "Archived",
+          "tone": "neutral",
+          "value": "archived"
+        }
+      ],
+      "filter": [
+        "in"
+      ],
+      "label": "Status",
+      "name": "status",
+      "readOnly": true,
+      "type": "enum",
+      "widget": "status"
+    },
+    {
+      "choices": [
+        {
+          "label": "Pending review",
+          "tone": "info",
+          "value": "pending"
+        },
+        {
+          "label": "Approved",
+          "tone": "success",
+          "value": "approved"
+        },
+        {
+          "label": "Rejected",
+          "tone": "danger",
+          "value": "rejected"
+        },
+        {
+          "label": "Suspended",
+          "tone": "warning",
+          "value": "suspended"
+        }
+      ],
+      "filter": [
+        "in"
+      ],
+      "label": "Approval",
+      "name": "approval_state",
+      "readOnly": true,
+      "type": "enum",
+      "widget": "status"
+    },
+    {
+      "label": "Created",
+      "name": "created_at",
+      "readOnly": true,
+      "type": "datetime",
+      "widget": "relative-time"
+    },
+    {
+      "label": "Updated",
+      "name": "updated_at",
+      "readOnly": true,
+      "type": "datetime",
+      "widget": "relative-time"
+    }
+  ],
+  "label": "Organization",
+  "labelPlural": "Organizations",
+  "list": {
+    "defaultPageSize": 25,
+    "fields": [
+      "name",
+      "organization_type",
+      "approval_state",
+      "created_at"
+    ],
+    "maxPageSize": 100
+  },
+  "lookup": "pk",
+  "ordering": [
+    "name",
+    "-created_at"
+  ],
+  "path": "organizations",
+  "primaryKey": "id",
+  "public": false,
+  "search": [
+    "name",
+    "legal_name"
+  ],
+  "tenantScoped": true,
+  "versioned": false
+} as const satisfies ModelMeta
+export const ProductSchema = z.object({
+  id: z.uuid().nullish(),
+  primary_image: z.unknown().nullish(),
+  gallery: z.unknown().nullish(),
+  name: z.string().max(160).min(1),
+  seller: z.uuid(),
+  category: z.uuid(),
+  slug: z.string().max(160).min(1),
+  sku: z.string().max(40).nullish(),
+  pack_label: z.string().max(80).nullish(),
+  unit_price: decimalString(12, 2).nullish(),
+  min_order_quantity: z.number().int().nullish(),
+  short_description: z.string().nullish(),
+  brand: z.string().max(80).nullish(),
+  description: z.unknown().nullish(),
+  in_stock: z.boolean().nullish(),
+  status: z.enum(["draft", "published", "suspended", "archived"]).nullish(),
+  published_at: z.iso.datetime({ offset: true }).nullish(),
+  seo_title: z.string().max(70).nullish(),
+  seo_description: z.string().nullish(),
+})
+export type Product = z.infer<typeof ProductSchema>
+export const ProductWriteSchema = ProductSchema.omit({ primary_image: true, gallery: true, name: true, seller: true, category: true, slug: true, sku: true, pack_label: true, unit_price: true, min_order_quantity: true, short_description: true, brand: true, description: true, in_stock: true, status: true, published_at: true, seo_title: true, seo_description: true })
+export const ProductMeta = {
+  "key": "product",
+  "actions": [],
+  "displayField": "name",
+  "fields": [
+    {
+      "label": "Id",
+      "name": "id",
+      "type": "uuid",
+      "widget": "hidden"
+    },
+    {
+      "label": "Photo",
+      "name": "primary_image",
+      "readOnly": true,
+      "type": "image",
+      "weight": 5,
+      "widget": "image"
+    },
+    {
+      "label": "More photos",
+      "maxItems": 8,
+      "name": "gallery",
+      "readOnly": true,
+      "type": "image",
+      "weight": 6,
+      "widget": "image"
+    },
+    {
+      "label": "Product",
+      "maxLength": 160,
+      "name": "name",
+      "readOnly": true,
+      "required": true,
+      "type": "string",
+      "weight": 10,
+      "widget": "text"
+    },
+    {
+      "filter": [
+        "eq",
+        "in"
+      ],
+      "label": "Seller",
+      "name": "seller",
+      "readOnly": true,
+      "relation": {
+        "display": "name",
+        "model": "organization"
+      },
+      "required": true,
+      "role": "subtitle",
+      "type": "relation",
+      "weight": 20,
+      "widget": "relation"
+    },
+    {
+      "filter": [
+        "in",
+        "eq"
+      ],
+      "label": "Category",
+      "name": "category",
+      "readOnly": true,
+      "relation": {
+        "display": "name",
+        "model": "category"
+      },
+      "required": true,
+      "type": "relation",
+      "weight": 25,
+      "widget": "relation"
+    },
+    {
+      "help": "Public address, unique across the marketplace.",
+      "label": "Slug",
+      "maxLength": 160,
+      "name": "slug",
+      "readOnly": true,
+      "required": true,
+      "type": "string",
+      "widget": "hidden"
+    },
+    {
+      "label": "SKU",
+      "maxLength": 40,
+      "name": "sku",
+      "readOnly": true,
+      "type": "string",
+      "weight": 30,
+      "widget": "code"
+    },
+    {
+      "help": "How it is sold, for example Bale of 12 × 2 kg.",
+      "label": "Pack",
+      "maxLength": 80,
+      "name": "pack_label",
+      "readOnly": true,
+      "type": "string",
+      "weight": 35,
+      "widget": "text"
+    },
+    {
+      "currency": "KES",
+      "decimalPlaces": 2,
+      "filter": [
+        "range"
+      ],
+      "help": "The lowest price among the product's variants.",
+      "label": "Price per pack",
+      "maxDigits": 12,
+      "name": "unit_price",
+      "readOnly": true,
+      "type": "decimal",
+      "weight": 40,
+      "widget": "currency"
+    },
+    {
+      "label": "Minimum order",
+      "name": "min_order_quantity",
+      "readOnly": true,
+      "type": "integer",
+      "weight": 45,
+      "widget": "integer"
+    },
+    {
+      "help": "One or two plain sentences for product cards and search.",
+      "label": "Summary",
+      "name": "short_description",
+      "readOnly": true,
+      "type": "text",
+      "weight": 47,
+      "widget": "textarea"
+    },
+    {
+      "label": "Brand",
+      "maxLength": 80,
+      "name": "brand",
+      "readOnly": true,
+      "type": "string",
+      "weight": 48,
+      "widget": "text"
+    },
+    {
+      "label": "Description",
+      "name": "description",
+      "readOnly": true,
+      "type": "richtext",
+      "weight": 50,
+      "widget": "richtext"
+    },
+    {
+      "filter": [
+        "eq"
+      ],
+      "label": "In stock",
+      "name": "in_stock",
+      "readOnly": true,
+      "type": "boolean",
+      "weight": 55,
+      "widget": "boolean"
+    },
+    {
+      "choices": [
+        {
+          "label": "Draft",
+          "tone": "neutral",
+          "value": "draft"
+        },
+        {
+          "label": "Published",
+          "tone": "success",
+          "value": "published"
+        },
+        {
+          "label": "Suspended",
+          "tone": "warning",
+          "value": "suspended"
+        },
+        {
+          "label": "Archived",
+          "tone": "neutral",
+          "value": "archived"
+        }
+      ],
+      "label": "Status",
+      "name": "status",
+      "readOnly": true,
+      "type": "enum",
+      "widget": "status"
+    },
+    {
+      "label": "Published",
+      "name": "published_at",
+      "readOnly": true,
+      "type": "datetime",
+      "widget": "relative-time"
+    },
+    {
+      "label": "Search title",
+      "maxLength": 70,
+      "name": "seo_title",
+      "readOnly": true,
+      "type": "string",
+      "widget": "text"
+    },
+    {
+      "label": "Search description",
+      "name": "seo_description",
+      "readOnly": true,
+      "type": "text",
+      "widget": "textarea"
+    }
+  ],
+  "label": "Product",
+  "labelPlural": "Products",
+  "list": {
+    "defaultPageSize": 24,
+    "fields": [
+      "primary_image",
+      "name",
+      "seller",
+      "pack_label",
+      "unit_price",
+      "min_order_quantity"
+    ],
+    "maxPageSize": 100
+  },
+  "lookup": "slug",
+  "ordering": [
+    "-published_at",
+    "unit_price",
+    "-unit_price",
+    "name"
+  ],
+  "path": "products",
+  "primaryKey": "id",
+  "public": true,
+  "search": [
+    "name",
+    "sku"
+  ],
+  "tenantScoped": false,
+  "versioned": false
+} as const satisfies ModelMeta
+export const SellerDocumentSchema = z.object({
+  id: z.uuid().nullish(),
+  seller_organization: z.uuid(),
+  document_type: z.enum(["registration", "tax", "license", "bank_verification", "other"]),
+  file_asset: z.string(),
+  verification_status: z.enum(["pending", "verified", "rejected", "expired"]).nullish(),
+  expires_at: z.iso.date().nullish(),
+  review_notes: z.string().nullish(),
+  created_at: z.iso.datetime({ offset: true }).nullish(),
+})
+export type SellerDocument = z.infer<typeof SellerDocumentSchema>
+export const SellerDocumentWriteSchema = SellerDocumentSchema.omit({ seller_organization: true, verification_status: true, review_notes: true, created_at: true })
+export const SellerDocumentMeta = {
+  "key": "seller_document",
+  "actions": [
+    {
+      "icon": "check",
+      "input": [
+        "review_notes"
+      ],
+      "kind": "command",
+      "label": "Mark verified",
+      "name": "verify",
+      "policy": "seller_document.verify",
+      "tone": "primary",
+      "when": {
+        "verification_status": [
+          "pending",
+          "rejected",
+          "expired"
+        ]
+      }
+    },
+    {
+      "confirm": true,
+      "input": [
+        "review_notes"
+      ],
+      "kind": "command",
+      "label": "Reject document",
+      "name": "reject",
+      "policy": "seller_document.verify",
+      "tone": "danger",
+      "when": {
+        "verification_status": [
+          "pending",
+          "verified"
+        ]
+      }
+    },
+    {
+      "input": [
+        "review_notes"
+      ],
+      "kind": "command",
+      "label": "Mark expired",
+      "name": "expire",
+      "policy": "seller_document.verify",
+      "tone": "warning",
+      "when": {
+        "verification_status": [
+          "verified"
+        ]
+      }
+    },
+    {
+      "confirm": true,
+      "kind": "archive",
+      "label": "Remove document",
+      "name": "remove",
+      "policy": "seller_document.delete",
+      "tone": "danger",
+      "when": {
+        "verification_status": [
+          "pending",
+          "rejected",
+          "expired"
+        ]
+      }
+    }
+  ],
+  "displayField": "document_type",
+  "fields": [
+    {
+      "label": "Id",
+      "name": "id",
+      "type": "uuid",
+      "widget": "hidden"
+    },
+    {
+      "filter": [
+        "eq"
+      ],
+      "label": "Seller organization",
+      "name": "seller_organization",
+      "readOnly": true,
+      "relation": {
+        "display": "name",
+        "model": "organization"
+      },
+      "required": true,
+      "type": "relation",
+      "widget": "hidden"
+    },
+    {
+      "choices": [
+        {
+          "label": "Business registration certificate",
+          "value": "registration"
+        },
+        {
+          "label": "KRA PIN certificate",
+          "value": "tax"
+        },
+        {
+          "label": "Trading licence",
+          "value": "license"
+        },
+        {
+          "label": "Bank verification letter",
+          "value": "bank_verification"
+        },
+        {
+          "label": "Other document",
+          "value": "other"
+        }
+      ],
+      "filter": [
+        "in"
+      ],
+      "label": "Document",
+      "name": "document_type",
+      "required": true,
+      "type": "enum",
+      "weight": 10,
+      "widget": "select"
+    },
+    {
+      "accept": [
+        "application/pdf",
+        "image/jpeg",
+        "image/png"
+      ],
+      "label": "File",
+      "maxBytes": 10485760,
+      "name": "file_asset",
+      "required": true,
+      "type": "file",
+      "weight": 20,
+      "widget": "file"
+    },
+    {
+      "choices": [
+        {
+          "label": "Pending check",
+          "tone": "info",
+          "value": "pending"
+        },
+        {
+          "label": "Verified",
+          "tone": "success",
+          "value": "verified"
+        },
+        {
+          "label": "Rejected",
+          "tone": "danger",
+          "value": "rejected"
+        },
+        {
+          "label": "Expired",
+          "tone": "warning",
+          "value": "expired"
+        }
+      ],
+      "filter": [
+        "in"
+      ],
+      "label": "Check",
+      "name": "verification_status",
+      "readOnly": true,
+      "type": "enum",
+      "weight": 30,
+      "widget": "status"
+    },
+    {
+      "label": "Valid until",
+      "name": "expires_at",
+      "type": "date",
+      "weight": 40,
+      "widget": "date"
+    },
+    {
+      "fieldPolicy": {
+        "write": "seller_document.verify"
+      },
+      "label": "Reviewer notes",
+      "name": "review_notes",
+      "readOnly": true,
+      "type": "text",
+      "weight": 50,
+      "widget": "textarea"
+    },
+    {
+      "label": "Uploaded",
+      "name": "created_at",
+      "readOnly": true,
+      "type": "datetime",
+      "widget": "relative-time"
+    }
+  ],
+  "label": "Seller document",
+  "labelPlural": "Seller documents",
+  "list": {
+    "defaultPageSize": 25,
+    "fields": [
+      "document_type",
+      "file_asset",
+      "verification_status",
+      "expires_at"
+    ],
+    "maxPageSize": 100
+  },
+  "lookup": "pk",
+  "ordering": [
+    "document_type",
+    "-created_at"
+  ],
+  "path": "seller-documents",
+  "primaryKey": "id",
+  "public": false,
+  "search": [],
+  "tenantScoped": true,
+  "versioned": false
+} as const satisfies ModelMeta
+export const SellerProfileSchema = z.object({
+  id: z.uuid().nullish(),
+  public_name: z.string().max(160).min(1),
+  description: z.unknown().nullish(),
+  support_email: z.email().nullish(),
+  support_phone: z.string().max(20).nullish(),
+  activation_status: z.enum(["draft", "under_review", "active", "rejected", "suspended"]).nullish(),
+  reviewed_by: z.uuid().nullish(),
+  reviewed_at: z.iso.datetime({ offset: true }).nullish(),
+  rejection_reason: z.string().nullish(),
+  submitted_at: z.iso.datetime({ offset: true }).nullish(),
+  updated_at: z.iso.datetime({ offset: true }).nullish(),
+})
+export type SellerProfile = z.infer<typeof SellerProfileSchema>
+export const SellerProfileWriteSchema = SellerProfileSchema.omit({ id: true, activation_status: true, reviewed_by: true, reviewed_at: true, rejection_reason: true, submitted_at: true, updated_at: true })
+export const SellerProfileMeta = {
+  "key": "seller_profile",
+  "actions": [
+    {
+      "icon": "send",
+      "kind": "command",
+      "label": "Send for review",
+      "name": "submit",
+      "policy": "seller_profile.submit",
+      "tone": "primary",
+      "when": {
+        "activation_status": [
+          "draft",
+          "rejected"
+        ]
+      }
+    },
+    {
+      "icon": "check",
+      "kind": "command",
+      "label": "Activate seller",
+      "name": "activate",
+      "policy": "seller_profile.review",
+      "tone": "primary",
+      "when": {
+        "activation_status": [
+          "under_review",
+          "suspended"
+        ]
+      }
+    },
+    {
+      "confirm": true,
+      "input": [
+        "rejection_reason"
+      ],
+      "kind": "command",
+      "label": "Reject application",
+      "name": "reject",
+      "policy": "seller_profile.review",
+      "tone": "danger",
+      "when": {
+        "activation_status": [
+          "under_review"
+        ]
+      }
+    },
+    {
+      "confirm": true,
+      "input": [
+        "rejection_reason"
+      ],
+      "kind": "command",
+      "label": "Suspend seller",
+      "name": "suspend",
+      "policy": "seller_profile.review",
+      "tone": "warning",
+      "when": {
+        "activation_status": [
+          "active"
+        ]
+      }
+    }
+  ],
+  "displayField": "public_name",
+  "fields": [
+    {
+      "name": "id",
+      "readOnly": true,
+      "type": "uuid",
+      "widget": "hidden"
+    },
+    {
+      "help": "The name buyers see on your products.",
+      "label": "Marketplace name",
+      "maxLength": 160,
+      "name": "public_name",
+      "required": true,
+      "type": "string",
+      "weight": 10,
+      "widget": "text"
+    },
+    {
+      "help": "What you sell, where you deliver and how buyers reach you.",
+      "label": "About the business",
+      "name": "description",
+      "type": "richtext",
+      "weight": 20,
+      "widget": "richtext"
+    },
+    {
+      "label": "Support email",
+      "maxLength": 254,
+      "name": "support_email",
+      "type": "email",
+      "weight": 30,
+      "widget": "email"
+    },
+    {
+      "label": "Support phone",
+      "maxLength": 20,
+      "name": "support_phone",
+      "type": "string",
+      "weight": 40,
+      "widget": "phone"
+    },
+    {
+      "choices": [
+        {
+          "label": "Draft",
+          "tone": "neutral",
+          "value": "draft"
+        },
+        {
+          "label": "Under review",
+          "tone": "info",
+          "value": "under_review"
+        },
+        {
+          "label": "Active",
+          "tone": "success",
+          "value": "active"
+        },
+        {
+          "label": "Rejected",
+          "tone": "danger",
+          "value": "rejected"
+        },
+        {
+          "label": "Suspended",
+          "tone": "warning",
+          "value": "suspended"
+        }
+      ],
+      "filter": [
+        "in"
+      ],
+      "label": "Status",
+      "name": "activation_status",
+      "readOnly": true,
+      "type": "enum",
+      "widget": "status"
+    },
+    {
+      "label": "Reviewed by",
+      "name": "reviewed_by",
+      "readOnly": true,
+      "relation": {
+        "display": "display_name",
+        "model": "user"
+      },
+      "type": "relation",
+      "widget": "relation"
+    },
+    {
+      "label": "Reviewed",
+      "name": "reviewed_at",
+      "readOnly": true,
+      "type": "datetime",
+      "widget": "relative-time"
+    },
+    {
+      "fieldPolicy": {
+        "write": "seller_profile.review"
+      },
+      "help": "Shown to the seller. Say what to change.",
+      "label": "Reason",
+      "name": "rejection_reason",
+      "readOnly": true,
+      "type": "text",
+      "widget": "textarea"
+    },
+    {
+      "label": "Submitted",
+      "name": "submitted_at",
+      "readOnly": true,
+      "type": "datetime",
+      "widget": "relative-time"
+    },
+    {
+      "label": "Updated",
+      "name": "updated_at",
+      "readOnly": true,
+      "type": "datetime",
+      "widget": "relative-time"
+    }
+  ],
+  "label": "Seller profile",
+  "labelPlural": "Seller profiles",
+  "list": {
+    "defaultPageSize": 25,
+    "fields": [
+      "public_name",
+      "activation_status",
+      "submitted_at",
+      "reviewed_at"
+    ],
+    "maxPageSize": 100
+  },
+  "lookup": "pk",
+  "ordering": [
+    "-submitted_at",
+    "public_name"
+  ],
+  "path": "seller-profiles",
+  "primaryKey": "id",
+  "public": false,
+  "search": [
+    "public_name"
+  ],
+  "tenantScoped": true,
+  "versioned": false
+} as const satisfies ModelMeta
+export const VariantSchema = z.object({
+  id: z.uuid().nullish(),
+  product: z.uuid(),
+  sku: z.string().max(40).min(1),
+  attributes: z.unknown().nullish(),
+  packaging_unit: z.enum(["bale", "sack", "carton", "case", "tray", "crate", "jerrycan", "pack", "piece"]),
+  units_per_pack: decimalString(10, 2),
+  minimum_order_quantity: z.number().int().nullish(),
+  unit_price: decimalString(12, 2),
+  stock_on_hand: z.number().int().nullish(),
+  is_active: z.boolean().nullish(),
+  pack_label: z.string().nullish(),
+  updated_at: z.iso.datetime({ offset: true }).nullish(),
+})
+export type Variant = z.infer<typeof VariantSchema>
+export const VariantWriteSchema = VariantSchema.omit({ pack_label: true, updated_at: true })
+export const VariantMeta = {
+  "key": "variant",
+  "actions": [],
+  "displayField": "sku",
+  "fields": [
+    {
+      "label": "Id",
+      "name": "id",
+      "type": "uuid",
+      "widget": "hidden"
+    },
+    {
+      "filter": [
+        "eq"
+      ],
+      "label": "Product",
+      "name": "product",
+      "relation": {
+        "display": "name",
+        "model": "catalog_product"
+      },
+      "required": true,
+      "type": "relation",
+      "weight": 5,
+      "widget": "relation"
+    },
+    {
+      "help": "Your stock code; unique across your catalogue.",
+      "label": "SKU",
+      "maxLength": 40,
+      "name": "sku",
+      "required": true,
+      "type": "string",
+      "weight": 10,
+      "widget": "code"
+    },
+    {
+      "label": "Variant details",
+      "name": "attributes",
+      "type": "json",
+      "weight": 15,
+      "widget": "json"
+    },
+    {
+      "choices": [
+        {
+          "label": "Bale",
+          "value": "bale"
+        },
+        {
+          "label": "Sack",
+          "value": "sack"
+        },
+        {
+          "label": "Carton",
+          "value": "carton"
+        },
+        {
+          "label": "Case",
+          "value": "case"
+        },
+        {
+          "label": "Tray",
+          "value": "tray"
+        },
+        {
+          "label": "Crate",
+          "value": "crate"
+        },
+        {
+          "label": "Jerrycan",
+          "value": "jerrycan"
+        },
+        {
+          "label": "Pack",
+          "value": "pack"
+        },
+        {
+          "label": "Piece",
+          "value": "piece"
+        }
+      ],
+      "label": "Sold by the",
+      "name": "packaging_unit",
+      "required": true,
+      "type": "enum",
+      "weight": 20,
+      "widget": "select"
+    },
+    {
+      "decimalPlaces": 2,
+      "help": "Packets, bottles or pieces in one pack.",
+      "label": "Units per pack",
+      "maxDigits": 10,
+      "name": "units_per_pack",
+      "required": true,
+      "type": "decimal",
+      "weight": 25,
+      "widget": "decimal"
+    },
+    {
+      "help": "In packs.",
+      "label": "Minimum order",
+      "name": "minimum_order_quantity",
+      "type": "integer",
+      "weight": 30,
+      "widget": "integer"
+    },
+    {
+      "currency": "KES",
+      "decimalPlaces": 2,
+      "label": "Price per pack",
+      "maxDigits": 12,
+      "name": "unit_price",
+      "required": true,
+      "type": "decimal",
+      "weight": 35,
+      "widget": "currency"
+    },
+    {
+      "help": "Leave empty if you do not track stock here yet.",
+      "label": "Packs in stock",
+      "name": "stock_on_hand",
+      "type": "integer",
+      "weight": 40,
+      "widget": "integer"
+    },
+    {
+      "filter": [
+        "eq"
+      ],
+      "label": "On sale",
+      "name": "is_active",
+      "type": "boolean",
+      "weight": 45,
+      "widget": "boolean"
+    },
+    {
+      "label": "Pack",
+      "name": "pack_label",
+      "readOnly": true,
+      "type": "string",
+      "weight": 50,
+      "widget": "text"
+    },
+    {
+      "label": "Updated",
+      "name": "updated_at",
+      "readOnly": true,
+      "type": "datetime",
+      "widget": "relative-time"
+    }
+  ],
+  "label": "Variant",
+  "labelPlural": "Variants",
+  "list": {
+    "defaultPageSize": 50,
+    "fields": [
+      "sku",
+      "pack_label",
+      "unit_price",
+      "minimum_order_quantity",
+      "stock_on_hand",
+      "is_active"
+    ],
+    "maxPageSize": 100
+  },
+  "lookup": "pk",
+  "ordering": [
+    "unit_price",
+    "sku",
+    "-updated_at"
+  ],
+  "path": "catalog/variants",
+  "primaryKey": "id",
+  "public": false,
+  "search": [
+    "sku"
+  ],
+  "tenantScoped": true,
+  "versioned": false
+} as const satisfies ModelMeta
+export const registry = { account: () => ({ schema: AccountSchema, write: AccountWriteSchema, meta: AccountMeta }), address: () => ({ schema: AddressSchema, write: AddressWriteSchema, meta: AddressMeta }), cart: () => ({ schema: CartSchema, write: CartWriteSchema, meta: CartMeta }), cart_line: () => ({ schema: CartLineSchema, write: CartLineWriteSchema, meta: CartLineMeta }), catalog_product: () => ({ schema: CatalogProductSchema, write: CatalogProductWriteSchema, meta: CatalogProductMeta }), category: () => ({ schema: CategorySchema, write: CategoryWriteSchema, meta: CategoryMeta }), category_contract: () => ({ schema: CategoryContractSchema, write: CategoryContractWriteSchema, meta: CategoryContractMeta }), membership: () => ({ schema: MembershipSchema, write: MembershipWriteSchema, meta: MembershipMeta }), notification: () => ({ schema: NotificationSchema, write: NotificationWriteSchema, meta: NotificationMeta }), notification_preference: () => ({ schema: NotificationPreferenceSchema, write: NotificationPreferenceWriteSchema, meta: NotificationPreferenceMeta }), order: () => ({ schema: OrderSchema, write: OrderWriteSchema, meta: OrderMeta }), organization: () => ({ schema: OrganizationSchema, write: OrganizationWriteSchema, meta: OrganizationMeta }), product: () => ({ schema: ProductSchema, write: ProductWriteSchema, meta: ProductMeta }), seller_document: () => ({ schema: SellerDocumentSchema, write: SellerDocumentWriteSchema, meta: SellerDocumentMeta }), seller_profile: () => ({ schema: SellerProfileSchema, write: SellerProfileWriteSchema, meta: SellerProfileMeta }), variant: () => ({ schema: VariantSchema, write: VariantWriteSchema, meta: VariantMeta }) } as const
 export type ModelKey = keyof typeof registry

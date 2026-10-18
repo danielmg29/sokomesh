@@ -23,7 +23,9 @@ export function resolveSlots(meta: ModelMeta, record: Rec, wanted: readonly Slot
   }
   if (wanted.includes('media')) out.media = take(meta.fields.find(f => f.widget === 'image'))
   if (wanted.includes('badge')) {
-    out.badge = take(meta.fields.find(f => f.widget === 'status') ?? meta.fields.find(f => f.type === 'enum' && f.choices?.some(c => c.tone)))
+    // A state the list declares; a model whose list leaves its status out (every row shares it) shows none.
+    const pool = meta.list.fields.length ? listFields : meta.fields
+    out.badge = take(pool.find(f => f.widget === 'status') ?? pool.find(f => f.type === 'enum' && f.choices?.some(c => c.tone)))
   }
   // The first money field the list shows: a price on a product, a total on an order. Read from the widget, so
   // no field name is involved, and taken before meta so it is not repeated there.

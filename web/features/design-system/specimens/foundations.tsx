@@ -3,6 +3,7 @@
 import { Archive, Check, ClipboardCheck, FileText, Package, PackageCheck, Printer, Scale, ShoppingCart, Truck, Undo2, Warehouse } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
 import { Cluster, DensityRegion, Grid, Split, Stack } from '@/components/layout/primitives'
+import { PageSection } from '@/components/layout/section'
 import { BrandLogo } from '@/components/ui/BrandLogo'
 import { Button } from '@/components/ui/button'
 import { Icon } from '@/components/ui/icon'
@@ -276,8 +277,11 @@ function BrandAssets() {
       <Plate label="Mark" note={`Minimum ${logos.mark.minWidth} px · clear space ¼ mark`}>
         <Cluster gap="md" align="end">{[20, 32, 48, 80].map(w => <span key={w} className="outline-1 outline-dashed outline-border-strong"><BrandLogo variant="mark" width={w} /></span>)}</Cluster>
       </Plate>
-      <Plate label="Lockup" note={`Minimum ${logos.lockup.minWidth} px; tagline legible from about 505 px`}>
-        <Stack gap="sm"><span className="self-start outline-1 outline-dashed outline-border-strong"><BrandLogo variant="lockup" width={160} /></span><span className="self-start outline-1 outline-dashed outline-border-strong"><BrandLogo variant="lockup" width={320} /></span></Stack>
+      <Plate label="Lockup" note={`Minimum ${logos.lockup.minWidth} px; tagline legible from about 320 px. Auth pages and the footer`}>
+        <Stack gap="sm"><span className="self-start outline-1 outline-dashed outline-border-strong"><BrandLogo variant="lockup" width={264} /></span><span className="self-start outline-1 outline-dashed outline-border-strong"><BrandLogo variant="lockup" width={360} /></span></Stack>
+      </Plate>
+      <Plate label="Wordmark" note={`Minimum ${logos.wordmark.minWidth} px; no tagline. Public header and app navigation`}>
+        <Stack gap="sm"><span className="self-start outline-1 outline-dashed outline-border-strong"><BrandLogo variant="wordmark" width={196} /></span><span className="self-start outline-1 outline-dashed outline-border-strong"><BrandLogo variant="wordmark" width={212} /></span></Stack>
       </Plate>
       <Plate label="Icons in public/brand" span>
         <Cluster gap="lg" align="end">
@@ -296,6 +300,9 @@ function Layouts() {
       <Plate label="Stack · Cluster">{<Stack gap="sm">{box('Stack')}<Cluster>{box('Cluster')}{box('wraps')}{box('items')}</Cluster></Stack>}</Plate>
       <Plate label="Split" note="Stacks below its container threshold">{<Split ratio="sidebar">{box('Main')}{box('Aside 20rem')}</Split>}</Plate>
       <Plate label="Grid" note="1 to 4 columns by container" span>{<Grid columns={4}>{box('1')}{box('2')}{box('3')}{box('4')}</Grid>}</Plate>
+      <Plate label="PageSection" note="Title and purpose left, controls right; stacks below the container's medium width" span>
+        <PageSection title="Your details" description="Your name signs your orders and approvals.">{box('Form or list')}</PageSection>
+      </Plate>
       <Plate label="Thread" span><Thread label="Example" steps={[{ key: 'a', label: 'Submitted', state: 'done' }, { key: 'b', label: 'Confirmed', state: 'done' }, { key: 'c', label: 'Picking', state: 'current' }, { key: 'd', label: 'Shipped', state: 'upcoming' }]} /></Plate>
     </Plates>
   )

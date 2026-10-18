@@ -20,6 +20,7 @@ import { Breadcrumbs } from '@/components/kernel/nav/Breadcrumbs'
 import { Pagination } from '@/components/kernel/nav/Pagination'
 import { CommandPalette } from '@/components/kernel/nav/CommandPalette'
 import { SortSelect } from '@/components/kernel/blocks/FiltersBlock'
+import { MemoryUrl, UrlFilters, UrlPageSize, UrlPager, UrlSort } from '@/components/kernel/blocks/UrlListControls'
 import { Projection } from '@/components/kernel/Projection'
 import { intents, surfaces, tones } from '@/components/kernel/recipes/recipes'
 import { resolveSlots } from '@/components/kernel/slots/resolve'
@@ -194,7 +195,7 @@ function Nav() {
   const [collapsed, setCollapsed] = useState(false)
   return (
     <Plates cols={2}>
-      <Plate label="Expanded, grouped, seller manager"><div className="w-64 rounded-md border border-border bg-surface"><AppNav items={navItems} current="orders" brand={<BrandLogo variant="lockup" width={160} className="-m-2" />} context={<><b className="font-semibold">Mwangaza Wholesalers</b><span className="block text-muted">Seller manager</span></>} /></div></Plate>
+      <Plate label="Expanded, grouped, seller manager"><div className="w-64 rounded-md border border-border bg-surface"><AppNav items={navItems} current="orders" brand={<BrandLogo variant="wordmark" width={196} className="-m-2" />} context={<><b className="font-semibold">Mwangaza Wholesalers</b><span className="block text-muted">Seller manager</span></>} /></div></Plate>
       <Plate label="Collapsed · toggle">
         <div className={collapsed ? 'w-16 rounded-md border border-border bg-surface' : 'w-64 rounded-md border border-border bg-surface'}><AppNav items={navItems.slice(0, 6)} current="products" collapsed={collapsed} onCollapsedChange={setCollapsed} brand={<span className="font-display font-bold">SokoMesh</span>} /></div>
       </Plate>
@@ -325,10 +326,29 @@ function SortSpecimen() {
   )
 }
 
+function UrlControls() {
+  const page = { results: products.slice(0, 6), next: 'cursor-to-page-2', previous: null, total: 34, totalCapped: false, pageSize: 6 }
+  return (
+    <Plates cols={1}>
+      <Plate label="filters, search, sort, page size and pages, written to the list query" note="A stand-in URL here; on real pages they write the address bar">
+        <MemoryUrl initial="page_size=24">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-[15rem_minmax(0,1fr)]">
+            <UrlFilters meta={productMeta} />
+            <div className="flex min-w-0 flex-col gap-4">
+              <div className="flex flex-wrap items-center gap-x-5 gap-y-2"><UrlSort meta={productMeta} /><UrlPageSize meta={productMeta} /></div>
+              <UrlPager page={page} noun={{ one: 'product', other: 'products' }} />
+            </div>
+          </div>
+        </MemoryUrl>
+      </Plate>
+    </Plates>
+  )
+}
+
 const map: Record<string, () => ReactNode> = {
   'K-01': Recipes, 'K-02': ProjectionSpecimen, 'K-03': Dispatchers, 'K-04': Forms, 'K-05': ActionBarSpecimen, 'K-06': ActionMenuSpecimen,
   'K-07': BulkSpecimen, 'K-08': ConfirmSpecimen, 'K-09': StatusSpecimen, 'K-10': Nav, 'K-11': Crumbs, 'K-12': Palette, 'K-13': Empties,
-  'K-14': Errors, 'K-15': Loading, 'K-16': Toasts, 'K-17': PageBlocksSpecimen, 'K-18': Pages, 'K-19': SortSpecimen,
+  'K-14': Errors, 'K-15': Loading, 'K-16': Toasts, 'K-17': PageBlocksSpecimen, 'K-18': Pages, 'K-19': SortSpecimen, 'K-20': UrlControls,
 }
 
 export default function KernelSpecimens({ code }: { code: string }) {

@@ -84,7 +84,7 @@ export function SellerCartGroup({ group, defaultOpen = true, onQuantity, onRemov
             ))}
           </ul>
           <div className="flex flex-col gap-1 border-t border-border px-4 py-3 text-md">
-            <div className="flex justify-between"><span className="text-muted">Delivery from {group.seller}</span><span className="tabular">{formatMoney(group.deliveryFee)}</span></div>
+            <div className="flex justify-between"><span className="text-muted">Delivery from {group.seller}</span><span className="tabular">{group.deliveryFee ? formatMoney(group.deliveryFee) : <span className="text-muted">Confirmed at checkout</span>}</span></div>
             {belowMinimum ? <p className="flex items-center gap-1.5 text-sm font-medium text-tone-warning"><Icon icon={TriangleAlert} />Add {formatMoney(addMoney(group.minimumOrder!, `-${subtotal}`))} more to reach this seller&apos;s minimum order of {formatMoney(group.minimumOrder!)}.</p> : null}
           </div>
         </CollapsibleContent>
@@ -95,24 +95,35 @@ export function SellerCartGroup({ group, defaultOpen = true, onQuantity, onRemov
 
 export type CartState = 'valid' | 'repricing' | 'out-of-stock' | 'approval-needed'
 
-/** Server-backed mixed-seller cart. Repricing is explicit; checkout explains why it is blocked. */
-export function CartBlock({ groups, state, approvalThreshold, onCheckout, onRequestApproval, onRequestQuote, onQuantity, onRemove, submitting }: {
+/**
+ * Server-backed mixed-seller cart. Repricing is explicit: the banner offers to accept the new prices
+ * (`onAcceptPrices`). Checkout explains why it is blocked, including `checkoutBlockedReason` from the page.
+ */
+export function CartBlock({ groups, state, approvalThreshold, onCheckout, onRequestApproval, onRequestQuote, onQuantity, onRemove, onAcceptPrices, accepting, checkoutBlockedReason, submitting }: {
   groups: readonly SellerGroup[]; state: CartState; approvalThreshold?: Money; onCheckout?: () => void; onRequestApproval?: () => void; onRequestQuote?: () => void
-  onQuantity?: (lineId: string, n: number) => void; onRemove?: (lineId: string) => void; submitting?: boolean
+  onQuantity?: (lineId: string, n: number) => void; onRemove?: (lineId: string) => void; onAcceptPrices?: () => void; accepting?: boolean
+  checkoutBlockedReason?: string; submitting?: boolean
 }) {
   const subtotal = addMoney(...groups.map(groupSubtotal), '0')
-  const delivery = addMoney(...groups.map(g => g.deliveryFee), '0')
+  const fees = groups.flatMap(g => (g.deliveryFee ? [g.deliveryFee] : []))
+  const priced = fees.length === groups.length
+  const delivery = addMoney(...fees, '0')
   const total = addMoney(subtotal, delivery)
   const banner: Partial<Record<CartState, { tone: string; text: ReactNode }>> = {
     repricing: { tone: 'border-tone-warning bg-tone-warning-bg/60', text: 'Some prices changed since you added these lines. The new prices apply; review them before checkout.' },
     'out-of-stock': { tone: 'border-tone-danger bg-tone-danger-bg/60', text: 'Some lines are no longer available. They are left out of the total; remove them or request a quote for later supply.' },
     'approval-needed': { tone: 'border-tone-info bg-tone-info-bg/60', text: <>Orders over {approvalThreshold ? formatMoney(approvalThreshold) : 'your limit'} need approval from a buyer owner before they are sent to sellers.</> },
   }
-  const blocked = state === 'out-of-stock'
+  const blocked = state === 'out-of-stock' || Boolean(checkoutBlockedReason)
   return (
     <div className="grid grid-cols-1 gap-6 @container lg:grid-cols-[minmax(0,1fr)_22rem]">
       <div className="flex min-w-0 flex-col gap-3">
-        {banner[state] ? <div role="status" className={cn('rounded-md border px-4 py-3 text-md', banner[state]!.tone)}>{banner[state]!.text}</div> : null}
+        {banner[state] ? (
+          <div role="status" className={cn('flex flex-wrap items-center justify-between gap-3 rounded-md border px-4 py-3 text-md', banner[state]!.tone)}>
+            <span className="min-w-0 flex-1">{banner[state]!.text}</span>
+            {state === 'repricing' && onAcceptPrices ? <Button variant="secondary" size="sm" loading={accepting} loadingLabel="Accepting…" onClick={onAcceptPrices}>Accept new prices</Button> : null}
+          </div>
+        ) : null}
         {groups.map(g => <SellerCartGroup key={g.sellerId} group={g} onQuantity={onQuantity} onRemove={onRemove} />)}
       </div>
       <aside className="flex h-fit flex-col gap-4 rounded-md border border-border bg-surface p-4 lg:sticky lg:top-4" aria-label="Cart summary">
@@ -121,8 +132,8 @@ export function CartBlock({ groups, state, approvalThreshold, onCheckout, onRequ
           {groups.map(g => (
             <div key={g.sellerId} className="flex justify-between gap-3"><dt className="truncate text-muted">{g.seller}</dt><dd className="tabular">{formatMoney(groupSubtotal(g))}</dd></div>
           ))}
-          <div className="flex justify-between gap-3"><dt className="text-muted">Delivery ({groups.length} sellers)</dt><dd className="tabular">{formatMoney(delivery)}</dd></div>
-          <div className="mt-2 flex items-baseline justify-between gap-3 border-t border-border pt-3"><dt className="font-semibold">Total</dt><dd className="font-display text-2xl font-extrabold tabular">{formatMoney(total)}</dd></div>
+          <div className="flex justify-between gap-3"><dt className="text-muted">Delivery ({groups.length} {groups.length === 1 ? 'seller' : 'sellers'})</dt><dd className="tabular">{priced ? formatMoney(delivery) : <span className="text-muted">At checkout</span>}</dd></div>
+          <div className="mt-2 flex items-baseline justify-between gap-3 border-t border-border pt-3"><dt className="font-semibold">{priced ? 'Total' : 'Goods total'}</dt><dd className="font-display text-2xl font-extrabold tabular">{formatMoney(total)}</dd></div>
         </dl>
         <p className="text-sm text-muted">Prices are confirmed and stock is reserved when you start checkout. Each seller ships separately.</p>
         {state === 'approval-needed' ? (
@@ -130,8 +141,8 @@ export function CartBlock({ groups, state, approvalThreshold, onCheckout, onRequ
         ) : (
           <Button variant="primary" size="lg" block disabled={blocked} loading={submitting} loadingLabel="Reserving stock…" onClick={onCheckout} aria-describedby={blocked ? 'cart-blocked' : undefined}>Reserve stock and check out</Button>
         )}
-        {blocked ? <p id="cart-blocked" className="flex items-start gap-1.5 text-sm text-tone-danger"><Icon icon={Lock} className="mt-0.5" />Remove unavailable lines to continue.</p> : null}
-        <Button variant="secondary" block onClick={onRequestQuote}>Request a quote instead</Button>
+        {blocked ? <p id="cart-blocked" className={cn('flex items-start gap-1.5 text-sm', state === 'out-of-stock' ? 'text-tone-danger' : 'text-muted')}><Icon icon={Lock} className="mt-0.5 shrink-0" />{state === 'out-of-stock' ? 'Remove unavailable lines to continue.' : checkoutBlockedReason}</p> : null}
+        {onRequestQuote ? <Button variant="secondary" block onClick={onRequestQuote}>Request a quote instead</Button> : null}
       </aside>
     </div>
   )

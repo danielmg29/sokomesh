@@ -289,3 +289,21 @@ export function fromListParams(meta: ModelMeta, params: URLSearchParams): Pick<T
     cursor: params.get(g.cursor),
   }
 }
+
+/** The page number a URL carries beside a cursor (`?cursor=…&page=3`): display only, never sent to the API. */
+export const PAGE_PARAM = 'page'
+
+/**
+ * A page's URL parameters as API list parameters: everything but the display-only page number, with
+ * `fixed` parameters (a route's own category) taking precedence. The API validates the rest and refuses
+ * what its contract does not allow, so nothing is invented here.
+ */
+export function apiListParams(search: Record<string, string | string[] | undefined>, fixed: Record<string, string> = {}): URLSearchParams {
+  const out = new URLSearchParams()
+  for (const [key, value] of Object.entries(search)) {
+    if (key === PAGE_PARAM || key in fixed || value === undefined) continue
+    out.set(key, Array.isArray(value) ? value[value.length - 1]! : value)
+  }
+  for (const [key, value] of Object.entries(fixed)) out.set(key, value)
+  return out
+}

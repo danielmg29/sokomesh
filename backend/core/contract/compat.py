@@ -123,6 +123,8 @@ def _walk_list(old: list, new: list, path: str, out: list[Diff]) -> None:
 def _removed(path: str, key: str) -> Diff:
     if key in UPPER_BOUNDS | LOWER_BOUNDS:
         return Diff(Change.ADDITIVE, path, "constraint removed (widened)")
+    if key in {"required", "readOnly"}:  # flags are written only when true: dropping one relaxes the field
+        return Diff(Change.ADDITIVE, path, "flag removed (relaxed)")
     return Diff(Change.BREAKING, path, "removed")
 
 

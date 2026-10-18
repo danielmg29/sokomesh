@@ -3,9 +3,14 @@
 # django-environ types every default as NoValue; settings are the narrowing boundary.
 # pyright: reportArgumentType=false
 
+import os
 from pathlib import Path
+from urllib.parse import parse_qsl, urlparse
 
 import environ
+from dotenv import load_dotenv
+
+load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parents[2]  # backend/
 REPO_DIR = BASE_DIR.parent
@@ -29,6 +34,14 @@ INSTALLED_APPS = [
     "core",
     "core.contract",
     "apps.accounts",
+    "apps.media",
+    "apps.organizations",
+    "apps.notifications",
+    "apps.sellers",
+    "apps.catalog",
+    "apps.carts",
+    "apps.orders",
+    "apps.demo",
 ]
 
 MIDDLEWARE = [
@@ -60,9 +73,19 @@ TEMPLATES = [
     },
 ]
 
+# Replace the DATABASES section of your settings.py with this
+tmpPostgres = urlparse(os.getenv("DATABASE_URL"))
+
 DATABASES = {
-    "default": env.db("DATABASE_URL", default="postgres://sokomesh:sokomesh@localhost:5433/sokomesh")
-    | {"OPTIONS": {"pool": True}, "CONN_MAX_AGE": 0}
+    "default": {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": tmpPostgres.path.replace("/", ""),
+        "USER": tmpPostgres.username,
+        "PASSWORD": tmpPostgres.password,
+        "HOST": tmpPostgres.hostname,
+        "PORT": 5432,
+        "OPTIONS": dict(parse_qsl(tmpPostgres.query)),
+    }
 }
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
@@ -162,7 +185,7 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 
 AC_CONTRACT = {
     # Bump with every contract change: major = breaking, minor = additive, patch = presentational.
-    "version": "0.4.0",
+    "version": "0.5.0",
     "api_base": "/api/v1/",
     "path": Path(env("AC_CONTRACT_PATH", default=str(REPO_DIR / "contract" / "ac-contract.json"))),
 }
@@ -202,3 +225,35 @@ AC_LIST_QUERY = {
 }
 
 DATA_UPLOAD_MAX_MEMORY_SIZE = AC_LIMITS["max_request_bytes"]
+
+# Uploaded files (apps.media). Documents are private and served only through GET /files/<id> after a
+# permission check; nothing under MEDIA_ROOT is published directly. Types are checked by content.
+MEDIA_ROOT = Path(env("AC_MEDIA_ROOT", default=str(BASE_DIR / "media")))
+MEDIA_URL = "/media/"
+AC_UPLOADS = {
+    "document": {"types": ["application/pdf", "image/jpeg", "image/png"], "max_bytes": 10 * 1_048_576},
+    "avatar": {"types": ["image/jpeg", "image/png", "image/webp"], "max_bytes": 2 * 1_048_576},
+}
+FILE_UPLOAD_MAX_MEMORY_SIZE = 2_621_440
+
+# The public site, for links in emails (verification, invitations, notifications).
+AC_SITE_URL = str(env("NEXT_PUBLIC_SITE_URL", default="http://localhost:3000")).rstrip("/")
+
+# Seeded demo accounts are listed on the sign-in page, password included, only where this is on.
+AC_DEMO_ACCOUNTS = env.bool("AC_DEMO_ACCOUNTS", default=False)
+AC_THROTTLE = True
+
+# Email. With BREVO_API_KEY set, mail goes through Brevo's transactional API from BREVO_SENDER_EMAIL
+# (a sender verified in Brevo). Without it, environments choose their own mailer (dev: Mailpit).
+BREVO_API_KEY = env("BREVO_API_KEY", default="")
+DEFAULT_FROM_EMAIL = env("BREVO_SENDER_EMAIL", default="SokoMesh <no-reply@sokomesh.local>")
+if BREVO_API_KEY:
+    MAILERS = {
+        "default": {
+            "BACKEND": "core.mail.BrevoBackend",
+            "OPTIONS": {"api_key": BREVO_API_KEY, "sender_email": DEFAULT_FROM_EMAIL, "sender_name": "SokoMesh"},
+        }
+    }
+
+SESSION_COOKIE_AGE = 14 * 24 * 3600
+SESSION_COOKIE_HTTPONLY = True

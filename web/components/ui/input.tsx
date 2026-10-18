@@ -4,14 +4,19 @@ import type { ComponentProps, ReactNode } from 'react'
 import { cn } from '@/lib/cn'
 import { useFieldControlProps } from './form-field'
 
-export const controlStyles = [
+const controlBase = [
   'w-full min-w-0 rounded-sm border border-border-strong bg-surface text-foreground',
   'placeholder:text-muted motion-bind transition-[border-color,box-shadow]',
   'hover:border-foreground',
   'aria-invalid:border-tone-danger aria-invalid:bg-tone-danger-bg/40',
-  'disabled:cursor-not-allowed disabled:border-border disabled:bg-sunken disabled:text-muted',
-  'read-only:border-border read-only:bg-sunken',
 ].join(' ')
+
+const controlDisabled = 'disabled:cursor-not-allowed disabled:border-border disabled:bg-sunken disabled:text-muted'
+
+export const controlStyles = [controlBase, controlDisabled, 'read-only:border-border read-only:bg-sunken'].join(' ')
+
+/** For button triggers (select, combobox, date): a button always matches :read-only, so that state is left out. */
+export const triggerStyles = [controlBase, controlDisabled].join(' ')
 
 type InputProps = Omit<ComponentProps<'input'>, 'prefix'> & {
   /** Fixed text before the value, e.g. "KES". */
@@ -42,7 +47,8 @@ export function Input({ className, inputClassName, prefix, suffix, ...props }: I
   return (
     <div
       className={cn(
-        controlStyles,
+        // A div always matches :read-only, so the wrapper takes the input's states through :has() instead.
+        controlBase,
         'flex h-(--density-control-height) items-center overflow-hidden',
         'has-[input:focus-visible]:outline-2 has-[input:focus-visible]:outline-offset-2 has-[input:focus-visible]:outline-ring-contrast has-[input:focus-visible]:shadow-[0_0_0_2px_var(--color-ring)]',
         'has-[input[aria-invalid=true]]:border-tone-danger has-[input:disabled]:border-border has-[input:disabled]:bg-sunken has-[input:read-only]:bg-sunken',

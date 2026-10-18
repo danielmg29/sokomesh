@@ -184,6 +184,35 @@
     animation: none;
   }
 }
+/* THREAD on scroll: the woven strands draw in from the left as their section enters, by clipping (the
+   strokes keep their width, which a scale would not). SETTLE: a photograph eases from a slight zoom. Both
+   ride the scroll timeline and stop for reduced motion; without timelines they are simply in place. */
+@keyframes thread-weave-in {
+  from { clip-path: inset(0 100% 0 0); }
+}
+@utility thread-weave {
+  @supports (animation-timeline: view()) {
+    animation: thread-weave-in auto var(--motion-thread-ease) both;
+    animation-timeline: view();
+    animation-range: entry 0% cover 35%;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
+@keyframes scroll-settle-in {
+  from { transform: scale(1.08); }
+}
+@utility scroll-settle {
+  @supports (animation-timeline: view()) {
+    animation: scroll-settle-in auto var(--motion-reveal-ease) both;
+    animation-timeline: view();
+    animation-range: entry 0% cover 50%;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
 @utility animate-reveal {
   animation: reveal-in var(--motion-reveal-duration) var(--motion-reveal-ease) both;
 }

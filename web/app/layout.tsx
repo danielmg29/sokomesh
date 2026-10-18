@@ -4,6 +4,7 @@ import { brandName, brandTagline, icons, siteDescription, socialCard } from '@/l
 import { colorHex, colorHexDark } from '@/lib/design/tokens.generated'
 import { themeScript } from '@/lib/theme'
 import './globals.css'
+import { Providers } from './providers'
 
 // Brand typography (constitution, amended 2026-10-13): one grotesque in two widths. Archivo at its
 // normal width sets interface text; its SemiExpanded width (type-display-width) sets headings and
@@ -52,7 +53,7 @@ export default function RootLayout({ children }: LayoutProps<'/'>) {
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
-      <body className="flex min-h-full flex-col">{children}</body>
+      <body className="flex min-h-full flex-col"><Providers>{children}</Providers></body>
     </html>
   )
 }

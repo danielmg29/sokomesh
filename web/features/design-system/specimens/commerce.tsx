@@ -3,7 +3,11 @@
 import { useState, type ReactNode } from 'react'
 import { IntegrationPanel, ReconciliationTraceBlock, SellerAnalyticsGrid, type AnalyticsPeriod, type ApiToken, type WebhookEndpoint } from '@/components/commerce/admin'
 import { ApprovalFlowBlock, CartBlock, QuoteDecisionPanel, QuoteRequestSheet, SellerCartGroup, type CartState, type QuoteStatus } from '@/components/commerce/cart'
-import { CategoryHero, FacetFilterPanel, MediaManager, ProductEditorBlock, SellerOnboardingReviewBlock, VariantMatrixEditor } from '@/components/commerce/catalog'
+import { AddToCart, BuyBox } from '@/components/commerce/buy'
+import { CategoryDetailsForm, CategoryHero, FacetFilterPanel, MediaManager, ProductEditorBlock, SellerOnboardingReviewBlock, VariantMatrixEditor, type VariantRow } from '@/components/commerce/catalog'
+import { CompareToggle, CompareTray } from '@/components/commerce/compare'
+import type { VariantRecord } from '@/lib/client/records'
+import { ProductGallery } from '@/components/commerce/gallery'
 import { CheckoutSummaryBlock, PaymentStatusPanel, type PaymentState } from '@/components/commerce/checkout'
 import { DeliveryTrackingBlock, OrderTimelineBlock, ReturnDisputeCaseBlock } from '@/components/commerce/orders'
 import { PriceBookEditor, PriceTierTable, ReorderDiffBlock, type ReorderLine } from '@/components/commerce/pricing'
@@ -37,9 +41,9 @@ function Onboarding() {
   const docs = sellerDocuments
   return (
     <Plates cols={2}>
-      <Plate label="under_review · decision available after verification" span><SellerOnboardingReviewBlock seller="Lakeside Supplies" location="Kisumu" status="under_review" documents={docs} history={onboardingHistory} /></Plate>
+      <Plate label="under_review · decision available after verification" span><SellerOnboardingReviewBlock seller="Lakeside Supplies" location="Kisumu" status="under_review" documents={docs} history={onboardingHistory} blockers={['Verify the tax document first.']} /></Plate>
       <Plate label="active · suspend"><SellerOnboardingReviewBlock seller="Mwangaza Wholesalers Ltd" location="Nakuru" status="active" documents={docs.slice(0, 2)} history={[...onboardingHistory, { status: 'active', at: '2026-10-06T10:00:00+03:00', by: people.amina }]} /></Plate>
-      <Plate label="rejected"><SellerOnboardingReviewBlock seller="Sunset Traders" location="Narok" status="rejected" documents={docs.slice(3)} history={[...onboardingHistory, { status: 'rejected', at: '2026-10-07T12:00:00+03:00', by: people.amina }]} /></Plate>
+      <Plate label="rejected"><SellerOnboardingReviewBlock seller="Sunset Traders" location="Narok" status="rejected" reason="The business permit has expired; upload the 2026 permit." documents={docs.slice(3)} history={[...onboardingHistory, { status: 'rejected', at: '2026-10-07T12:00:00+03:00', by: people.amina, reason: 'Business permit expired' }]} /></Plate>
       <Plate label="suspended · reinstate after review"><SellerOnboardingReviewBlock seller="Rift Valley Traders" location="Eldoret" status="suspended" documents={docs.slice(0, 3)} history={[...onboardingHistory, { status: 'active', at: '2026-10-06T10:00:00+03:00', by: people.amina }, { status: 'suspended', at: '2026-10-11T15:30:00+03:00', by: people.amina }]} /></Plate>
     </Plates>
   )
@@ -64,7 +68,9 @@ export const editorMeta: ModelMeta = {
 function ProductEditor() {
   return (
     <Plates cols={1}>
-      <Plate label="mode=edit, inline, draft, publish blocked"><ProductEditorBlock meta={editorMeta} mode="edit" status="draft" category="Flour & grains · Maize flour v3" initial={{ name: 'Mavuno Maize Flour 2 kg', brand: 'Mavuno', pack_size: '2kg', fortified: true, net_weight: '24.00' }} publishBlockedReason="Publishing unlocks once Lakeside Supplies is approved as a seller." onSubmit={ok} /></Plate>
+      <Plate label="mode=edit, inline, draft, publish blocked, with category details"><ProductEditorBlock meta={editorMeta} mode="edit" status="draft" category="Flour & grains (version 3)" fields={['name', 'brand', 'short_description', 'description']} initial={{ name: 'Mavuno Maize Flour 2 kg', brand: 'Mavuno' }} publishBlockers={['The marketplace has to approve your seller account first.', 'Add at least one variant that is on sale.']} actions={<Button size="sm" variant="primary" disabled>Publish</Button>} onSubmit={ok}>
+        <CategoryDetailsForm fields={maizeAttributes} values={{ pack_size: '2kg', fortified: true }} guidance={{ html: '<p>Tick <strong>Fortified</strong> only if the packet carries the KEBS logo.</p>', text: 'Tick Fortified only if the packet carries the KEBS logo.' }} onSave={async () => ({ ok: true })} />
+      </ProductEditorBlock></Plate>
       <Plate label="mode=create · stepper"><ProductEditorBlock meta={editorMeta} mode="create" layout="stepper" status="draft" category="Flour & grains · Maize flour v3" onSubmit={ok} /></Plate>
     </Plates>
   )
@@ -72,15 +78,70 @@ function ProductEditor() {
 
 export const variantAttributes = [{ key: 'pack', label: 'Pack', options: ['1 kg', '2 kg', '5 kg'] }, { key: 'fortified', label: 'Fortified', options: ['Yes', 'No'] }]
 
-export const variantRows = [
+export const variantRows: VariantRow[] = [
   { id: 'v1', sku: 'MVN-1K-24', attributes: { pack: '1 kg', fortified: 'Yes' }, packagingUnit: 'bale', unitsPerPack: '24', moq: '5', active: true },
   { id: 'v2', sku: 'MVN-2K-12', attributes: { pack: '2 kg', fortified: 'Yes' }, packagingUnit: 'bale', unitsPerPack: '12', moq: '5', active: true },
   { id: 'v3', sku: 'MVN-2K-12N', attributes: { pack: '2 kg', fortified: 'Yes' }, packagingUnit: 'bale', unitsPerPack: '12', moq: '5', active: false },
   { id: 'v4', sku: 'MVN-5K-04', attributes: { pack: '5 kg', fortified: 'No' }, packagingUnit: 'bale', unitsPerPack: '4', moq: '0', active: true },
 ]
 
+const saleUnits = [{ value: 'bale', label: 'Bale' }, { value: 'sack', label: 'Sack' }]
+const pricedRows: VariantRow[] = variantRows.map((r, i) => ({ ...r, price: ['1820.00', '1740.00', '1740.00', '1590.00'][i], stock: ['95', '180', '', '12'][i], packLabel: `Bale of ${r.unitsPerPack} × ${r.attributes.pack}` }))
+const savedAll = async () => {
+  await new Promise(r => setTimeout(r, 600))
+  return {}
+}
+
 function Variants() {
-  return <Plates cols={1}><Plate label="table · 2 invalid rows"><VariantMatrixEditor attributes={variantAttributes} rows={variantRows} /></Plate><Plate label="cards"><VariantMatrixEditor attributes={variantAttributes} rows={variantRows.slice(0, 2)} layout="cards" /></Plate></Plates>
+  return (
+    <Plates cols={1}>
+      <Plate label="editable table · prices and stock · 2 invalid rows" note="Add a variant, edit a cell, then save"><VariantMatrixEditor attributes={variantAttributes} units={saleUnits} rows={pricedRows} onSave={savedAll} /></Plate>
+      <Plate label="read-only table"><VariantMatrixEditor attributes={variantAttributes} rows={variantRows} /></Plate>
+      <Plate label="cards"><VariantMatrixEditor attributes={variantAttributes} rows={pricedRows.slice(0, 2)} layout="cards" /></Plate>
+      <Plate label="no variants yet"><VariantMatrixEditor attributes={[]} units={saleUnits} rows={[]} onSave={savedAll} /></Plate>
+    </Plates>
+  )
+}
+
+const stockOf = (state: VariantRecord['stock']['state'], available: number | null) => ({ state, available, unit: 'bale' })
+export const buyVariants: VariantRecord[] = [
+  { id: 'bv1', sku: 'MVN-2K-12', pack_label: 'Bale of 12 × 2 kg', packaging_unit: 'bale', units_per_pack: '12', moq: 5, unit_price: '1740.00', normalised_price: { amount: '72.50', per: 'kg' }, stock: stockOf('available', 180), is_active: true, attributes: {}, details: [] },
+  { id: 'bv2', sku: 'MVN-2K-06', pack_label: 'Bale of 6 × 2 kg', packaging_unit: 'bale', units_per_pack: '6', moq: 10, unit_price: '890.00', normalised_price: { amount: '74.17', per: 'kg' }, stock: stockOf('limited', 24), is_active: true, attributes: {}, details: [] },
+]
+
+function Buy() {
+  return (
+    <Plates cols={2}>
+      <Plate label="several packs" note="Signed in as a buyer it adds to the cart; otherwise it says why not"><BuyBox variants={buyVariants} productName="Mavuno Maize Flour 2 kg" /></Plate>
+      <Plate label="one pack · compact add to cart"><AddToCart compact variant={buyVariants[0]!} productName="Mavuno Maize Flour 2 kg" /></Plate>
+      <Plate label="out of stock"><BuyBox variants={[{ ...buyVariants[0]!, stock: stockOf('unavailable', 0) }]} productName="Magharibi Brown Sugar 2 kg" /></Plate>
+    </Plates>
+  )
+}
+
+function Compare() {
+  const pick = (id: string, name: string, category = 'flour', label = 'Flour & grains') => ({ id, name, category, categoryLabel: label })
+  return (
+    <Plates cols={2}>
+      <Plate label="toggles" note="Up to four, one category at a time">
+        <div className="flex flex-col items-start gap-1">
+          <CompareToggle product={pick('ds-1', 'Mavuno Maize Flour 2 kg')} />
+          <CompareToggle product={pick('ds-2', 'Kati Highlands Maize Flour 2 kg')} />
+          <CompareToggle product={pick('ds-3', 'Sukari Bora White Sugar 2 kg', 'sugar', 'Sugar & sweeteners')} />
+        </div>
+      </Plate>
+      <Plate label="tray (inline here; fixed at the foot of storefront pages)"><CompareTray inline /></Plate>
+    </Plates>
+  )
+}
+
+function Details() {
+  return (
+    <Plates cols={1}>
+      <Plate label="required missing · guidance beside"><CategoryDetailsForm fields={maizeAttributes} values={{}} guidance={{ html: '<p>Give the weight of one packet, not the bale.</p>', text: 'Give the weight of one packet, not the bale.' }} onSave={async () => ({ ok: false, detail: 'Some details need attention.', fields: {} })} /></Plate>
+      <Plate label="read-only (archived product)"><CategoryDetailsForm fields={maizeAttributes} values={{ pack_size: '2kg', fortified: true }} /></Plate>
+    </Plates>
+  )
 }
 
 export const mediaItems = [
@@ -359,14 +420,15 @@ function Returns() {
 }
 
 export const reorderLines: ReorderLine[] = [
-  { id: 'r1', product: 'Mavuno Maize Flour 2 kg', unit: 'bale', quantity: 20, thenPrice: '1690.00', nowPrice: '1690.00', difference: 'none' },
-  { id: 'r2', product: 'Sukari Bora Sugar 1 kg', unit: 'bale', quantity: 6, thenPrice: '3960.00', nowPrice: '4087.00', difference: 'price' },
-  { id: 'r3', product: 'Maziwa Milk Powder 400 g', unit: 'tray', quantity: 10, thenPrice: '7080.00', stock: stockFor['p-mzw-400'], difference: 'availability' },
-  { id: 'r4', product: 'Pishori Rice 50 kg (discontinued)', unit: 'sack', quantity: 2, thenPrice: '9400.00', difference: 'product-unavailable' },
+  { id: 'r1', product: 'Mavuno Maize Flour 2 kg', unit: 'bale', thenQuantity: 20, thenPrice: '1690.00', nowQuantity: 20, nowPrice: '1690.00', kinds: [], addable: true },
+  { id: 'r2', product: 'Sukari Bora Sugar 1 kg', unit: 'bale', thenQuantity: 6, thenPrice: '3960.00', nowQuantity: 6, nowPrice: '4087.00', kinds: ['price'], addable: true },
+  { id: 'r3', product: 'Unga Bora Baking Flour 2 kg', unit: 'bale', thenQuantity: 4, thenPrice: '1650.00', nowQuantity: 5, nowPrice: '1690.00', kinds: ['price', 'moq'], addable: true },
+  { id: 'r4', product: 'Maziwa Milk Powder 400 g', unit: 'tray', thenQuantity: 10, thenPrice: '7080.00', nowQuantity: 4, nowPrice: '7080.00', stock: stockFor['p-mzw-400'], kinds: ['stock'], addable: true },
+  { id: 'r5', product: 'Jua Gold Cooking Oil 5 L', unit: 'carton', thenQuantity: 2, thenPrice: '6900.00', kinds: ['discontinued'], addable: false },
 ]
 
 function Reorder() {
-  return <Plates cols={1}><Plate label="price, availability and discontinued differences"><ReorderDiffBlock orderReference="SM-ORD-004176" placedOn="2026-09-14T08:15:00+03:00" lines={reorderLines} /></Plate></Plates>
+  return <Plates cols={1}><Plate label="price, minimum order, stock and discontinued differences"><ReorderDiffBlock orderReference="SO-2026-0141" placedOn="2026-09-14T08:15:00+03:00" lines={reorderLines} replacesCartLines={3} onAdd={() => undefined} /></Plate></Plates>
 }
 
 const day = (i: number, from: number) => new Date(Date.UTC(2026, 9, 12 - from + i)).toLocaleDateString('en-KE', { day: 'numeric', month: 'short', timeZone: 'Africa/Nairobi' })
@@ -468,11 +530,23 @@ function CategoryHeroSpecimen() {
   )
 }
 
+function GallerySpecimen() {
+  const cut = (i: typeof images.maize) => ({ url: i.url, alt: i.alt, width: i.width, height: i.height, fit: 'contain' as const })
+  const scene = (k: keyof typeof scenes, credit: string) => ({ url: scenes[k].src, alt: scenes[k].alt, width: scenes[k].width, height: scenes[k].height, fit: 'cover' as const, credit })
+  return (
+    <Plates cols={2}>
+      <Plate label="one photograph"><ProductGallery name="Mavuno Maize Flour 2 kg" images={[cut(images.maize)]} /></Plate>
+      <Plate label="four photographs, rail beside or below by width"><ProductGallery name="Mwea Pishori Rice 25 kg" images={[cut(images.rice), scene('category-grains', 'Photo: Unsplash'), scene('story-stock', 'Photo: Unsplash'), scene('story-delivery', 'Photo: Unsplash')]} /></Plate>
+    </Plates>
+  )
+}
+
 const map: Record<string, () => ReactNode> = {
   'X-01': Onboarding, 'X-02': ProductEditor, 'X-03': Variants, 'X-04': Media, 'X-05': PriceBook, 'X-06': Tiers, 'X-07': Ledger, 'X-08': Stock,
   'X-09': Facets, 'X-10': Cart, 'X-11': CartGroup, 'X-12': QuoteSheet, 'X-13': QuoteDecision, 'X-14': Approvals, 'X-15': Reservations,
   'X-16': Countdown, 'X-17': Checkout, 'X-18': Payment, 'X-19': OrderTimeline, 'X-20': Delivery, 'X-21': Returns, 'X-22': Reorder,
-  'X-23': Analytics, 'X-24': Integrations, 'X-25': Trace, 'X-26': Notifications, 'X-27': Bell, 'X-28': Preferences, 'X-29': CategoryHeroSpecimen,
+  'X-23': Analytics, 'X-24': Integrations, 'X-25': Trace, 'X-26': Notifications, 'X-27': Bell, 'X-28': Preferences, 'X-29': CategoryHeroSpecimen, 'X-30': GallerySpecimen,
+  'X-31': Buy, 'X-32': Compare, 'X-33': Details,
 }
 
 export default function CommerceSpecimens({ code }: { code: string }) {

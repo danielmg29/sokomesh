@@ -6,6 +6,7 @@
 
 import { ArrowRight, Menu as MenuIcon, Search } from 'lucide-react'
 import Image from 'next/image'
+import Link from 'next/link'
 import { useState, type ReactNode } from 'react'
 import { BrandLogo } from '@/components/ui/BrandLogo'
 import { Button, buttonStyles } from '@/components/ui/button'
@@ -17,7 +18,7 @@ import { cn } from '@/lib/cn'
 import { StorySplit, cta, type Scene } from './Marketing'
 
 const nav = [
-  { label: 'How it works', href: '#flow' }, { label: 'For sellers', href: '#value' }, { label: 'Trust', href: '#trust' },
+  { label: 'How it works', href: '/#flow' }, { label: 'For sellers', href: '/#value' }, { label: 'Trust', href: '/#trust' },
 ]
 
 /** Operating terms (PRODUCT.md), not promotions: the strip says how the market works before anyone signs in. */
@@ -36,36 +37,46 @@ function SearchField({ className }: { className?: string }) {
  * Public header in three ruled tiers: operating terms, the search-first main row, and the category row
  * (category discovery before marketing). `sticky` pins it; narrow containers move everything into a sheet.
  */
-export function MarketingHeader({ emphasis = 'buyer', sticky = false, categories }: {
-  emphasis?: 'buyer' | 'seller'; sticky?: boolean; categories?: readonly { key: string; name: string }[]
+export function MarketingHeader({ emphasis = 'buyer', sticky = false, categories, account, search = true, current, links = nav }: {
+  emphasis?: 'buyer' | 'seller'; sticky?: boolean; categories?: readonly { key: string; name: string; href?: string }[]
+  /** Replaces the two calls to action, e.g. with the signed-in person's account link. */
+  account?: ReactNode
+  /** The catalogue search; off until search (SM-F-08) answers it. */
+  search?: boolean
+  /** Key of the category being shown, marked in the category row; `all` for the whole catalogue. */
+  current?: string
+  /** The main row's links; defaults to the landing's sections. */
+  links?: readonly { label: string; href: string }[]
 }) {
-  const ctas = (
+  const ctas = account ?? (
     <>
       <a href={cta.sell.href} className={buttonStyles({ variant: emphasis === 'seller' ? 'primary' : 'ghost', size: 'md' })}>{cta.sell.label}</a>
       <a href={cta.buy.href} className={buttonStyles({ variant: emphasis === 'buyer' ? 'primary' : 'secondary', size: 'md' })}>{cta.buy.label}</a>
     </>
   )
+  const catHref = (c: { key: string; href?: string }) => c.href ?? `#${c.key}`
+  const tab = (on: boolean) => cn('block border-b-2 py-2.5 motion-bind transition-colors', on ? 'border-foreground font-semibold text-foreground' : 'border-transparent text-muted hover:border-border-strong hover:text-foreground')
   return (
     <header className={cn('@container border-b border-border bg-surface', sticky && 'sticky top-0 z-40')}>
-      <div className="on-chrome flex items-center justify-between gap-4 bg-chrome px-4 py-1.5 text-xs text-chrome-muted sm:px-6">
-        <span className="text-chrome-foreground">Wholesale ordering for Kenyan retailers</span>
+      <div className="flex items-center justify-between gap-4 border-b border-border bg-background px-4 py-1.5 text-xs text-muted sm:px-6">
+        <span className="font-semibold text-foreground">Wholesale ordering for Kenyan retailers</span>
         <ul className="hidden gap-5 @3xl:flex">{terms.map(t => <li key={t}>{t}</li>)}</ul>
       </div>
       <div className="flex h-16 items-center gap-4 px-4 sm:px-6">
-        <a href="#top" aria-label="SokoMesh home" className="-ml-3 shrink-0"><BrandLogo variant="lockup" width={168} /></a>
-        <SearchField className="hidden max-w-xl min-w-0 flex-1 @3xl:block" />
+        <Link href="/" aria-label="SokoMesh home" className="-ml-3 shrink-0"><BrandLogo variant="wordmark" width={212} /></Link>
+        {search ? <SearchField className="hidden max-w-xl min-w-0 flex-1 @3xl:block" /> : null}
         <nav aria-label="Main" className="ml-auto hidden @5xl:block">
-          <ul className="flex items-center gap-5 text-md font-medium">{nav.map(n => <li key={n.href}><a href={n.href} className="hover:text-primary hover:underline">{n.label}</a></li>)}</ul>
+          <ul className="flex items-center gap-5 text-md font-medium">{links.map(n => <li key={n.href}><a href={n.href} className="hover:text-primary hover:underline">{n.label}</a></li>)}</ul>
         </nav>
         <div className="ml-auto hidden items-center gap-2 @3xl:flex @5xl:ml-0">{ctas}</div>
         <div className="ml-auto @3xl:hidden">
           <Sheet side="right" title="Menu" trigger={<Button variant="secondary" size="icon" aria-label="Open menu"><Icon icon={MenuIcon} /></Button>}>
-            <SearchField />
-            <nav aria-label="Main" className="mt-4 flex flex-col">{nav.map(n => <a key={n.href} href={n.href} className="border-b border-border px-1 py-3 text-lg font-semibold hover:bg-sunken">{n.label}</a>)}</nav>
+            {search ? <SearchField /> : null}
+            <nav aria-label="Main" className="mt-4 flex flex-col">{links.map(n => <a key={n.href} href={n.href} className="border-b border-border px-1 py-3 text-lg font-semibold hover:bg-sunken">{n.label}</a>)}</nav>
             {categories?.length ? (
               <nav aria-label="Categories" className="mt-4 flex flex-col">
                 <span className="caps px-1 pb-1 text-muted">Categories</span>
-                {categories.map(c => <a key={c.key} href={`#${c.key}`} className="border-b border-border px-1 py-2.5 hover:bg-sunken">{c.name}</a>)}
+                {categories.map(c => <a key={c.key} href={catHref(c)} aria-current={current === c.key ? 'page' : undefined} className="border-b border-border px-1 py-2.5 hover:bg-sunken aria-[current=page]:font-semibold">{c.name}</a>)}
               </nav>
             ) : null}
             <div className="mt-6 flex flex-col gap-2">{ctas}</div>
@@ -75,8 +86,8 @@ export function MarketingHeader({ emphasis = 'buyer', sticky = false, categories
       {categories?.length ? (
         <nav aria-label="Categories" className="hidden border-t border-border @3xl:block">
           <ul className="flex gap-6 overflow-x-auto px-6 text-md">
-            <li><a href={cta.browse.href} className="block border-b-2 border-foreground py-2.5 font-semibold">{cta.browse.label}</a></li>
-            {categories.map(c => <li key={c.key} className="shrink-0"><a href={`#${c.key}`} className="block border-b-2 border-transparent py-2.5 text-muted motion-bind transition-colors hover:border-border-strong hover:text-foreground">{c.name}</a></li>)}
+            <li className="shrink-0"><a href={cta.browse.href} aria-current={current === 'all' ? 'page' : undefined} className={tab(current === undefined || current === 'all')}>{cta.browse.label}</a></li>
+            {categories.map(c => <li key={c.key} className="shrink-0"><a href={catHref(c)} aria-current={current === c.key ? 'page' : undefined} className={tab(current === c.key)}>{c.name}</a></li>)}
           </ul>
         </nav>
       ) : null}

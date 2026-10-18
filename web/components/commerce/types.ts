@@ -3,6 +3,7 @@
 // replaced by generated types and the labels come from contract choices.
 
 import type { ImageValue } from '@/components/kernel/fields/types'
+import type { StockRecord, StockStatus } from '@/lib/client/records'
 
 export type Money = string // decimal string, KES
 
@@ -18,6 +19,11 @@ export type Stock = {
   restockOn?: string
   countedAt?: string
 }
+
+const fromStatus: Record<StockStatus, StockState> = { available: 'available', limited: 'low', unavailable: 'out-of-stock', unknown: 'unknown' }
+
+/** The API's buyer-visible stock (CartLine.stock_status values) as the indicator's view model (server-safe). */
+export const stockFrom = (s: StockRecord): Stock => ({ state: fromStatus[s.state], available: s.available ?? 0, unit: s.unit })
 
 export type ReservationStatus = 'active' | 'expiring' | 'expired' | 'consumed' | 'released'
 export type Reservation = { id: string; quantity: number; unit: string; status: ReservationStatus; expiresAt: string; product: string; orderReference?: string }
@@ -46,4 +52,5 @@ export type CartLine = {
   reason?: string
 }
 
-export type SellerGroup = { sellerId: string; seller: string; location: string; lines: CartLine[]; deliveryFee: Money; minimumOrder?: Money; dispatch?: string }
+/** `deliveryFee` is absent until delivery is priced (it is confirmed at checkout). */
+export type SellerGroup = { sellerId: string; seller: string; location: string; lines: CartLine[]; deliveryFee?: Money; minimumOrder?: Money; dispatch?: string }

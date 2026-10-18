@@ -10,15 +10,20 @@ type Props = {
   action: ActionMeta
   meta: ModelMeta
   record: Rec
-  trigger: ReactNode
+  /** The control that opens it; omit when the caller opens it with `open` (e.g. from a menu). */
+  trigger?: ReactNode
   /** Resolves on success; rejects with an AppError to keep the dialog open with its message. */
   onConfirm: (input: Record<string, unknown>) => Promise<void> | void
   description?: ReactNode
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
 }
 
 /** Confirm-only (destructive or standard) or a small command form built from `action.input`. */
-export function ConfirmAction({ action, meta, record, trigger, onConfirm, description }: Props) {
-  const [open, setOpen] = useState(false)
+export function ConfirmAction({ action, meta, record, trigger, onConfirm, description, open: controlled, onOpenChange }: Props) {
+  const [own, setOwn] = useState(false)
+  const open = controlled ?? own
+  const setOpen = (o: boolean) => { setOwn(o); onOpenChange?.(o) }
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<AppError | null>(null)
   const inputFields = (action.input ?? []).map(n => meta.fields.find(f => f.name === n)).filter((f): f is NonNullable<typeof f> => Boolean(f))

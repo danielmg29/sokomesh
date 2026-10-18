@@ -15,10 +15,14 @@ SESSION_COOKIE_SECURE = False
 CSRF_COOKIE_SECURE = False
 CSRF_TRUSTED_ORIGINS = env.list("DJANGO_CSRF_TRUSTED_ORIGINS", default=["http://localhost:3000"])
 
-# Mailpit captures every outgoing email locally (http://localhost:8025).
-MAILERS = {
-    "default": {
-        "BACKEND": "django.core.mail.backends.smtp.EmailBackend",
-        "OPTIONS": {"host": env("EMAIL_HOST", default="localhost"), "port": env.int("EMAIL_PORT", default=1025)},
+# Without a Brevo key, Mailpit captures every outgoing email locally (http://localhost:8025).
+if not BREVO_API_KEY:  # noqa: F405
+    MAILERS = {
+        "default": {
+            "BACKEND": "django.core.mail.backends.smtp.EmailBackend",
+            "OPTIONS": {"host": env("EMAIL_HOST", default="localhost"), "port": env.int("EMAIL_PORT", default=1025)},
+        }
     }
-}
+
+# Development lists the seeded demo accounts on the sign-in page (never in production).
+AC_DEMO_ACCOUNTS = env.bool("AC_DEMO_ACCOUNTS", default=True)

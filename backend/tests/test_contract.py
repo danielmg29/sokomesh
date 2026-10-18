@@ -57,6 +57,12 @@ def test_removing_field_is_breaking(base):
     assert kinds(base, with_model(base)) == {Change.BREAKING}
 
 
+def test_dropping_a_required_flag_relaxes_the_field(base):
+    required = with_model(base, {**FIELD, "required": True})
+    assert kinds(required, with_model(required, FIELD)) == {Change.ADDITIVE}
+    assert kinds(with_model(base, FIELD), required) == {Change.BREAKING}
+
+
 @pytest.mark.parametrize(("limit", "kind"), [(120, Change.BREAKING), (200, Change.ADDITIVE)])
 def test_constraint_direction(base, limit, kind):
     assert kinds(base, with_model(base, {**FIELD, "maxLength": limit})) == {kind}

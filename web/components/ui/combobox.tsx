@@ -7,7 +7,7 @@ import { cn } from '@/lib/cn'
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from './command'
 import { useFieldControlProps } from './form-field'
 import { Icon } from './icon'
-import { controlStyles } from './input'
+import { triggerStyles } from './input'
 
 export type ComboOption = { value: string; label: string; description?: string; disabled?: boolean; reason?: string }
 
@@ -31,7 +31,7 @@ function Trigger({ children, open, disabled, className }: { children: ReactNode;
       role="combobox"
       aria-expanded={open}
       disabled={disabled}
-      className={cn(controlStyles, 'flex min-h-(--density-control-height) items-center justify-between gap-2 px-3 py-1 text-left text-md', className)}
+      className={cn(triggerStyles, 'flex min-h-(--density-control-height) items-center justify-between gap-2 px-3 py-1 text-left text-md', className)}
     >
       {children}
       <Icon icon={ChevronsUpDown} className="text-muted" />

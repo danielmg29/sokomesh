@@ -52,6 +52,8 @@ export function renderContract(contract: Contract): string {
     `export type ErrorCode = keyof typeof errors`,
     constant('roles', Object.keys(contract.policies.roles)),
     `export type Role = (typeof roles)[number]`,
+    // What each role may do: the client mirrors it to show or hide controls; the API decides.
+    constant('rolePermissions', contract.policies.roles),
   )
 
   for (const [key, m] of models) {

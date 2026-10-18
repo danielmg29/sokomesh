@@ -16,10 +16,13 @@ type Props = {
   actions?: ReactNode
   breadcrumbs?: readonly Crumb[]
   variant?: 'standard' | 'compact'
+  /** 1 when the header titles the page (one per route); 2 inside a page. */
+  level?: 1 | 2
   className?: string
 }
 
-export function HeaderBlock({ source, meta, record, title, description, count, status, actions, breadcrumbs, variant = 'standard', className }: Props) {
+export function HeaderBlock({ source, meta, record, title, description, count, status, actions, breadcrumbs, variant = 'standard', level = 2, className }: Props) {
+  const Heading = level === 1 ? 'h1' : 'h2'
   const statusField = meta?.fields.find(f => f.widget === 'status')
   const heading =
     source === 'meta' ? meta?.labelPlural ?? meta?.label
@@ -32,7 +35,7 @@ export function HeaderBlock({ source, meta, record, title, description, count, s
       <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
         <div className="flex min-w-0 flex-col gap-1.5">
           <div className="flex flex-wrap items-center gap-3">
-            <h2 className={cn('font-display font-extrabold tracking-display', variant === 'compact' ? 'text-2xl' : 'text-3xl sm:text-4xl')}>{heading}</h2>
+            <Heading className={cn('font-display font-extrabold tracking-display', variant === 'compact' ? 'text-2xl' : 'text-3xl sm:text-4xl')}>{heading}</Heading>
             {badge}
             {count !== undefined ? <span className="text-md text-muted tabular">{count.toLocaleString('en-KE')} {count === 1 ? meta?.label.toLowerCase() : (meta?.labelPlural ?? '').toLowerCase()}</span> : null}
           </div>

@@ -98,7 +98,9 @@ export function DateRangeFilter({ field, value, onChange }: FilterProps) {
 }
 
 export function RelationFilter({ value, onChange, options = [] }: FilterProps) {
-  return <Combobox options={options} value={asString(value?.value)} onValueChange={v => onChange(v ? { op: 'eq', value: v } : undefined)} placeholder="Any" />
+  // One choice; a list from a shared link (`__in`) shows its first value until the reader changes it.
+  const current = Array.isArray(value?.value) ? value.value[0] : value?.value
+  return <Combobox options={options} value={asString(current)} onValueChange={v => onChange(v ? { op: 'eq', value: v } : undefined)} placeholder="Any" />
 }
 
 const counties = KENYA_COUNTIES.map(c => ({ value: c, label: c }))

@@ -5,12 +5,31 @@ import json
 from django.conf import settings
 
 from core.http import ERRORS
+from core.operations.registry import export_models
 from core.policies import export_policies
 
 
 def _camel(name: str) -> str:
     head, *rest = name.split("_")
     return head + "".join(part.title() for part in rest)
+
+
+def _password_policy() -> dict:
+    """The password rules, read from the validators Django runs, so forms describe what the server checks."""
+    min_length, rules = 0, []
+    for v in settings.AUTH_PASSWORD_VALIDATORS:
+        name = v["NAME"].rsplit(".", 1)[-1]
+        if name == "MinimumLengthValidator":
+            min_length = v.get("OPTIONS", {}).get("min_length", 8)
+        elif name == "NumericPasswordValidator":
+            rules.append("not only numbers")
+        elif name == "CommonPasswordValidator":
+            rules.append("not a common password")
+        elif name == "UserAttributeSimilarityValidator":
+            rules.append("not close to your name or email")
+    parts = ([f"At least {min_length} characters"] if min_length else []) + rules
+    text = ", ".join(parts[:-1]) + (" and " if len(parts) > 1 else "") + parts[-1] if parts else ""
+    return {"minLength": min_length, "help": f"{text[:1].upper()}{text[1:]}." if text else ""}
 
 
 def build_contract() -> dict:
@@ -22,7 +41,12 @@ def build_contract() -> dict:
             "apiBase": contract["api_base"],
             "generatedBy": "backend/core/contract",
         },
-        "auth": {"mode": auth["mode"], "verification": list(auth["verification"]), "session": auth["session"]},
+        "auth": {
+            "mode": auth["mode"],
+            "verification": list(auth["verification"]),
+            "session": auth["session"],
+            "password": _password_policy(),
+        },
         "limits": {_camel(k): v for k, v in settings.AC_LIMITS.items()},
         "listQuery": {_camel(k): v for k, v in listing.items()},
         "locales": {
@@ -35,9 +59,9 @@ def build_contract() -> dict:
             for code, spec in ERRORS.items()
         },
         "policies": export_policies(),
-        # Filled from core.operations.registry as models are registered (first: SM-F-01).
         "events": {},
-        "models": {},
+        # Every resource registered with core.operations.registry (SM-F-01, 02, 21 and 22 so far).
+        "models": export_models(),
     }
 
 

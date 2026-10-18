@@ -4,13 +4,14 @@
 // contract's comparable fields, with sticky labels and explicit gaps. Cells still render through
 // the kernel's FieldView, so every widget looks as it does everywhere else.
 
+import type { Route } from 'next'
 import Image from 'next/image'
-import { useState } from 'react'
+import Link from 'next/link'
+import { useState, type ReactNode } from 'react'
 import { StockAvailabilityIndicator } from '@/components/commerce/stock'
 import type { Stock } from '@/components/commerce/types'
 import { FieldView } from '@/components/kernel/fields/FieldView'
 import type { ImageValue } from '@/components/kernel/fields/types'
-import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/choice'
 import { Stamp } from '@/components/ui/stamp'
 import { cn } from '@/lib/cn'
@@ -28,6 +29,10 @@ export type CompareProduct = {
   normalisedPrice?: { amount: string; per: string }
   stock: Stock
   values: Record<string, unknown>
+  /** The product's page. */
+  href?: Route
+  /** What a buyer can do with this column (the page passes add-to-cart for the cheapest pack). */
+  action?: ReactNode
 }
 
 export function ProductComparisonBlock({ products, fields }: { products: readonly CompareProduct[]; fields: readonly FieldMeta[] }) {
@@ -40,7 +45,7 @@ export function ProductComparisonBlock({ products, fields }: { products: readonl
   return (
     <section className="flex min-w-0 flex-col gap-3" aria-label="Product comparison">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-md text-muted">Comparing {shown.length} products on the category&apos;s comparable attributes. Prices per normalised unit come from the seller&apos;s current price book.</p>
+        <p className="text-md text-muted">Comparing {shown.length} products on the category&apos;s comparable attributes. Prices are each product&apos;s cheapest pack today, also per normalised unit so packs of different sizes compare fairly.</p>
         <Switch label="Keep labels visible" checked={sticky} onCheckedChange={setSticky} className="w-auto" />
       </div>
       <div className="overflow-x-auto rounded-md border border-border bg-surface" role="table" aria-label="Comparison">
@@ -50,7 +55,7 @@ export function ProductComparisonBlock({ products, fields }: { products: readonl
             {shown.map(p => (
               <div role="columnheader" key={p.id} className="flex flex-col gap-2 border-l border-border p-3">
                 {p.image ? <Image src={p.image.url} alt={p.image.alt} width={240} height={180} className="aspect-[4/3] w-full rounded-sm bg-well object-contain p-3" /> : null}
-                <span className="font-semibold leading-snug">{p.name}</span>
+                {p.href ? <Link href={p.href} className="font-semibold leading-snug hover:text-primary hover:underline">{p.name}</Link> : <span className="font-semibold leading-snug">{p.name}</span>}
                 <span className="text-sm text-muted">{p.seller}</span>
               </div>
             ))}
@@ -84,15 +89,12 @@ export function ProductComparisonBlock({ products, fields }: { products: readonl
               })}
             </div>
           ))}
-          <div role="row" className="grid" style={grid}>
-            <span role="rowheader" className={label}><span className="sr-only">Actions</span></span>
-            {shown.map(p => (
-              <div role="cell" key={p.id} className="flex flex-col gap-2 border-l border-border p-3">
-                <Button variant="primary" size="sm" disabled={p.stock.state === 'out-of-stock'}>Add to cart</Button>
-                <Button variant="secondary" size="sm">Request quote</Button>
-              </div>
-            ))}
-          </div>
+          {shown.some(p => p.action) ? (
+            <div role="row" className="grid" style={grid}>
+              <span role="rowheader" className={label}><span className="sr-only">Actions</span></span>
+              {shown.map(p => <div role="cell" key={p.id} className="flex flex-col gap-2 border-l border-border p-3">{p.action}</div>)}
+            </div>
+          ) : null}
         </div>
       </div>
     </section>

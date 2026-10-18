@@ -11,12 +11,16 @@ export const siteDescription =
 const BASE = '/brand'
 
 /**
- * `markRatio` is the mark's share of the asset width, used for clear space
- * (one quarter of the mark width on every side). The lockup mark is a 512 box at 0.59 scale.
+ * `markRatio` is the mark's share of the asset width, used for clear space (one quarter of the mark width
+ * on every side); the mark inside the lockups is the 512 box at 0.59 scale, about 225 units wide.
+ * `lockup` and `wordmark` are trimmed to their artwork (derived 2026-10-17): the kit's 1600 × 400 board left
+ * a third of its width empty, so the name rendered at a third less than its box. `lockup` keeps the tagline,
+ * readable from about 320 px wide; `wordmark` drops it and sets the name larger, for headers and navigation.
  */
 export const logos = {
   mark: { src: `${BASE}/logo/logo-mark.svg`, width: 512, height: 512, markRatio: 1, minWidth: 20 },
-  lockup: { src: `${BASE}/logo/logo-horizontal.svg`, width: 1600, height: 400, markRatio: (512 * 0.59) / 1600, minWidth: 160 },
+  lockup: { src: `${BASE}/logo/logo-lockup.svg`, width: 1010, height: 250, markRatio: 225 / 1010, minWidth: 200 },
+  wordmark: { src: `${BASE}/logo/logo-wordmark.svg`, width: 1160, height: 250, markRatio: 225 / 1160, minWidth: 120 },
 } as const
 
 /**
@@ -26,7 +30,8 @@ export const logos = {
  */
 export const reversedLogos: Record<keyof typeof logos, string> = {
   mark: `${BASE}/logo/logo-mark-reversed.svg`,
-  lockup: `${BASE}/logo/logo-horizontal-reversed.svg`,
+  lockup: `${BASE}/logo/logo-lockup-reversed.svg`,
+  wordmark: `${BASE}/logo/logo-wordmark-reversed.svg`,
 }
 
 export type LogoVariant = keyof typeof logos

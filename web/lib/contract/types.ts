@@ -58,6 +58,12 @@ export type ModelMeta = {
   key: string
   label: string
   labelPlural?: string
+  /** API path under `API_BASE` for registered resources: `<path>`, `<path>/<ref>`, `<path>/<ref>/<action>`. */
+  path?: string
+  /** What `<ref>` is: the primary key, or the slug for public pages. */
+  lookup?: 'pk' | 'slug'
+  /** Readable without signing in. */
+  public?: boolean
   primaryKey?: string
   displayField?: string
   tenantScoped?: boolean
@@ -104,7 +110,25 @@ export type ListQueryPolicy = {
 }
 
 /** One keyset page as every list endpoint returns it. `total` is counted up to `listQuery.countCap`. */
-export type ListPage<Row = Rec> = { results: Row[]; next: string | null; total: number; totalCapped: boolean; pageSize: number }
+/** Choice counts and options a list adds beside its page (the product list's buyer filters). */
+export type ListFacets = {
+  /** Field -> choice value -> how many rows picking it would show, with every other filter applied. */
+  counts: Record<string, Record<string, number>>
+  /** Field -> the choices a relation filter offers (sellers in the current results). */
+  options: Record<string, { value: string; label: string }[]>
+  price?: { min: string | null; max: string | null }
+}
+
+/** One keyset page: `next` and `previous` are cursors (null at either end). */
+export type ListPage<Row = Rec> = {
+  results: Row[]
+  next: string | null
+  previous?: string | null
+  total: number
+  totalCapped: boolean
+  pageSize: number
+  facets?: ListFacets
+}
 
 export type Contract = {
   meta: { contractVersion: string; apiBase: string; generatedBy: string }

@@ -102,7 +102,15 @@ export function ProjectedForm({
     setClientErrors({})
     setPhase('submitting')
     const result = await onSubmit(values)
-    if (result.ok) { setError(null); setTheirs(null); setPhase('saved'); return }
+    if (result.ok) {
+      setError(null); setTheirs(null); setPhase('saved')
+      // A sheet closes on success; a create sheet opens empty next time.
+      if (recipe === 'sheet') {
+        setOpen(false)
+        if (mode === 'create') { setValues(Object.fromEntries(fields.map(f => [f.name, initial[f.name] ?? f.default ?? null]))); setPhase('editing') }
+      }
+      return
+    }
     setError(result.error)
     if (result.error.code === 'CONFLICT' && result.theirs) { setTheirs(result.theirs); setPhase('conflict'); return }
     setPhase(result.error.code === 'VALIDATION' ? 'invalid' : 'error')

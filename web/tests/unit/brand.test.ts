@@ -11,13 +11,16 @@ describe('brand assets', () => {
     for (const p of paths) expect(existsSync(join(PUBLIC, p)), p).toBe(true)
   })
 
-  test('minimum sizes from ASSET_USAGE are enforced', () => {
+  test('minimum sizes are enforced', () => {
     expect(logoBox('mark', 8).width).toBe(20)
-    expect(logoBox('lockup', 100).width).toBe(160)
+    expect(logoBox('lockup', 100).width).toBe(200) // the tagline needs the room (trimmed lockup, decision 51)
+    expect(logoBox('wordmark', 60).width).toBe(120)
   })
 
   test('clear space is a quarter of the rendered mark width', () => {
     expect(logoBox('mark', 40).clearSpace).toBe(10)
-    expect(logoBox('lockup', 1600).clearSpace).toBe(Math.ceil((512 * 0.59) / 4))
+    // At their native widths both lockups draw the kit mark (a 512 box at 0.59 scale, about 225 units wide).
+    expect(logoBox('lockup', logos.lockup.width).clearSpace).toBe(Math.ceil(225 / 4))
+    expect(logoBox('wordmark', logos.wordmark.width).clearSpace).toBe(Math.ceil(225 / 4))
   })
 })

@@ -8,7 +8,7 @@ import { cn } from '@/lib/cn'
 import { TIME_ZONE, formatDate } from '@/lib/format'
 import { useFieldControlProps } from './form-field'
 import { Icon } from './icon'
-import { controlStyles } from './input'
+import { triggerStyles } from './input'
 
 const classNames = {
   root: 'p-3 text-md',
@@ -58,7 +58,7 @@ export function DatePicker({ value, onValueChange, disabled, placeholder = 'Choo
   const selected = value ? new Date(`${value}T12:00:00+03:00`) : undefined
   return (
     <PopoverPrimitive.Root open={open} onOpenChange={setOpen}>
-      <PopoverPrimitive.Trigger {...field} disabled={disabled} className={cn(controlStyles, 'flex h-(--density-control-height) items-center gap-2 px-3 text-left text-md tabular')}>
+      <PopoverPrimitive.Trigger {...field} disabled={disabled} className={cn(triggerStyles, 'flex h-(--density-control-height) items-center gap-2 px-3 text-left text-md tabular')}>
         <Icon icon={CalendarDays} className="text-muted" />
         <span className={cn(!value && 'text-muted')}>{value ? formatDate(`${value}T12:00:00+03:00`) : placeholder}</span>
       </PopoverPrimitive.Trigger>

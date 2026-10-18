@@ -29,6 +29,8 @@ ERRORS: dict[ErrorCode, ErrorSpec] = {
     ErrorCode.RATE_LIMITED: ErrorSpec(429, True, "Too many requests. Wait a moment, then try again."),
     ErrorCode.LIMIT_EXCEEDED: ErrorSpec(413, False, "This request is larger than the allowed limit."),
     ErrorCode.UNAVAILABLE: ErrorSpec(503, True, "The service is temporarily unavailable. Try again shortly."),
+    ErrorCode.UNAUTHENTICATED: ErrorSpec(401, False, "Sign in to continue."),
+    ErrorCode.UNVERIFIED: ErrorSpec(403, False, "Confirm your email address to continue."),
 }
 
 

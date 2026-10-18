@@ -14,7 +14,7 @@ One authoritative record of catalogue, stock, price and order, shown to every bu
 
 ---
 
-**Status: foundation and design system complete; features are being built in the order below.** The contract and design-token pipelines run end to end, and every component the app needs is live on the `/design-system` page with Kenyan demo data. Backend features land one requirement at a time, from `SM-F-01` onwards.
+**Status: foundation, design system and the first ten features are live.** The four foundation features (organization accounts `SM-F-01`, seller onboarding `SM-F-02`, public product pages `SM-F-22`, notifications `SM-F-21`) and all six Core CRUD features (category contracts `SM-F-03`, catalogue management `SM-F-04`, search and facets `SM-F-08`, comparison `SM-F-09`, cart `SM-F-10`, buyer reorder `SM-F-20`) run against the API with seeded demo data; every other component is live on the `/design-system` page. Features land one requirement at a time in the order below; the media pipeline (`SM-F-05`) is next.
 
 > *Soko* is Swahili for market; *mesh* is the connected network of buyers, sellers, catalogue rules, stock, orders and fulfilment events. SokoMesh is a portfolio project: the name and identity are concept work and are not cleared for commercial use, and every organization, person, price and figure in the demo is invented.
 
@@ -72,7 +72,7 @@ SokoMesh follows the **Adaptive Convergence** method: the backend owns every bus
 backend models / policies / limits / locales / rich-text allow-list
         │  python manage.py contract export   (enforces the semantic version bump)
         ▼
-contract/ac-contract.json   ◀── committed, reviewed, versioned (0.3.0)
+contract/ac-contract.json   ◀── committed, reviewed, versioned (0.5.0)
         │  pnpm contract:gen
         ▼
 web/lib/contract/generated.ts   (types, Zod schemas, limits, roles, locales, rich-text policy)
@@ -91,7 +91,7 @@ design/tokens/*.json (DTCG) ── pnpm tokens:gen ──▶ app/tokens.generate
 
 | Layer | Technology |
 |---|---|
-| Backend | Python 3.13, Django 6.1 (ASGI), Channels, PostgreSQL 17, Redis 7, nh3 (HTML sanitising), uv |
+| Backend | Python 3.13, Django 6.1 (ASGI), Channels, PostgreSQL 17, Redis 7, nh3 (HTML sanitising), Brevo (email), uv |
 | Web | Next.js 16 (App Router, Cache Components, React Compiler), React 19, TypeScript, Tailwind CSS 4, Radix primitives, Tiptap (rich text), Zod 4, TanStack Query, pnpm |
 | Tests | pytest, pytest-django, Hypothesis; Vitest, Testing Library, Playwright |
 | Delivery | Docker Compose, GitHub Actions, pre-commit, just |
@@ -114,7 +114,7 @@ The visual language is **WOVEN TRADE**: a wholesale market drawn as one connecte
 | **Photography** | Real product photographs cut out of their backgrounds and set on a theme-aware ground, so one file works in light and dark; scene photographs of shops, warehouses, roads and fields, graded as one set, lead every MARKET page |
 | **Modes** | MARKET (buyers, photography-led), LEDGER (sellers and admins, dense and numeric), FLOW (checkout and warehouse, state-heavy) |
 
-The live inventory at **`/design-system`** renders all 155 catalogued pieces from the real components: 11 foundations, 19 primitives, 26 field widgets, 19 kernel pieces, 10 blocks, 29 commerce extensions, 3 divergent surfaces, 13 marketing sections and 25 page templates, each in every state the specification names, in both themes. The binding rules are in the [design constitution](docs/design/constitution.md); how they landed in code is in [DESIGN.md](DESIGN.md).
+The live inventory at **`/design-system`** renders all 161 catalogued pieces from the real components: 11 foundations, 19 primitives, 26 field widgets, 20 kernel pieces, 10 blocks, 33 commerce extensions, 3 divergent surfaces, 14 marketing sections and 25 page templates, each in every state the specification names, in both themes. The binding rules are in the [design constitution](docs/design/constitution.md); how they landed in code is in [DESIGN.md](DESIGN.md).
 
 ## Progress
 
@@ -132,9 +132,13 @@ Requirement IDs (`SM-F-xx`) come from the SokoMesh Feature Build Order and Field
 - [x] Docker Compose development stack (Postgres, Redis, Mailpit), Dockerfiles, pre-commit hooks and a GitHub Actions workflow
 - [x] Brand kit integrated, with an approved reversed logo and mark for dark grounds
 - [x] List-query grammar in the backend kernel and the contract: declared search, filters and ordering, bounded keyset pages with signed cursors, and a web client that sends the same table state
-- [ ] Operation registry, changesets and idempotency keys in the backend kernel, and the first list endpoint (lands with `SM-F-01`)
+- [x] Two-way keyset pages (each page returns `next` and `previous` cursors), resource-declared filters for one request (a category contract's facets) and facet counts beside the page (with `SM-F-08`)
+- [x] Operation registry in the backend kernel: one resource declaration generates the routes, the contract model (fields, commands, API path), the commands each record permits and its list endpoint (with `SM-F-01`)
+- [ ] Changesets and idempotency keys for writes
 - [ ] Outbox, event relay and WebSocket gateway (lands with the first real-time topic, `SM-F-15`)
-- [ ] Object storage and upload policy (lands with `SM-F-02` and `SM-F-05`)
+- [x] Upload policy: file types checked from their contents, per-kind size limits, seller documents served only to their organization and the marketplace reviewers (with `SM-F-02`)
+- [x] Email: Brevo's transactional API when `BREVO_API_KEY` is set, Mailpit in development, in-memory in tests
+- [ ] S3-compatible object storage (with `SM-F-05`; uploads are on local disk until then)
 - [ ] Production deployment target, images and deploy workflow
 
 ### Design system
@@ -151,6 +155,7 @@ Requirement IDs (`SM-F-xx`) come from the SokoMesh Feature Build Order and Field
 - [x] Notification language preference driven by the contract's locales
 - [x] SellaPay confirmation rule reflected in the payment interface
 - [x] Rich-text document editor (CKEditor 5 style): headings, emphasis, links, lists with indent, quotes, captioned images, YouTube and Vimeo video, tables, undo and word count, on an allow-list the backend owns and sanitises
+- [x] URL list controls: filters, search, sort, products per page and previous/next written to the address as the contract's list grammar, so every filtered page is server-rendered, shareable and crawlable
 - [ ] Accessibility test pass (axe) on every projected page
 - [ ] Visual regression captures of the design-system page
 
@@ -158,46 +163,46 @@ Requirement IDs (`SM-F-xx`) come from the SokoMesh Feature Build Order and Field
 
 Each feature is done when its UI is designed, its backend models, rules and permissions publish to the contract, and its live pages run against the API with tests.
 
-- [ ] **1. `SM-F-01` Organization accounts**
+- [x] **1. `SM-F-01` Organization accounts**
   - [x] UI designed: sign-in and registration, organization settings, member lists
-  - [ ] Organization, Membership and Address models, permissions and contract
-  - [ ] Live pages and tests
-- [ ] **2. `SM-F-02` Seller onboarding**
+  - [x] Organization, Membership and Address models, permissions and contract
+  - [x] Live pages and tests: registration confirmed by an emailed code, sign-in with the seeded demo accounts, profile with photo, settings, organization details, team invitations and roles, addresses
+- [x] **2. `SM-F-02` Seller onboarding**
   - [x] UI designed: seller application, document evidence, onboarding review
-  - [ ] Backend and contract
-  - [ ] Live pages and tests
-- [ ] **3. `SM-F-22` Public product pages**
+  - [x] Backend and contract: seller profile with a rich-text description, private documents, submission, review decisions with reasons; activation only once the registration and KRA PIN certificates are verified
+  - [x] Live pages and tests: seller application and marketplace review
+- [x] **3. `SM-F-22` Public product pages**
   - [x] UI designed: landing page, product detail, public header and footer
-  - [ ] Backend and contract
-  - [ ] Live pages and tests
-- [ ] **4. `SM-F-21` Notifications**
+  - [x] Backend and contract: only published products from approved sellers; canonical URL, schema.org JSON-LD and breadcrumbs derived by the backend
+  - [x] Live pages and tests: landing, catalogue, category and product pages, server-rendered
+- [x] **4. `SM-F-21` Notifications**
   - [x] UI designed: notification list and bell, preferences by event, channel and language
-  - [ ] Backend, sender and translated templates
-  - [ ] Live pages and tests
-- [ ] **5. `SM-F-03` Category contracts**
+  - [x] Backend, sender and translated templates: in-app and email, per-event preferences, deduplicated delivery, English and Kiswahili wording
+  - [x] Live pages and tests: bell, inbox, preferences and language
+- [x] **5. `SM-F-03` Category contracts**
   - [x] UI designed: category contract builder with live derived surfaces
-  - [ ] Backend and contract
-  - [ ] Live pages and tests
-- [ ] **6. `SM-F-04` Catalog management**
+  - [x] Backend and contract: versioned contracts (attributes, units and normalisation, buyer filters, comparison rows, display hints, rich-text guidance for sellers and buyers); drafts are checked, published versions are immutable, publishing retires the previous version and renames the category
+  - [x] Live pages and tests: administrators list versions, edit drafts in the builder, publish and start new drafts
+- [x] **6. `SM-F-04` Catalog management**
   - [x] UI designed: product editor, variant matrix
-  - [ ] Backend and contract
-  - [ ] Live pages and tests
-- [ ] **7. `SM-F-08` Search and facets**
+  - [x] Backend and contract: products with category details validated against their contract (field-level messages), sellable variants with SKUs unique per seller, packs the category is sold by, minimum orders, prices and reported stock; drafts may be incomplete, publishing needs an approved seller, every required detail and a variant on sale
+  - [x] Live pages and tests: the seller's product list (filters, search, page size), new product, editor with generated category details and the variant matrix, publish, take off sale, archive and restore
+- [x] **7. `SM-F-08` Search and facets**
   - [x] UI designed: facet filter panel, category results, cursor pagination
-  - [ ] Backend and contract
-  - [ ] Live pages and tests
-- [ ] **8. `SM-F-09` Comparison**
+  - [x] Backend and contract: a search document per product rebuilt whenever it changes; search over titles, descriptions, SKUs and attribute values; filters by category, seller, price and stock, plus each category contract's buyer filters, with live counts; unpublished products never reach results
+  - [x] Live pages and tests: catalogue and category pages with filters, sort, products per page and previous/next, all in the URL
+- [x] **8. `SM-F-09` Comparison**
   - [x] UI designed: product comparison of two to four products, normalised prices
-  - [ ] Backend and contract
-  - [ ] Live pages and tests
-- [ ] **9. `SM-F-10` Cart**
+  - [x] Backend and contract: a comparison projection on the category contract's comparable attributes, prices per normalised unit, buyer-visible stock and explicit gaps; one category at a time
+  - [x] Live pages and tests: compare toggles on product cells and pages, a comparison tray, and the comparison page with add to cart
+- [x] **9. `SM-F-10` Cart**
   - [x] UI designed: cart grouped by seller
-  - [ ] Backend and contract
-  - [ ] Live pages and tests
-- [ ] **10. `SM-F-20` Buyer reorder**
+  - [x] Backend and contract: one server-backed cart per buyer and organization, lines grouped by seller, minimum order and stock checked on every change, price snapshots with explicit acceptance of new prices, a version per change
+  - [x] Live pages and tests: buy box on product pages, cart page, cart link in the public header
+- [x] **10. `SM-F-20` Buyer reorder**
   - [x] UI designed: reorder difference view
-  - [ ] Backend and contract
-  - [ ] Live pages and tests
+  - [x] Backend and contract: immutable order history (snapshots of each line), a reorder preview and command that copies what can be ordered into a fresh cart at today's prices and reports every price, stock, minimum-order and discontinued difference
+  - [x] Live pages and tests: order list, order detail with the reorder preview, copy to a new cart
 - [ ] **11. `SM-F-05` Media pipeline**
   - [x] UI designed: media manager with upload, processing and rejection states
   - [ ] Backend, storage and image workers
@@ -257,7 +262,9 @@ Each feature is done when its UI is designed, its backend models, rules and perm
 
 ### Portfolio release
 
-- [ ] Two demo organizations and two category contracts seeded (`seed_demo`)
+- [x] Demo data seeded (`seed_demo`): eight organizations (four approved sellers), six people with portraits prepared for the light and dark themes; the sign-in page lists the demo accounts in development
+- [x] Six category contracts seeded, two with version history (flour has a retired v1, tea an open draft), and 37 products (34 published) with category details and 42 variants, some low or out of stock
+- [x] A buyer cart that needs repricing and three past orders with price, stock, minimum-order and discontinued differences to reorder from
 - [ ] End-to-end tests for the core journeys (Playwright)
 - [ ] Performance budgets met: storefront LCP ≤ 2.5 s on mid-tier mobile, search p95 < 500 ms
 - [ ] Deployed demo
@@ -273,6 +280,16 @@ just migrate
 just api         # http://localhost:8000/healthz
 just web         # http://localhost:3000, design system at /design-system
 ```
+
+Seed the demo data, then open `/login` and choose one of the listed demo accounts to fill the form:
+
+```bash
+cd backend && uv run python manage.py seed_demo
+```
+
+Each account shows a different side: Brian (buyer purchaser) has a cart waiting for new prices and an order history to reorder from; Faith (seller manager) manages Mwangaza's products and variants; Amina (administrator) edits category contracts and reviews sellers. `seed_demo --reset` puts everything back.
+
+Emails go to Mailpit at http://localhost:8025 unless `BREVO_API_KEY` and `BREVO_SENDER_EMAIL` (a sender verified in Brevo) are set in `.env`; then they are sent through Brevo. Tests never use the database in `DATABASE_URL`: they use `TEST_DATABASE_URL`, or the local Docker Postgres.
 
 Or run the whole stack in containers with `just up`.
 
@@ -315,8 +332,9 @@ docs/           project context, design constitution, brand assets, architecture
 - [DESIGN.md](DESIGN.md): the shipped design system, token by token
 - [Brand assets](docs/design/brand-assets.md): logo usage rules and where every kit file lives
 - [Architecture decisions](docs/architecture/decisions.md): deliberate deviations and deferred work
+- [Code tour](docs/code-tour.md): every file of the foundation and the first ten features, in reading order
 - [Contract changelog](contract/CHANGELOG.md)
 
 ## Credits
 
-Demo product photographs are open-licence images from Wikimedia Commons, cut out for the interface; authors and licences are listed in [`web/public/images/products/README.md`](web/public/images/products/README.md). CC BY-SA cut-outs are shared under the same licence as their source. Scene photographs are from Unsplash (Unsplash Licence), credited in [`web/public/images/scenes/README.md`](web/public/images/scenes/README.md).
+Demo product photographs are open-licence images from Wikimedia Commons, cut out for the interface; authors and licences are listed in [`web/public/images/products/README.md`](web/public/images/products/README.md). CC BY-SA cut-outs are shared under the same licence as their source. Scene photographs are from Unsplash (Unsplash Licence), credited in [`web/public/images/scenes/README.md`](web/public/images/scenes/README.md). The six demo portraits are Unsplash photographs prepared by `design/photography/people.py` in light-theme and dark-theme versions, credited in [`backend/apps/demo/avatars/README.md`](backend/apps/demo/avatars/README.md). Photographs and videos in the seeded product listings are Unsplash photos and YouTube videos referenced by address, each credited where it appears (listed in [`backend/apps/demo/products.py`](backend/apps/demo/products.py)); they show the kind of product, not the invented brands.

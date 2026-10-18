@@ -122,7 +122,7 @@ export function NotificationBell({ notifications, now, onMarkRead, onMarkAllRead
   )
 }
 
-export type NotificationEvent = 'order' | 'approval' | 'quote' | 'payment' | 'delivery'
+export type NotificationEvent = 'order' | 'approval' | 'quote' | 'payment' | 'delivery' | 'account'
 export type NotificationPreference = { event: NotificationEvent; channel: NotificationChannel; enabled: boolean }
 
 const eventLabel: Record<NotificationEvent, { label: string; detail: string }> = {
@@ -131,6 +131,7 @@ const eventLabel: Record<NotificationEvent, { label: string; detail: string }> =
   quote: { label: 'Quotes', detail: 'Requested, responded, expiring' },
   payment: { label: 'Payments', detail: 'Prompt sent, confirmed, failed' },
   delivery: { label: 'Deliveries', detail: 'Handed over, delayed, delivered' },
+  account: { label: 'Account', detail: 'Invitations, team changes, security' },
 }
 
 /**

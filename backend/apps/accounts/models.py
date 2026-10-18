@@ -37,6 +37,14 @@ class User(AbstractBaseUser, PermissionsMixin):  # pyright: ignore[reportIncompa
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
     date_joined = models.DateTimeField(default=timezone.now)
+    avatar_id: uuid.UUID | None  # foreign-key columns, declared for the type checker
+    avatar_dark_id: uuid.UUID | None
+    # Profile photo. Seeded people carry a second version prepared for the dark theme; an uploaded
+    # photo is used in both themes.
+    avatar = models.ForeignKey("media.FileAsset", null=True, blank=True, on_delete=models.SET_NULL, related_name="+")
+    avatar_dark = models.ForeignKey(
+        "media.FileAsset", null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
+    )
 
     objects = UserManager()
     USERNAME_FIELD = "email"
@@ -44,4 +52,23 @@ class User(AbstractBaseUser, PermissionsMixin):  # pyright: ignore[reportIncompa
     REQUIRED_FIELDS: ClassVar[list[str]] = []
 
     def __str__(self) -> str:
-        return self.email
+        return self.display_name or self.email
+
+
+class EmailVerification(models.Model):
+    """A six-digit code sent to confirm an address. Only its hash is stored; it expires and counts tries."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="verifications")
+    email = models.EmailField()
+    code_hash = models.CharField(max_length=64)
+    attempts = models.PositiveSmallIntegerField(default=0)
+    expires_at = models.DateTimeField()
+    used_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ("-created_at",)
+
+    def __str__(self) -> str:
+        return f"Verification for {self.email}"

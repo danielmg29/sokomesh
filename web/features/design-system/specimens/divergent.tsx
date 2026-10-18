@@ -1,49 +1,61 @@
 'use client'
 
-import { ArrowRight } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
 import { PaymentStatusPanel } from '@/components/commerce/checkout'
 import { PriceTierTable } from '@/components/commerce/pricing'
 import { InventoryLedgerBlock, ReservationCountdown, ReservationIndicator, StockAvailabilityIndicator } from '@/components/commerce/stock'
 import { Projection } from '@/components/kernel/Projection'
-import { Icon } from '@/components/ui/icon'
 import { Thread } from '@/components/ui/thread'
 import { Segmented } from '@/components/ui/choice'
 import { cn } from '@/lib/cn'
 import { formatTime } from '@/lib/format'
-import { CategoryContractBuilder, type Attribute } from '@/features/categories/CategoryContractBuilder'
+import { CategoryContractBuilder, attributeToField, type Attribute, type ContractDraft } from '@/features/categories/CategoryContractBuilder'
+import { VariantMeta } from '@/lib/contract/generated'
 import { ProductComparisonBlock, type CompareProduct } from '@/features/comparison/ProductComparisonBlock'
 import { FulfillmentPickPackBlock, type PickLine } from '@/features/fulfillment/FulfillmentPickPackBlock'
-import { CategoryShowcase, MarketingCTA, MarketingFooter, MercantileHero, StorySplit, TradeRibbon, TradeStatement, WholesaleMetricsStrip, cta, type HeroEmphasis, type HeroPanel } from '@/features/marketing/Marketing'
+import { CategoryShowcase, MarketingCTA, MarketingFooter, MercantileHero, ProductRail as MarketingProductRail, StorySplit, buyerValue, sellerValue, statementCopy, heroPanels, TradeRibbon, TradeStatement, WholesaleMetricsStrip, cta, type HeroEmphasis } from '@/features/marketing/Marketing'
 import { BuyerSellerValueSplit, InventoryTrustProof, MarketingHeader, MarketMeshVisualization, TradeFlowStory, type MeshRecord } from '@/features/marketing/MarketingInteractive'
 import { DEMO_NOW, images, productMeta, products, scenes, sellers, stockFor } from '../fixtures'
 import { Plate, Plates } from '../kit'
 
 export const maizeContract: Attribute[] = [
-  { key: 'pack_size', label: 'Pack size', type: 'enum', required: true, facet: true, comparable: true, choices: ['1 kg', '2 kg', '5 kg'] },
+  { key: 'pack_size', label: 'Pack size', type: 'enum', required: true, facet: true, comparable: true, card: true, choices: [{ value: '1kg', label: '1 kg' }, { value: '2kg', label: '2 kg' }, { value: '5kg', label: '5 kg' }] },
   { key: 'fortified', label: 'Fortified', type: 'boolean', required: false, facet: true, comparable: true },
   { key: 'net_weight', label: 'Bale net weight', type: 'decimal', unit: 'kg', required: true, facet: false, comparable: true },
   { key: 'mill', label: 'Mill', type: 'string', required: false, facet: false, comparable: true },
   { key: 'shelf_life_months', label: 'Shelf life', type: 'integer', unit: 'months', required: false, facet: false, comparable: true },
 ]
 
+/** The marketplace's packaging units, from the contract (the variant field's choices). */
+export const contractUnits = (VariantMeta.fields.find(f => f.name === 'packaging_unit')?.choices ?? []).map(c => ({ value: c.value, label: c.label }))
+export const maizeDraft: ContractDraft = {
+  name: 'Flour & grains',
+  attributes: maizeContract,
+  saleUnits: ['bale', 'sack'],
+  normalise: { attribute: 'net_weight', per: 'kg', factor: '1' },
+  sellerGuidance: { html: '<p>List each packet size as its own product; tick <strong>Fortified</strong> only with the KEBS logo.</p>', text: 'List each packet size as its own product; tick Fortified only with the KEBS logo.' },
+  buyerGuidance: { html: '<p>Compare prices per kg: bales of 12 × 2 kg and 24 × 1 kg both weigh 24 kg.</p>', text: 'Compare prices per kg: bales of 12 × 2 kg and 24 × 1 kg both weigh 24 kg.' },
+}
+const saved = async () => ({ ok: true as const })
+
 function Builder() {
-  return <Plates cols={1}><Plate label="Draft to publish, with live derived surfaces"><CategoryContractBuilder category="Flour & grains · Maize flour" version={3} attributes={maizeContract} /></Plate></Plates>
+  return (
+    <Plates cols={1}>
+      <Plate label="draft: editable, saved through the API, with live derived surfaces"><CategoryContractBuilder category="Flour & grains" version={3} status="draft" initial={maizeDraft} units={contractUnits} onSave={saved} /></Plate>
+      <Plate label="published: read-only" note="Start a new draft to change a category"><CategoryContractBuilder category="Flour & grains" version={2} status="published" initial={maizeDraft} units={contractUnits} /></Plate>
+    </Plates>
+  )
 }
 
 export const compareProducts: CompareProduct[] = [
-  { id: 'c1', name: 'Mavuno Maize Flour 2 kg', seller: sellers.mwangaza.label, image: images.maize, unitPrice: '1740.00', unit: 'bale', normalisedPrice: { amount: '72.50', per: 'kg' }, stock: stockFor['p-mvn-2k']!, values: { pack_size: '2_kg', fortified: true, net_weight: '24.00', mill: 'Nakuru', shelf_life_months: 6 } },
-  { id: 'c2', name: 'Shamba Maize Flour 2 kg', seller: sellers.rift.label, image: images.flour, unitPrice: '1650.00', unit: 'bale', normalisedPrice: { amount: '68.75', per: 'kg' }, stock: stockFor['p-skb-1k']!, values: { pack_size: '2_kg', fortified: false, net_weight: '24.00', mill: null, shelf_life_months: 4 } },
-  { id: 'c3', name: 'Nafaka Sifted Maize Meal 5 kg', seller: sellers.lakeside.label, image: images.rice, unitPrice: '1420.00', unit: 'bale', normalisedPrice: { amount: '71.00', per: 'kg' }, stock: stockFor['p-jua-3l']!, values: { pack_size: '5_kg', fortified: true, net_weight: '20.00', mill: 'Kisumu', shelf_life_months: null } },
+  { id: 'c1', name: 'Mavuno Maize Flour 2 kg', seller: sellers.mwangaza.label, image: images.maize, unitPrice: '1740.00', unit: 'bale', normalisedPrice: { amount: '72.50', per: 'kg' }, stock: stockFor['p-mvn-2k']!, values: { pack_size: '2kg', fortified: true, net_weight: '24.00', mill: 'Nakuru', shelf_life_months: 6 } },
+  { id: 'c2', name: 'Shamba Maize Flour 2 kg', seller: sellers.rift.label, image: images.flour, unitPrice: '1650.00', unit: 'bale', normalisedPrice: { amount: '68.75', per: 'kg' }, stock: stockFor['p-skb-1k']!, values: { pack_size: '2kg', fortified: false, net_weight: '24.00', mill: null, shelf_life_months: 4 } },
+  { id: 'c3', name: 'Nafaka Sifted Maize Meal 5 kg', seller: sellers.lakeside.label, image: images.rice, unitPrice: '1420.00', unit: 'bale', normalisedPrice: { amount: '71.00', per: 'kg' }, stock: stockFor['p-jua-3l']!, values: { pack_size: '5kg', fortified: true, net_weight: '20.00', mill: 'Kisumu', shelf_life_months: null } },
 ]
-const fourth: CompareProduct = { id: 'c4', name: 'Pwani Maize Meal 1 kg', seller: sellers.pwani.label, image: images.flour, unitPrice: '1860.00', unit: 'bale', normalisedPrice: { amount: '77.50', per: 'kg' }, stock: stockFor['p-sfi-800']!, values: { pack_size: '1_kg', fortified: true, net_weight: '24.00', mill: 'Mombasa', shelf_life_months: 5 } }
+const fourth: CompareProduct = { id: 'c4', name: 'Pwani Maize Meal 1 kg', seller: sellers.pwani.label, image: images.flour, unitPrice: '1860.00', unit: 'bale', normalisedPrice: { amount: '77.50', per: 'kg' }, stock: stockFor['p-sfi-800']!, values: { pack_size: '1kg', fortified: true, net_weight: '24.00', mill: 'Mombasa', shelf_life_months: 5 } }
 
 /** The category contract's comparable attributes, as field metadata (what the backend would emit). */
-export const comparisonFields = maizeContract.filter(a => a.comparable).map(a => ({
-  name: a.key, label: a.label, unit: a.unit, type: a.type === 'string' ? 'string' : a.type, decimalPlaces: a.type === 'decimal' ? 2 : undefined,
-  widget: a.type === 'enum' ? 'select' : a.type === 'boolean' ? 'boolean' : a.type === 'decimal' ? 'decimal' : a.type === 'integer' ? 'integer' : 'text',
-  choices: a.choices?.map(c => ({ value: c.toLowerCase().replace(/\s+/g, '_'), label: c })),
-}))
+export const comparisonFields = maizeContract.filter(a => a.comparable).map(attributeToField)
 
 function Comparison() {
   const fields = comparisonFields
@@ -75,29 +87,11 @@ function Header() {
   )
 }
 
-/** The two doors of the landing hero: one per side of the market, each with its own photograph and action. */
-export const heroPanels: readonly [HeroPanel, HeroPanel] = [
-  { scene: scenes['hero-retail'], heading: 'Order wholesale against real stock.', body: 'One cart across several wholesalers. Stock is held for you while you pay by M-Pesa.', cta: cta.buy, text: 'light', place: 'bottom' },
-  { scene: scenes['hero-warehouse'], heading: 'Sell to every retailer from one stock ledger.', body: 'Publish against category contracts, price by buyer group and quantity, and fulfil from the order record.', cta: cta.sell, text: 'dark', place: 'top' },
-]
+export { heroPanels }
 
-/** A merchandised row of product cells from the real projection (after Tanini Home and Bélanger listings). */
+/** The landing's product row with fixture products (the live page passes published products). */
 export function ProductRail({ title = 'Restock this week', records = products.slice(0, 4) }: { title?: string; records?: typeof products }) {
-  return (
-    <section aria-labelledby="rail-title" className="@container scroll-reveal flex flex-col gap-6">
-      <div className="flex flex-wrap items-baseline justify-between gap-3">
-        <h2 id="rail-title" className="text-3xl font-semibold @5xl:text-4xl">{title}</h2>
-        <a href="#products" className="inline-flex items-center gap-1 text-md font-semibold text-primary hover:underline">All products<Icon icon={ArrowRight} /></a>
-      </div>
-      <ul className="grid grid-cols-2 border-t border-l border-border @4xl:grid-cols-4">
-        {records.map(p => (
-          <li key={p.id} className="flex border-r border-b border-border bg-surface">
-            <Projection meta={productMeta} record={p} context="list" override={{ intent: 'media', surface: 'flat' }} now={DEMO_NOW} href="#product" className="w-full" />
-          </li>
-        ))}
-      </ul>
-    </section>
-  )
+  return <MarketingProductRail title={title} meta={productMeta} records={records} href={() => '#product'} all={{ label: 'All products', href: '#products' }} now={DEMO_NOW} />
 }
 
 /** The hero's market: four product cells from the real projection, and the hold one buyer has on the first. */
@@ -186,18 +180,7 @@ function Categories() {
   )
 }
 
-export const buyerValue = [
-  { title: 'One cart, several wholesalers', body: 'Lines are grouped by seller, each with its own delivery fee and dispatch day.' },
-  { title: 'Stock held while you pay', body: 'Checkout reserves the units for 15 minutes so nobody else takes them mid-payment.' },
-  { title: 'Prices you can explain', body: 'Every price says which rule set it: base, your buyer group or a quantity tier.' },
-  { title: 'Approvals before money moves', body: 'Owners set a limit; larger orders wait for approval and the API enforces it.' },
-]
-export const sellerValue = [
-  { title: 'Categories that build your forms', body: 'Publish against a category contract and its fields, filters and comparison rows appear everywhere.' },
-  { title: 'A stock ledger, not a stock number', body: 'Receipts, holds, releases and shipments are kept as movements, so availability is always explainable.' },
-  { title: 'Quotes and price books', body: 'Buyer-group and volume prices with conflicts flagged before buyers see them.' },
-  { title: 'Pick, pack and hand over', body: 'Short-ship, substitute and attach evidence from the same order record.' },
-]
+export { buyerValue, sellerValue }
 
 function ValueSplit() {
   return <Plates cols={1}><Plate label="stories" note="A photograph per side, left then right" tone="canvas"><BuyerSellerValueSplit layout="stories" buyer={buyerValue} seller={sellerValue} scenes={{ buyer: scenes['story-delivery'], seller: scenes['story-stock'] }} /></Plate><Plate label="split"><BuyerSellerValueSplit buyer={buyerValue} seller={sellerValue} /></Plate><Plate label="tabs"><BuyerSellerValueSplit layout="tabs" buyer={buyerValue} seller={sellerValue} /></Plate></Plates>
@@ -279,7 +262,7 @@ function Ribbon() {
           <TradeRibbon className="relative -z-10 -mt-12 h-24" />
         </div>
       </Plate>
-      <Plate label="on the brand ground" tone="canvas"><div className="bg-brand pt-10"><TradeRibbon ground="brand" className="h-24" /></div></Plate>
+      <Plate label="on a dark ground" note="The forest strand lifts; the amber keeps its value" tone="canvas"><div className="on-chrome bg-chrome px-4 py-8"><TradeRibbon ground="brand" className="h-16" /></div></Plate>
     </Plates>
   )
 }
@@ -294,11 +277,7 @@ function Story() {
 }
 
 /** The statement, as on the landing page: the tagline with the oil bottle standing in front of it. */
-export const statement = {
-  lines: ['Trade without', 'the tangle.'] as const,
-  product: { src: images.oil.url, width: images.oil.width, height: images.oil.height },
-  body: 'One record of stock, price and order sits between every buyer and seller, so nobody restocks against a guess.',
-}
+export const statement = { ...statementCopy, product: { src: images.oil.url, width: images.oil.width, height: images.oil.height } }
 
 function Statement() {
   return <Plates cols={1}><Plate label="tagline with a product in front" tone="canvas"><TradeStatement {...statement} link={cta.flow} /></Plate></Plates>
@@ -310,6 +289,7 @@ function Footer() {
 
 const map: Record<string, () => ReactNode> = {
   'D-01': Builder, 'D-02': Comparison, 'D-03': PickPack,
+  'M-14': () => <Plates cols={1}><Plate label="four products, with link" tone="canvas"><ProductRail /></Plate></Plates>,
   'M-01': Header, 'M-02': Hero, 'M-03': Mesh, 'M-04': Categories, 'M-05': ValueSplit, 'M-06': Flow, 'M-07': Trust, 'M-08': Metrics, 'M-09': CTA, 'M-10': Footer, 'M-11': Ribbon, 'M-12': Story, 'M-13': Statement,
 }
 

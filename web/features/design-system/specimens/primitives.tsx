@@ -15,6 +15,7 @@ import { Accordion, Collapsible, CollapsibleContent, CollapsibleTrigger, Tabs, T
 import { FormField } from '@/components/ui/form-field'
 import { Icon } from '@/components/ui/icon'
 import { Input, Textarea } from '@/components/ui/input'
+import { PasswordInput } from '@/components/ui/password-input'
 import { Menu, MenuCheckboxItem, MenuContent, MenuItem, MenuLabel, MenuSeparator, MenuSub, MenuSubContent, MenuSubTrigger, MenuTrigger, Popover, Tooltip } from '@/components/ui/overlay'
 import { Progress, RangeSlider, Skeleton } from '@/components/ui/progress'
 import { Select } from '@/components/ui/select'
@@ -84,6 +85,17 @@ function Inputs() {
           <Input aria-label="Disabled" disabled defaultValue="Locked while publishing" />
           <Input aria-label="Read-only" readOnly defaultValue="SM-ORD-004215" />
         </Stack>
+      </Plate>
+      <Plate label="PasswordInput" note="The browser's password manager still recognises it">
+        <Stack gap="sm">
+          <FormField label="Current password"><PasswordInput autoComplete="current-password" defaultValue="Soko-Demo-2026!" /></FormField>
+        </Stack>
+      </Plate>
+      <Plate label="Avatar with a dark-theme photograph" note="Switch the theme to see the second photograph">
+        <Cluster gap="md">
+          <Avatar size="xl" name="Faith Chebet" src="/images/demo/people/faith.light.webp" darkSrc="/images/demo/people/faith.dark.webp" />
+          <Avatar size="lg" name="Faith Chebet" />
+        </Cluster>
       </Plate>
       <Plate label="Textarea, count, over limit" span>
         <div className="grid grid-cols-1 gap-3 @2xl:grid-cols-2">
@@ -211,6 +223,7 @@ function Floating() {
           <MenuTrigger asChild><Button variant="secondary">Order actions</Button></MenuTrigger>
           <MenuContent align="start">
             <MenuLabel>SM-ORD-004215</MenuLabel>
+            <MenuItem href="/design-system">Open the order (link)</MenuItem>
             <MenuItem>Confirm order</MenuItem>
             <MenuItem disabled hint="Unavailable">Ship</MenuItem>
             <MenuCheckboxItem checked>Notify buyer</MenuCheckboxItem>

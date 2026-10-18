@@ -6,7 +6,7 @@ import type { ReactNode } from 'react'
 import { cn } from '@/lib/cn'
 import { useFieldControlProps } from './form-field'
 import { Icon } from './icon'
-import { controlStyles } from './input'
+import { triggerStyles } from './input'
 
 export type SelectOption = { value: string; label: string; disabled?: boolean; description?: string }
 
@@ -30,7 +30,7 @@ export function Select({ options, value, defaultValue, onValueChange, placeholde
     <SelectPrimitive.Root value={value} defaultValue={defaultValue} onValueChange={onValueChange} disabled={disabled} name={name}>
       <SelectPrimitive.Trigger
         {...field}
-        className={cn(controlStyles, 'flex h-(--density-control-height) items-center justify-between gap-2 px-3 text-left text-md data-placeholder:text-muted', className)}
+        className={cn(triggerStyles, 'flex h-(--density-control-height) items-center justify-between gap-2 px-3 text-left text-md data-placeholder:text-muted', className)}
       >
         <SelectPrimitive.Value placeholder={placeholder}>{current && renderValue ? renderValue(current) : undefined}</SelectPrimitive.Value>
         <SelectPrimitive.Icon asChild>

@@ -120,23 +120,34 @@ export function PriceBookEditor({ rules, unit, product, mode: initialMode = 'vie
   )
 }
 
+export type ReorderKind = 'price' | 'stock' | 'moq' | 'discontinued'
 export type ReorderLine = {
   id: string
   product: string
   unit: string
-  quantity: number
+  thenQuantity: number
   thenPrice: Money
+  /** Today's terms; absent when the product is no longer sold. */
+  nowQuantity?: number
   nowPrice?: Money
   stock?: Stock
-  difference: 'none' | 'price' | 'availability' | 'product-unavailable'
+  /** Every difference from the historical line (spec ReorderResult.line_differences). */
+  kinds: readonly ReorderKind[]
+  addable: boolean
 }
 
-/** Copying a past order into a fresh cart: historical values stay; differences are explicit. */
-export function ReorderDiffBlock({ orderReference, placedOn, lines, onAdd }: { orderReference: string; placedOn: string; lines: readonly ReorderLine[]; onAdd?: () => void }) {
-  const addable = lines.filter(l => l.difference !== 'product-unavailable' && l.stock?.state !== 'out-of-stock')
-  const thenTotal = addMoney(...lines.map(l => multiplyMoney(l.thenPrice, l.quantity)))
-  const nowTotal = addMoney(...addable.map(l => multiplyMoney(l.nowPrice ?? l.thenPrice, l.quantity)))
-  const tone = (l: ReorderLine): Tone => (l.difference === 'product-unavailable' ? 'danger' : l.difference === 'availability' ? 'warning' : l.difference === 'price' ? 'info' : 'neutral')
+const packs = (n: number, unit: string) => `${n.toLocaleString('en-KE')} ${unitLabel(unit, n) ?? unit}`
+
+/**
+ * Copying a past order into a fresh cart (SM-F-20): historical values stay as they were; every difference
+ * with today (price, stock, minimum order, discontinued) is shown before anything is copied.
+ */
+export function ReorderDiffBlock({ orderReference, placedOn, lines, onAdd, adding, replacesCartLines = 0 }: {
+  orderReference: string; placedOn: string; lines: readonly ReorderLine[]; onAdd?: () => void; adding?: boolean; replacesCartLines?: number
+}) {
+  const addable = lines.filter(l => l.addable)
+  const thenTotal = addMoney(...lines.map(l => multiplyMoney(l.thenPrice, l.thenQuantity)), '0')
+  const nowTotal = addMoney(...addable.map(l => multiplyMoney(l.nowPrice ?? l.thenPrice, l.nowQuantity ?? l.thenQuantity)), '0')
   return (
     <section className="flex min-w-0 flex-col gap-3 rounded-md border border-border bg-surface p-4" aria-label={`Reorder ${orderReference}`}>
       <div className="flex flex-col gap-1">
@@ -144,33 +155,42 @@ export function ReorderDiffBlock({ orderReference, placedOn, lines, onAdd }: { o
         <p className="text-md text-muted">Placed {formatDate(placedOn)}. Prices and stock below are today&apos;s; the original order is unchanged.</p>
       </div>
       <ul className="flex flex-col divide-y divide-border rounded-sm border border-border">
-        {lines.map(l => (
-          <li key={l.id} className="grid grid-cols-1 gap-2 px-3 py-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
-            <div className="flex min-w-0 flex-col gap-1">
-              <span className="font-semibold">{l.quantity} × {l.product}</span>
-              <span className="flex flex-wrap items-center gap-2 text-sm">
-                {l.difference === 'none' ? <span className="text-muted">Same price and available</span> : null}
-                {l.difference === 'price' && l.nowPrice ? <Stamp tone={tone(l)} size="sm" detail={percentChange(l.thenPrice, l.nowPrice)}>Price changed</Stamp> : null}
-                {l.difference === 'availability' && l.stock ? <StockAvailabilityIndicator stock={l.stock} /> : null}
-                {l.difference === 'product-unavailable' ? <Stamp tone="danger" condition="unavailable" size="sm">No longer sold</Stamp> : null}
+        {lines.map(l => {
+          const changedQty = l.addable && l.nowQuantity !== undefined && l.nowQuantity !== l.thenQuantity
+          return (
+            <li key={l.id} className={cn('grid grid-cols-1 gap-2 px-3 py-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center', !l.addable && 'bg-sunken/60')}>
+              <div className="flex min-w-0 flex-col gap-1">
+                <span className={cn('font-semibold', !l.addable && 'text-muted')}>
+                  {changedQty ? <><span className="text-muted line-through">{l.thenQuantity}</span> {l.nowQuantity}</> : l.thenQuantity} × {l.product}
+                </span>
+                <span className="flex flex-wrap items-center gap-2 text-sm">
+                  {!l.kinds.length ? <span className="text-muted">Same price, and in stock</span> : null}
+                  {l.kinds.includes('discontinued') ? <Stamp tone="danger" condition="unavailable" size="sm">No longer sold</Stamp> : null}
+                  {l.kinds.includes('price') && l.nowPrice ? <Stamp tone="info" size="sm" detail={percentChange(l.thenPrice, l.nowPrice)}>Price changed</Stamp> : null}
+                  {l.kinds.includes('moq') && l.nowQuantity ? <Stamp tone="info" size="sm" detail={`now ${packs(l.nowQuantity, l.unit)}`}>Minimum order raised</Stamp> : null}
+                  {l.kinds.includes('stock') && l.stock ? <StockAvailabilityIndicator stock={l.stock} /> : null}
+                  {!l.addable && !l.kinds.includes('discontinued') ? <span className="text-muted">Left out: not enough stock</span> : null}
+                </span>
+              </div>
+              <span className="flex items-center gap-2 text-md tabular sm:justify-end">
+                <span className={cn(l.kinds.includes('price') && 'text-muted line-through')}>{formatMoney(l.thenPrice)}</span>
+                {l.kinds.includes('price') && l.nowPrice ? <><Icon icon={ArrowRight} className="text-muted" /><span className="font-semibold">{formatMoney(l.nowPrice)}</span></> : null}
+                <span className="text-sm text-muted">/ {unitLabel(l.unit, 1) ?? l.unit}</span>
               </span>
-            </div>
-            <span className="flex items-center gap-2 text-md tabular sm:justify-end">
-              <span className={cn(l.difference === 'price' && 'text-muted line-through')}>{formatMoney(l.thenPrice)}</span>
-              {l.difference === 'price' && l.nowPrice ? <><Icon icon={ArrowRight} className="text-muted" /><span className="font-semibold">{formatMoney(l.nowPrice)}</span></> : null}
-              <span className="text-sm text-muted">/ {l.unit}</span>
-            </span>
-          </li>
-        ))}
+            </li>
+          )
+        })}
       </ul>
       <dl className="grid grid-cols-2 gap-x-6 gap-y-1 text-md sm:max-w-sm">
         <dt className="text-muted">Original total</dt><dd className="text-right tabular">{formatMoney(thenTotal)}</dd>
         <dt className="font-semibold">Today, {addable.length} of {lines.length} lines</dt><dd className="text-right font-semibold tabular">{formatMoney(nowTotal)}</dd>
       </dl>
-      <div className="flex flex-wrap gap-2">
-        <Button variant="primary" onClick={onAdd} disabled={!addable.length}>Add {addable.length} available lines to cart</Button>
-        <Button variant="secondary">Review each line</Button>
-      </div>
+      {replacesCartLines ? <p className="text-sm text-muted">Your current cart ({replacesCartLines} {replacesCartLines === 1 ? 'line' : 'lines'}) will be set aside, not deleted.</p> : null}
+      {onAdd ? (
+        <div className="flex flex-wrap gap-2">
+          <Button variant="primary" onClick={onAdd} disabled={!addable.length} loading={adding} loadingLabel="Copying…">Copy {addable.length} {addable.length === 1 ? 'line' : 'lines'} to a new cart</Button>
+        </div>
+      ) : null}
     </section>
   )
 }

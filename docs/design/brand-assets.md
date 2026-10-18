@@ -25,7 +25,9 @@ Served files keep the kit's folder names, so `logo/logo-mark.svg` in ASSET_USAGE
 | Kit file | Location | Used for |
 |---|---|---|
 | `logo/logo-mark.svg` | `web/public/brand/logo/` | `BrandLogo variant="mark"` |
-| `logo/logo-horizontal.svg` | `web/public/brand/logo/` | `BrandLogo variant="lockup"` (home page) |
+| `logo/logo-horizontal.svg` | `web/public/brand/logo/` | Source for the trimmed lockup below; kept as delivered |
+| (derived 2026-10-17, awaiting brand-owner approval) `logo-lockup.svg`, `logo-lockup-reversed.svg` | `web/public/brand/logo/` | `BrandLogo variant="lockup"`: the kit lockup with its artboard trimmed to the artwork (the 1600 × 400 board left about a third of its width empty, so the name and tagline rendered a third smaller than their box). Nothing inside changes. Auth pages and the footer, at 264 px and up, where the tagline is readable |
+| (derived 2026-10-17, awaiting brand-owner approval) `logo-wordmark.svg`, `logo-wordmark-reversed.svg` | `web/public/brand/logo/` | `BrandLogo variant="wordmark"`: the kit mark with the name set beside it at 150 units, centred on the mark, and no tagline. The public header and app navigation, at about 200 px, where the kit lockup's tagline was under 4 px |
 | (derived, approved 2026-10-13) `logo-horizontal-reversed.svg`, `logo-mark-reversed.svg` | `web/public/brand/logo/` | Dark grounds: brand-surface wordmark, lifted-forest tagline `#44A77B` (5.6:1), the mark forest raised one lightness step in its own hue to `#3B7E63` (3.5:1); amber and the white seam unchanged. `BrandLogo` swaps them in on the dark theme, and `ground="dark"` forces them on chrome |
 | `icons/favicon.svg` | `web/public/brand/icons/` | `<link rel="icon" type="image/svg+xml">` |
 | `icons/favicon.ico` | `web/public/brand/icons/` | `<link rel="icon">`; `/favicon.ico` is rewritten here in `next.config.ts` |
