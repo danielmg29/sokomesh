@@ -1,7 +1,9 @@
 'use client'
 
 import { useState, type ReactNode } from 'react'
-import { IntegrationPanel, ReconciliationTraceBlock, SellerAnalyticsGrid, type AnalyticsPeriod, type ApiToken, type WebhookEndpoint } from '@/components/commerce/admin'
+import { IntegrationPanel, ReconciliationChecksBlock, ReconciliationTraceBlock, SecretReveal, SellerAnalyticsGrid, type AnalyticsPeriod, type ApiToken, type ReconciliationCheck, type TraceEvent, type WebhookEndpoint } from '@/components/commerce/admin'
+import { OrderPaymentBlock } from '@/components/commerce/payment'
+import type { PaymentRecord, ReservationRecord, SandboxOutcome } from '@/lib/client/records'
 import { ApprovalFlowBlock, CartBlock, QuoteDecisionPanel, QuoteRequestSheet, SellerCartGroup, type CartState, type QuoteStatus } from '@/components/commerce/cart'
 import { AddToCart, BuyBox } from '@/components/commerce/buy'
 import { CategoryDetailsForm, CategoryHero, FacetFilterPanel, MediaManager, ProductEditorBlock, SellerOnboardingReviewBlock, VariantMatrixEditor, type VariantRow } from '@/components/commerce/catalog'
@@ -18,7 +20,9 @@ import { FieldInput } from '@/components/kernel/fields/FieldInput'
 import type { SubmitResult } from '@/components/kernel/forms/ProjectedForm'
 import { Button } from '@/components/ui/button'
 import { Segmented } from '@/components/ui/choice'
-import { QuoteMeta, locales } from '@/lib/contract/generated'
+import { ApiTokenMeta, QuoteMeta, ReturnCaseMeta, WebhookEndpointMeta, locales } from '@/lib/contract/generated'
+import { ActionBar } from '@/components/kernel/actions/ActionBar'
+import { MemoryUrl } from '@/components/kernel/blocks/UrlListControls'
 import type { FieldMeta, ModelMeta } from '@/lib/contract/types'
 import { formatMoney } from '@/lib/money'
 import { Breadcrumbs } from '@/components/kernel/nav/Breadcrumbs'
@@ -248,7 +252,13 @@ function Stock() {
 function Facets() {
   const facetMeta: ModelMeta = { ...productMeta, fields: [...productMeta.fields.filter(f => ['stock_status', 'unit_price', 'seller'].includes(f.name)), { ...maizeAttributes[0]!, filter: ['in'] }, { ...maizeAttributes[1]!, filter: ['eq'] }] }
   const counts = { pack_size: { '1kg': 18, '2kg': 41, '5kg': 6 }, stock_status: { available: 52, low: 9, reserved: 3, out_of_stock: 4 } }
-  return <Plates cols={2}><Plate label="sidebar · category-derived controls"><FacetFilterPanel meta={facetMeta} layout="sidebar" counts={counts} /></Plate><Plate label="mobile sheet"><FacetFilterPanel meta={facetMeta} layout="sheet" counts={counts} /></Plate></Plates>
+  const facets = { counts, options: { seller: [{ value: 's-mwangaza', label: 'Mwangaza Wholesalers' }, { value: 's-rift', label: 'Rift Valley Traders' }] }, price: { min: '1180.00', max: '4850.00' } }
+  return (
+    <Plates cols={2}>
+      <Plate label="sidebar · contract facets, counts, price slider" note="Written to the address below, as on the catalogue"><MemoryUrl><FacetFilterPanel meta={facetMeta} layout="sidebar" facets={facets} /></MemoryUrl></Plate>
+      <Plate label="mobile sheet"><MemoryUrl><FacetFilterPanel meta={facetMeta} layout="sheet" facets={facets} /></MemoryUrl></Plate>
+    </Plates>
+  )
 }
 
 const line = (id: string, product: string, sku: string, image: CartLine['image'], quantity: number, unit: string, unitPrice: string, stock: CartLine['stock'], extra: Partial<CartLine> = {}): CartLine =>
@@ -318,6 +328,7 @@ function Approvals() {
       <Plate label="pending · purchaser view"><ApprovalFlowBlock state="pending" policyName="Restock policy" threshold="250000.00" orderTotal="312400.00" steps={approvalSteps} /></Plate>
       <Plate label="rejected"><ApprovalFlowBlock state="rejected" policyName="Restock policy" threshold="250000.00" orderTotal="312400.00" steps={[approvalSteps[0]!, { level: 2, role: 'Finance', approver: people.joseph, decision: 'rejected', decidedAt: '2026-10-12T11:30:00+03:00', comment: 'Credit limit reached; split into two orders.' }]} /></Plate>
       <Plate label="not-required"><ApprovalFlowBlock state="not-required" policyName="Restock policy" threshold="250000.00" orderTotal="48250.00" steps={[]} /></Plate>
+      <Plate label="not-required · placed by an approver"><ApprovalFlowBlock state="not-required" policyName="Restock policy" threshold="250000.00" orderTotal="312400.00" steps={[]} note="Placed by a buyer owner: under this policy their own orders go straight to the seller." /></Plate>
     </Plates>
   )
 }
@@ -398,7 +409,7 @@ function Payment() {
   return (
     <Plates cols={2}>
       <Plate label="SellaPay STK push · every state" span>
-        <div className="mb-4"><Segmented label="Payment state" size="sm" value={state} onValueChange={setState} items={(['created', 'pending', 'stale', 'failed', 'cancelled', 'confirmed', 'reconciled'] as const).map(v => ({ value: v, label: v }))} /></div>
+        <div className="mb-4"><Segmented label="Payment state" size="sm" value={state} onValueChange={setState} items={(['created', 'pending', 'stale', 'failed', 'cancelled', 'confirmed', 'reconciled', 'refunded'] as const).map(v => ({ value: v, label: v }))} /></div>
         <div className="max-w-xl"><PaymentStatusPanel state={state} {...common} staleMinutes={9} failure="The M-Pesa PIN request timed out on the phone." retryable confirmations={state === 'reconciled' ? 2 : 1} /></div>
       </Plate>
     </Plates>
@@ -435,13 +446,21 @@ function Delivery() {
 export const returnEvidence = [{ name: 'torn-bales-1.jpg', size: 1_900_000, type: 'image/jpeg', state: 'ready' as const, url: '#' }, { name: 'delivery-note-55102.pdf', size: 220_000, type: 'application/pdf', state: 'scanning' as const }]
 
 export const returnClaim = 'Three of twelve bales arrived torn at the seams and wet. We set them aside unopened; photos attached.'
+/** A case the seller may act on, so the action bar shows the contract's commands and their dialogs. */
+export const sellerCase = { id: 'case-42', reference: 'RET-0042', status: 'reviewing', _can: ['request_evidence', 'add_evidence', 'decide'] }
+export const caseEvidence = [
+  { ...returnEvidence[0]!, note: 'Bales as they came off the lorry', side: 'buyer' as const, addedAt: '2026-10-12T09:16:00+03:00' },
+  { ...returnEvidence[1]!, note: 'Signed delivery note', side: 'buyer' as const, addedAt: '2026-10-12T09:18:00+03:00' },
+]
 
 function Returns() {
   return (
     <Plates cols={2}>
-      <Plate label="reviewing · seller decides" span><ReturnDisputeCaseBlock reference="RET-0042" type="damage" status="reviewing" line="Mavuno Maize Flour 2 kg × 3 of 20" reason={returnClaim} evidence={returnEvidence} canDecide openedAt="2026-10-12T09:15:00+03:00" now={DEMO_NOW} /></Plate>
-      <Plate label="evidence requested"><ReturnDisputeCaseBlock reference="DSP-0011" type="shortage" status="evidence_requested" line="Sukari Bora Sugar 1 kg × 2 of 6" reason="Two bales missing from the delivery." evidence={[]} openedAt="2026-10-11T17:00:00+03:00" now={DEMO_NOW} /></Plate>
-      <Plate label="resolved"><ReturnDisputeCaseBlock reference="RET-0038" type="wrong_item" status="resolved" line="Safi Laundry Bar 800 g × 1" reason="Received 400 g bars instead of 800 g." evidence={returnEvidence.slice(0, 1)} openedAt="2026-10-08T12:00:00+03:00" now={DEMO_NOW} /></Plate>
+      <Plate label="reviewing · seller decides" span><ReturnDisputeCaseBlock reference="RET-0042" type="damage" status="reviewing" line="Mavuno Maize Flour 2 kg × 3 of 20" reason={returnClaim} evidence={caseEvidence} openedAt="2026-10-12T09:15:00+03:00" now={DEMO_NOW}
+        parties={{ buyer: 'Wanjiru General Stores', seller: 'Mavuno Mills' }} windowCloses="2026-10-26T09:15:00+03:00" actions={<ActionBar meta={ReturnCaseMeta} record={sellerCase} onRun={() => undefined} />} /></Plate>
+      <Plate label="evidence requested"><ReturnDisputeCaseBlock reference="DSP-0011" type="shortage" status="evidence_requested" line="Sukari Bora Sugar 1 kg × 2 of 6" reason="Two bales missing from the delivery." evidence={[]} openedAt="2026-10-11T17:00:00+03:00" now={DEMO_NOW} evidenceNote="a photo of the signed delivery note" /></Plate>
+      <Plate label="resolved"><ReturnDisputeCaseBlock reference="RET-0038" type="wrong_item" status="resolved" line="Safi Laundry Bar 800 g × 1" reason="Received 400 g bars instead of 800 g." evidence={caseEvidence.slice(0, 1)} openedAt="2026-10-08T12:00:00+03:00" now={DEMO_NOW}
+        decision={{ label: 'Approve part of the claim', approvedQuantity: 1, unit: 'carton', notes: 'One carton was the wrong size; we refund it and collect it with the next delivery.', disposition: 'Restock', refund: '1450.00', refunded: '1450.00', decidedAt: '2026-10-09T10:00:00+03:00' }} /></Plate>
     </Plates>
   )
 }
@@ -473,22 +492,105 @@ function Analytics() {
 export const apiTokens: ApiToken[] = [{ id: 't1', name: 'Stock sync (ERP)', scopes: ['catalogue.read', 'order.read'], last4: '8d2c', createdAt: '2026-08-02T10:00:00+03:00', lastUsedAt: '2026-10-12T11:35:00+03:00', status: 'active' }, { id: 't2', name: 'Old reporting script', scopes: ['order.read'], last4: '11af', createdAt: '2026-03-14T10:00:00+03:00', status: 'revoked' }]
 export const webhookEndpoints: WebhookEndpoint[] = [{ id: 'w1', url: 'https://hooks.mwangaza-demo.co.ke/sokomesh/orders', events: ['order.submitted', 'order.shipped'], active: true, lastDelivery: { status: 'delivered', at: '2026-10-12T11:18:04+03:00', attempts: 1, code: 200 } }, { id: 'w2', url: 'https://erp.mwangaza-demo.co.ke/stock', events: ['inventory.reserved'], active: true, lastDelivery: { status: 'retrying', at: '2026-10-12T11:22:30+03:00', attempts: 3, code: 503 } }]
 
+const noop = () => undefined
+const tokenRecord = (t: ApiToken) => ({ id: t.id, name: t.name, status: t.status, _can: t.status === 'active' ? ['revoke'] : [] })
+const hookRecord = (w: WebhookEndpoint) => ({ id: w.id, url: w.url, is_active: w.active, _can: ['rotate_secret', w.active ? 'switch_off' : 'switch_on'] })
+
 function Integrations() {
-  return <Plates cols={1}><Plate label="tokens and webhooks"><IntegrationPanel now={DEMO_NOW}
-    tokens={apiTokens}
-    webhooks={webhookEndpoints} /></Plate></Plates>
+  return (
+    <Plates cols={1}>
+      <Plate label="tokens and webhooks · each row with the contract's commands">
+        <IntegrationPanel now={DEMO_NOW} tokens={apiTokens} webhooks={webhookEndpoints}
+          addToken={<Button variant="primary">Issue a token</Button>} addWebhook={<Button variant="primary">Add a webhook</Button>}
+          tokenActions={t => <ActionBar meta={ApiTokenMeta} record={tokenRecord(t)} onRun={noop} density="compact" />}
+          webhookActions={w => <ActionBar meta={WebhookEndpointMeta} record={hookRecord(w)} onRun={noop} density="compact" />} />
+      </Plate>
+      <Plate label="empty"><IntegrationPanel tokens={[]} webhooks={[]} /></Plate>
+    </Plates>
+  )
 }
 
-export const traceEvents = [
-  { id: 'x1', at: '2026-10-12T11:22:00+03:00', domain: 'inventory' as const, event: 'inventory.reserved', summary: '24 bales MVN-2K-12 held for Wanjiru General Stores', requestId: 'req_7f3a91', eventId: 'evt_000918223', actor: 'Checkout' },
-  { id: 'x2', at: '2026-10-12T11:18:00+03:00', domain: 'order' as const, event: 'order.submitted', summary: 'SM-ORD-004215 submitted, KES 48,250.00', requestId: 'req_7f3a10', eventId: 'evt_000918201', actor: people.brian },
-  { id: 'x3', at: '2026-10-12T11:30:00+03:00', domain: 'payment' as const, event: 'payment.prompt_sent', summary: 'STK push TXN-1770727500-12345, status pending', requestId: 'req_7f3b44', eventId: 'evt_000918240', actor: 'SellaPay adapter' },
-  { id: 'x4', at: '2026-10-12T10:12:00+03:00', domain: 'price' as const, event: 'price.resolved', summary: 'Tier 10 to 49 bales, KES 1,690.00, rule r5', requestId: 'req_7f2c08', eventId: 'evt_000918100', actor: 'Pricing' },
-  { id: 'x5', at: '2026-10-11T16:00:00+03:00', domain: 'catalog' as const, event: 'product.published', summary: 'Mavuno Maize Flour 2 kg under Maize flour v3', requestId: 'req_7e9911', eventId: 'evt_000917650', actor: people.faith },
+function Secret() {
+  return (
+    <Plates cols={2}>
+      <Plate label="a new token"><SecretReveal title="Token “Stock sync (ERP)”" value="smk_4f9a2c1e_Qm9vb2s4dGVzdC1vbmx5LW5vdC1yZWFsLXNlY3JldA" detail="Copy it into the system that will use it. SokoMesh keeps only a fingerprint and cannot show it again." onDone={noop} /></Plate>
+      <Plate label="a replaced signing secret"><SecretReveal title="Signing secret" value="whsec_specimen_value_not_a_real_secret_0000" detail="Deliveries to https://erp.mwangaza-demo.co.ke/stock are signed with this secret from now on." onDone={noop} /></Plate>
+    </Plates>
+  )
+}
+
+export const reconciliationChecks: ReconciliationCheck[] = [
+  { key: 'unpaid_orders', label: 'Orders with sellers but no confirmed payment', help: 'Every order a seller sees should have been paid.', count: 0, ok: true, examples: [], traceable: true },
+  { key: 'ledger_drift', label: 'Stock balances that differ from their movements', help: 'On hand must equal the sum of its movements; a difference means a change bypassed the ledger.', count: 0, ok: true, examples: [] },
+  { key: 'lagging_holds', label: 'Stock holds past their time and not yet released', help: 'The expiry worker (expire_reservations) is behind or stopped.', count: 2, ok: false, examples: ['RSV-000184', 'RSV-000191'], traceable: true },
+  { key: 'failed_webhooks', label: 'Webhook deliveries that gave up', help: 'An organization’s endpoint refused every attempt; they can send it again.', count: 1, ok: false, examples: ['order.shipped to https://erp.mwangaza-demo.co.ke/stock'] },
+]
+
+function Checks() {
+  return (
+    <Plates cols={1}>
+      <Plate label="needs a look · traceable examples"><ReconciliationChecksBlock checks={reconciliationChecks} onTrace={noop} checkedAt="2026-10-12T11:40:00+03:00" now={DEMO_NOW} /></Plate>
+      <Plate label="all clear"><ReconciliationChecksBlock checks={reconciliationChecks.map(c => ({ ...c, ok: true, count: 0, examples: [] }))} /></Plate>
+    </Plates>
+  )
+}
+
+const heldFor = (anchor: number, status: ReservationRecord['status'] = 'active'): ReservationRecord[] => [
+  { id: 'h1', reference: 'RSV-000201', product: 'Mavuno Maize Flour', sku: 'MVN-2K-12', quantity: 24, unit: 'bale', status, expires_at: new Date(anchor + 660_000).toISOString() },
+  { id: 'h2', reference: 'RSV-000202', product: 'Sukari Bora Sugar', sku: 'SKB-1K-24', quantity: 6, unit: 'bale', status, expires_at: new Date(anchor + 660_000).toISOString() },
+]
+const attempt = (status: PaymentRecord['status'], extra: Partial<PaymentRecord> = {}): PaymentRecord => ({
+  id: 'pay-1', status, amount: '48250.00', currency: 'KES', provider: 'sandbox', reference: status === 'created' ? null : 'SBX-7F3A91C2', phone: '0712 *** 678', attempt: 1,
+  sent_at: '2026-10-12T11:30:00+03:00', confirmed_at: status === 'confirmed' ? '2026-10-12T11:31:10+03:00' : null, failure: null, refunded_amount: '0.00',
+  results_received: status === 'pending' ? 0 : 2, duplicates: status === 'pending' ? 0 : 1, sandbox: status === 'pending', confirms: true, ...extra,
+})
+
+/** The block against a pretend provider: the sandbox phone's answers come back as the API would report them. */
+export function PaymentFlow() {
+  const [anchor] = useState(() => Date.now())
+  const [payment, setPayment] = useState<PaymentRecord | undefined>()
+  const [answering, setAnswering] = useState<SandboxOutcome | null>(null)
+  const outcome: Record<SandboxOutcome, Partial<PaymentRecord> & { status: PaymentRecord['status'] }> = {
+    approve: { status: 'confirmed' }, cancel: { status: 'cancelled' }, wrong_pin: { status: 'failed', failure: 'Wrong M-Pesa PIN entered.' },
+    insufficient_funds: { status: 'failed', failure: 'Not enough money in the M-Pesa account.' }, timeout: { status: 'failed', failure: 'The prompt timed out on the phone.' },
+  }
+  const answer = (_id: string, o: SandboxOutcome) => {
+    setAnswering(o)
+    setTimeout(() => { const { status, ...rest } = outcome[o]; setPayment(attempt(status, { ...rest, sandbox: false })); setAnswering(null) }, 600)
+  }
+  const done = payment?.status === 'confirmed'
+  return (
+    <OrderPaymentBlock orderReference="SM-ORD-004215" amount="48250.00" holds={heldFor(anchor, done ? 'consumed' : 'active')} holdSeconds={900} payment={payment}
+      canPay={!done} answering={answering} onPay={() => setPayment(attempt('pending'))} onAnswer={answer} onCheckAgain={noop} />
+  )
+}
+
+function OrderPaymentSpecimen() {
+  const [anchor] = useState(() => Date.now())
+  return (
+    <Plates cols={1}>
+      <Plate label="interactive · send the prompt, answer it on the sandbox phone"><PaymentFlow /></Plate>
+      <Plate label="paid · one repeated result ignored"><OrderPaymentBlock orderReference="SM-ORD-004215" amount="48250.00" holds={heldFor(anchor, 'consumed')} holdSeconds={900} payment={attempt('confirmed')} canPay={false} onPay={noop} /></Plate>
+      <Plate label="refunded after a cancellation"><OrderPaymentBlock orderReference="SM-ORD-004188" amount="12400.00" holds={heldFor(anchor, 'cancelled')} holdSeconds={900} payment={attempt('refunded', { refunded_amount: '12400.00', failure: 'the order was cancelled' })} canPay={false} onPay={noop} /></Plate>
+      <Plate label="not stock-tracked · ready to pay"><OrderPaymentBlock orderReference="SM-ORD-004230" amount="9800.00" holds={[]} holdSeconds={900} canPay onPay={noop} /></Plate>
+    </Plates>
+  )
+}
+
+export const traceEvents: TraceEvent[] = [
+  { id: 'x1', at: '2026-10-12T11:18:00+03:00', domain: 'order', event: 'order.awaiting_payment', summary: 'SM-ORD-004215 placed, KES 48,250.00, waiting for payment', requestId: 'req_7f3a10', eventId: 'evt_9182', actor: people.brian },
+  { id: 'x2', at: '2026-10-12T11:18:01+03:00', domain: 'inventory', event: 'inventory.reserved', summary: '24 bales MVN-2K-12 held until 11:33 (RSV-000201)', requestId: 'req_7f3a10', eventId: 'evt_9183', actor: people.brian },
+  { id: 'x3', at: '2026-10-12T11:30:00+03:00', domain: 'payment', event: 'payment.prompt_sent', summary: 'M-Pesa prompt SBX-7F3A91C2 for KES 48,250.00 to 0712 *** 678', requestId: 'req_7f3b44', eventId: 'evt_9240', actor: people.brian },
+  { id: 'x4', at: '2026-10-12T11:31:10+03:00', domain: 'payment', event: 'payment.confirmed', summary: 'SBX-7F3A91C2 confirmed; a repeated result was ignored', requestId: 'req_7f3b61', eventId: 'evt_9241', actor: 'Payment sandbox' },
+  { id: 'x5', at: '2026-10-12T11:31:10+03:00', domain: 'order', event: 'order.submitted', summary: 'SM-ORD-004215 sent to Mavuno Mills', requestId: 'req_7f3b61', eventId: 'evt_9242', actor: 'Payment sandbox' },
+  { id: 'x6', at: '2026-10-12T14:02:00+03:00', domain: 'fulfilment', event: 'fulfilment.handed_over', summary: '23 of 24 bales handed to Rift Express (RX-552019)', reason: 'One bale torn at the seam; set aside for the supplier.', requestId: 'req_80a1c2', eventId: 'evt_9310', actor: people.peter },
+  { id: 'x7', at: '2026-10-12T14:02:01+03:00', domain: 'payment', event: 'payment.refunded', summary: 'KES 1,690.00 refunded for the bale not shipped', requestId: 'req_80a1c2', eventId: 'evt_9311', actor: people.peter },
+  { id: 'x8', at: '2026-10-13T09:15:00+03:00', domain: 'return', event: 'return.opened', summary: 'RET-0042: 3 bales damaged on the way', requestId: 'req_81f004', eventId: 'evt_9402', actor: people.brian },
+  { id: 'x9', at: '2026-10-13T10:00:00+03:00', domain: 'inventory', event: 'inventory.expired_run', summary: 'Hold sweep released 2 lapsed holds', requestId: '', eventId: 'evt_9410', actor: '' },
 ]
 
 function Trace() {
-  return <Plates cols={1}><Plate label="filter by domain · expand an event"><ReconciliationTraceBlock correlationId="cor_SM-ORD-004215" events={traceEvents} now={DEMO_NOW} /></Plate></Plates>
+  return <Plates cols={1}><Plate label="filter by domain · expand an event"><ReconciliationTraceBlock correlationId="ord_7c1e0b9a4f" query="SM-ORD-004215" events={traceEvents} now={DEMO_NOW} /></Plate></Plates>
 }
 
 export const notifications: AppNotification[] = [
@@ -569,6 +671,7 @@ function GallerySpecimen() {
 }
 
 const map: Record<string, () => ReactNode> = {
+  'X-34': OrderPaymentSpecimen, 'X-35': Secret, 'X-36': Checks,
   'X-01': Onboarding, 'X-02': ProductEditor, 'X-03': Variants, 'X-04': Media, 'X-05': PriceBook, 'X-06': Tiers, 'X-07': Ledger, 'X-08': Stock,
   'X-09': Facets, 'X-10': Cart, 'X-11': CartGroup, 'X-12': QuoteSheet, 'X-13': QuoteDecision, 'X-14': Approvals, 'X-15': Reservations,
   'X-16': Countdown, 'X-17': CheckoutFlows, 'X-18': Payment, 'X-19': OrderTimeline, 'X-20': Delivery, 'X-21': Returns, 'X-22': Reorder,

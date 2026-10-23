@@ -26,8 +26,11 @@ export function Progress({ value, max = 100, label, tone = 'primary', className 
 }
 
 /** Range slider with two thumbs for price filters. Values are whole currency units. */
-export function RangeSlider({ min, max, step = 1, value, onValueChange, label, formatValue }: {
-  min: number; max: number; step?: number; value: [number, number]; onValueChange: (v: [number, number]) => void; label: string; formatValue: (n: number) => string
+export function RangeSlider({ min, max, step = 1, value, onValueChange, onValueCommit, label, formatValue }: {
+  min: number; max: number; step?: number; value: [number, number]; onValueChange: (v: [number, number]) => void
+  /** When the thumb is released (or moved by keyboard): the moment to apply the range. */
+  onValueCommit?: (v: [number, number]) => void
+  label: string; formatValue: (n: number) => string
 }) {
   return (
     <div className="flex flex-col gap-2">
@@ -37,6 +40,7 @@ export function RangeSlider({ min, max, step = 1, value, onValueChange, label, f
         step={step}
         value={value}
         onValueChange={v => onValueChange([v[0]!, v[1]!])}
+        onValueCommit={onValueCommit ? v => onValueCommit([v[0]!, v[1]!]) : undefined}
         aria-label={label}
         className="relative flex h-5 w-full touch-none items-center select-none"
       >

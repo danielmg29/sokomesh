@@ -10,7 +10,7 @@ from typing import Any
 from django.http import HttpRequest
 from django.utils import timezone
 
-from apps.orders.checkout import notify_seller
+from apps.orders.checkout import hold
 from apps.orders.lifecycle import buyer_link, person_name, record, side_of
 from apps.orders.models import ApprovalDecision, Order
 from apps.organizations.tenancy import roles
@@ -58,7 +58,9 @@ def decide(request: HttpRequest, order: Order, decision: str, comment: str) -> N
         return
     approved = ApprovalDecision.objects.filter(order=order, decision=ApprovalDecision.Decision.APPROVED).count()
     if approved >= int((order.approval_snapshot or {}).get("minimum", 1)):
-        record(order, Order.Status.SUBMITTED, request.user, f"Approved by {who}")
+        # Approved: now it waits for payment, with its stock on hold (refused here if the stock is gone).
+        record(order, Order.Status.AWAITING_PAYMENT, request.user, f"Approved by {who}")
+        hold(order)
         if order.submitted_by:
             notify(
                 order.submitted_by,
@@ -68,7 +70,6 @@ def decide(request: HttpRequest, order: Order, decision: str, comment: str) -> N
                 params=params,
                 deep_link=buyer_link(order),
             )
-        notify_seller(order)
 
 
 def approval_view(order: Order, request: HttpRequest) -> dict[str, Any] | None:
@@ -78,9 +79,15 @@ def approval_view(order: Order, request: HttpRequest) -> dict[str, Any] | None:
     decisions = list(order.approvals.select_related("approver"))  # pyright: ignore[reportAttributeAccessIssue]
     approved = sum(1 for d in decisions if d.decision == ApprovalDecision.Decision.APPROVED)
     rejected = any(d.decision == ApprovalDecision.Decision.REJECTED for d in decisions)
-    state = "rejected" if rejected else "pending" if order.status == Order.Status.PENDING_APPROVAL else "approved"
+    if snapshot.get("exempt"):
+        state = "not_required"
+    elif rejected:
+        state = "rejected"
+    else:
+        state = "pending" if order.status == Order.Status.PENDING_APPROVAL else "approved"
     return {
         "state": state,
+        "placed_as": snapshot.get("placed_as"),
         "policy": snapshot.get("name"),
         "threshold": snapshot.get("threshold"),
         "roles": snapshot.get("roles", []),

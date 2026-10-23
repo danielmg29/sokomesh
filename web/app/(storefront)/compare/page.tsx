@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { Suspense } from 'react'
+import { CompareTray } from '@/components/commerce/compare'
 import { EmptyState } from '@/components/kernel/feedback/EmptyState'
 import { ErrorState } from '@/components/kernel/feedback/ErrorState'
 import { LoadingState } from '@/components/kernel/feedback/LoadingState'
@@ -15,8 +16,14 @@ async function Comparison({ searchParams }: { searchParams: PageProps<'/compare'
   const raw = (await searchParams).products
   const ids = [...new Set((Array.isArray(raw) ? raw.join(',') : raw ?? '').split(',').map(s => s.trim()).filter(Boolean))]
   if (!ids.length) {
-    return <EmptyState kind="no-data" title="Nothing to compare yet" description="Use Compare on two to four products of one category, then open the comparison."
-      action={<Link href="/catalogue" className={buttonStyles({ variant: 'primary' })}>Browse the catalogue</Link>} />
+    // Picks are kept in this browser; the inline tray offers the ones made earlier, if any.
+    return (
+      <div className="flex flex-col gap-8">
+        <EmptyState kind="no-data" title="Nothing to compare yet" description="Use Compare on two to four products of one category, then open the comparison."
+          action={<Link href="/catalogue" className={buttonStyles({ variant: 'primary' })}>Browse the catalogue</Link>} />
+        <CompareTray inline />
+      </div>
+    )
   }
   const state = await comparison(ids).catch((err: unknown) => (err instanceof StorefrontError ? err : new StorefrontError(503, 'Try again in a moment.')))
   if (state instanceof StorefrontError) {

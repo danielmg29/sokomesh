@@ -1,4 +1,5 @@
-"""Orders (SM-F-15) with approval (SM-F-12), delivery (SM-F-17) and reorder (SM-F-20); approval policies.
+"""Orders (SM-F-15) with approval (SM-F-12), stock holds (SM-F-13), payment (SM-F-14), fulfilment (SM-F-16),
+delivery (SM-F-17), returns (SM-F-18) and reorder (SM-F-20); approval policies.
 
 An order belongs to its buyer and its seller, so each side reads it and runs the commands its roles hold;
 `can` then narrows what is offered to the commands the order's state and the viewer's side allow (the
@@ -8,6 +9,7 @@ fields, so forms are projected and records stay clean.
 
 from typing import Any
 
+from django.conf import settings
 from django.db.models import Q, QuerySet
 from django.http import HttpRequest
 
@@ -55,8 +57,8 @@ def _order_extra(o: Order, request: HttpRequest) -> dict[str, Any]:
         "delivery": o.delivery_snapshot or None,
         "next_actions": lifecycle.next_actions(o, side),
     }
-    if request.resolver_match is None or request.resolver_match.url_name != "order-detail":
-        return out  # lists stay light; the detail adds lines, history, approval and delivery
+    if request.resolver_match is None or request.resolver_match.url_name not in ("order-detail", "order-action"):
+        return out  # lists stay light; the detail (and a command's answer) adds lines, history, payment and delivery
     out.update(
         {
             "lines": [
@@ -90,11 +92,61 @@ def _order_extra(o: Order, request: HttpRequest) -> dict[str, Any]:
                 for s in o.shipments.prefetch_related("events").select_related("proof_of_delivery")  # pyright: ignore[reportAttributeAccessIssue]
             ],
             "quote": {"id": str(o.quote.pk), "reference": o.quote.reference} if o.quote else None,
+            **_journey(o, request),
         }
     )
-    if side == "buyer" and o.status != Order.Status.PENDING_APPROVAL:
+    if side == "buyer" and o.status not in (Order.Status.PENDING_APPROVAL, Order.Status.AWAITING_PAYMENT):
         out["reorder"] = preview(o, request)
     return out
+
+
+def _journey(o: Order, request: HttpRequest) -> dict[str, Any]:
+    """What the order's journey holds now: stock on hold, payments, the pick list and return cases."""
+    from apps.fulfillment.models import FulfillmentTask
+    from apps.inventory.models import Reservation
+    from apps.inventory.services import expire_due
+    from apps.payments.services import payment_view
+    from apps.returns.services import case_summary
+
+    if o.status == Order.Status.AWAITING_PAYMENT:  # a hold that ran out is released (and the order cancelled) now
+        expire_due(order=o)
+        o.refresh_from_db()
+    holds = list(Reservation.objects.filter(order=o).select_related("variant__product").order_by("created_at"))
+    task = FulfillmentTask.objects.filter(order=o).first()
+    return {
+        "status": o.status,
+        "reservations": [
+            {
+                "id": str(r.pk),
+                "reference": r.reference,
+                "product": r.variant.product.name,
+                "sku": r.variant.sku,
+                "quantity": r.quantity,
+                "unit": r.unit,
+                "status": r.status,
+                "expires_at": r.expires_at.isoformat(),
+            }
+            for r in holds
+        ],
+        "hold_seconds": settings.AC_RESERVATIONS["ttl_minutes"] * 60,
+        "payments": [payment_view(i) for i in o.payments.prefetch_related("events").order_by("-attempt")],  # pyright: ignore[reportAttributeAccessIssue]
+        "fulfilment": {"id": str(task.pk), "status": task.status} if task else None,
+        "cases": case_summary(o),
+    }
+
+
+def _pay(request: HttpRequest, o: Order, data: dict[str, Any]) -> None:
+    from apps.payments.services import start
+
+    values = action_input(order, _action("pay"), data, ("phone",))
+    start(request, o, values["phone"])
+
+
+def _dispute(request: HttpRequest, o: Order, data: dict[str, Any]) -> None:
+    from apps.returns.services import open_dispute
+
+    values = action_input(order, _action("dispute"), data, ("reason",))
+    open_dispute(request, o, values["reason"])
 
 
 def _can(request: HttpRequest, o: Order, names: list[str]) -> list[str]:
@@ -131,9 +183,13 @@ def _ship(request: HttpRequest, o: Order, data: dict[str, Any]) -> None:
             "The delivery window must end after it starts.",
             {"estimated_end_at": ["End after the start."]},
         )
-    lifecycle.move(request, o, "ship")
-    delivery.start(
+    from apps.fulfillment.services import ship_now
+
+    if lifecycle.side_of(request, o) != "seller":
+        fail(ErrorCode.FORBIDDEN, "Only the seller ships an order.")
+    ship_now(
         o,
+        actor=request.user,
         carrier_name=values["carrier_name"],
         carrier_reference=values.get("carrier_reference", ""),
         start_at=start,
@@ -172,6 +228,14 @@ INPUTS = (
     Field("carrier_reference", "string", "code", label="Tracking reference", max_length=80, input_only=True),
     Field("estimated_start_at", "datetime", "datetime", label="Expected from", input_only=True),
     Field("estimated_end_at", "datetime", "datetime", label="Expected by", input_only=True),
+    Field(
+        "phone",
+        "string",
+        "phone",
+        label="M-Pesa number",
+        help="The Safaricom number that receives the payment prompt. It is not kept.",
+        input_only=True,
+    ),
 )
 
 order = register(
@@ -233,6 +297,15 @@ order = register(
                 when={"status": ["pending_approval"]},
             ),
             Action(
+                "pay",
+                "Pay with M-Pesa",
+                "order.pay",
+                _pay,
+                input=("phone",),
+                icon="smartphone",
+                when={"status": ["awaiting_payment"]},
+            ),
+            Action(
                 "confirm",
                 "Confirm order",
                 "order.fulfil",
@@ -276,13 +349,13 @@ order = register(
                 _move("cancel"),
                 input=("reason",),
                 tone="danger",
-                when={"status": ["pending_approval", "submitted", "confirmed", "picking"]},
+                when={"status": ["pending_approval", "awaiting_payment", "submitted", "confirmed", "picking"]},
             ),
             Action(
                 "dispute",
                 "Report a problem",
                 "order.dispute",
-                _move("dispute", ("reason",)),
+                _dispute,
                 input=("reason",),
                 tone="danger",
                 when={"status": ["shipped", "delivered"]},
@@ -347,15 +420,23 @@ approval_policy = register(
                 weight=30,
             ),
             derive(ApprovalPolicy, "minimum_approvals", weight=40),
+            derive(ApprovalPolicy, "exempt_approvers", weight=50),
             derive(ApprovalPolicy, "is_active", read_only=True, filter=("eq",)),
             derive(ApprovalPolicy, "currency", read_only=True),
             derive(ApprovalPolicy, "updated_at", read_only=True, widget="relative-time"),
         ),
-        list_fields=("name", "threshold_amount", "approver_role_keys", "minimum_approvals", "is_active"),
+        list_fields=(
+            "name",
+            "threshold_amount",
+            "approver_role_keys",
+            "minimum_approvals",
+            "exempt_approvers",
+            "is_active",
+        ),
         search=("name",),
         ordering=("threshold_amount", "-updated_at"),
         default_page_size=25,
-        writable=("name", "threshold_amount", "approver_role_keys", "minimum_approvals"),
+        writable=("name", "threshold_amount", "approver_role_keys", "minimum_approvals", "exempt_approvers"),
         permissions={
             "list": "approval_policy.list",
             "get": "approval_policy.get",

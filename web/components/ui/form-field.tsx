@@ -73,13 +73,3 @@ export function FieldLabel({ className, ...props }: ComponentProps<typeof LabelP
   return <LabelPrimitive.Root className={cn('text-md font-semibold text-foreground', className)} {...props} />
 }
 
-/** Group heading for a fieldset of related controls. */
-export function Fieldset({ legend, help, children, className }: { legend: ReactNode; help?: ReactNode; children: ReactNode; className?: string }) {
-  return (
-    <fieldset className={cn('flex min-w-0 flex-col gap-3', className)}>
-      <legend className="mb-1 font-display text-lg font-bold">{legend}</legend>
-      {help ? <p className="-mt-2 text-sm text-muted">{help}</p> : null}
-      {children}
-    </fieldset>
-  )
-}

@@ -25,7 +25,6 @@ export function Popover({ trigger, children, align = 'start', className, open, o
   )
 }
 
-export const PopoverClose = PopoverPrimitive.Close
 
 export function TooltipProvider({ children }: { children: ReactNode }) {
   return <TooltipPrimitive.Provider delayDuration={300} skipDelayDuration={150}>{children}</TooltipPrimitive.Provider>

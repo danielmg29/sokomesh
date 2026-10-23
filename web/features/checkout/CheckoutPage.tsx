@@ -1,18 +1,19 @@
 'use client'
 
 // SM-F-15 checkout: choose where to deliver, review each seller's part, place the orders. The API checks
-// every line again (still on sale, minimum order, reported stock, today's price) and places one order per
-// seller; orders over the organization's approval threshold wait for a colleague (SM-F-12). Payment is not
-// taken here: sellers confirm delivery fees and terms on the order.
+// every line again (still on sale, minimum order, today's price), holds the tracked packs (SM-F-13) and
+// places one order per seller; orders over the organization's approval threshold wait for a colleague
+// (SM-F-12). Each order is then paid by M-Pesa on its own (SM-F-14) before it reaches its seller.
 
 import type { Route } from 'next'
 import Link from 'next/link'
 import { useState } from 'react'
 import { CheckoutSummaryBlock, type CheckoutGroup } from '@/components/commerce/checkout'
 import { orderLook } from '@/components/commerce/orders'
+import { OrderPayment, pollWhileWaiting } from '@/components/commerce/payment'
 import { HeaderBlock } from '@/components/kernel/blocks/HeaderBlock'
 import { EmptyState } from '@/components/kernel/feedback/EmptyState'
-import { ErrorState } from '@/components/kernel/feedback/ErrorState'
+import { ErrorState, errorFrom } from '@/components/kernel/feedback/ErrorState'
 import { LoadingState } from '@/components/kernel/feedback/LoadingState'
 import { FieldInput } from '@/components/kernel/fields/FieldInput'
 import type { AddressValue } from '@/components/kernel/fields/types'
@@ -20,16 +21,35 @@ import { buttonStyles } from '@/components/ui/button'
 import { Stamp } from '@/components/ui/stamp'
 import { ApiError, api } from '@/lib/client/api'
 import type { CartRecord, CheckoutResult, OrderRecord } from '@/lib/client/records'
-import { useList, useRefresh } from '@/lib/client/resources'
+import { policyFor, type PolicyLike } from '@/lib/client/approval'
+import { useList, useRecord, useRefresh } from '@/lib/client/resources'
+import { activeMembership, useSession } from '@/lib/client/session'
 import { AddressMeta, ApprovalPolicyMeta, CartLineMeta, CartMeta, OrderMeta } from '@/lib/contract/generated'
 import type { AppError, Rec } from '@/lib/contract/types'
-import { compareMoney, formatMoney } from '@/lib/money'
+import { formatMoney } from '@/lib/money'
 
 type Step = 'address' | 'review' | 'result'
 const STEPS = ['address', 'review', 'result'] as const
 const field = (name: string) => CartMeta.fields.find(f => f.name === name)!
 type AddressRecord = Rec & { label: string; line1: string; line2?: string; city: string; region?: string; postal_code?: string; country_code?: string }
-type PolicyRecord = Rec & { name: string; threshold_amount: string; is_active: boolean }
+type PolicyRecord = Rec & PolicyLike
+
+/** A placed order read live, so its payment follows the provider's result. */
+function PlacedOrderPayment({ id }: { id: string }) {
+  const record = useRecord<OrderRecord>(OrderMeta, id, pollWhileWaiting)
+  if (record.isPending) return <LoadingState variant="skeleton" shape="detail" label="Loading the payment" />
+  if (record.isError || !record.data) return <ErrorState {...errorFrom(record.error)} size="inline" title="The payment did not load" onRetry={() => void record.refetch()} />
+  const o = record.data
+  return (
+    <article className="flex flex-col gap-4 border-t border-border pt-5" aria-label={`Pay ${o.order_number}`}>
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <h3 className="font-display text-xl font-bold">{o.seller.label}</h3>
+        <Link href={`/orders/${o.id}` as Route} className="font-mono text-md font-semibold text-primary hover:underline">{o.order_number}</Link>
+      </div>
+      <OrderPayment order={o} onCheckAgain={() => void record.refetch()} />
+    </article>
+  )
+}
 
 const addressValue = (a: AddressRecord): AddressValue => ({ label: a.label, line1: a.line1, line2: a.line2, city: a.city, region: a.region, postalCode: a.postal_code, countryCode: a.country_code ?? 'KE' })
 
@@ -38,6 +58,7 @@ export function CheckoutPage() {
   const addresses = useList<AddressRecord>(AddressMeta, 'page_size=50')
   const policies = useList<PolicyRecord>(ApprovalPolicyMeta, 'is_active__eq=true&page_size=20')
   const refresh = useRefresh()
+  const { data: session } = useSession()
   const [step, setStep] = useState<Step>('address')
   const [address, setAddress] = useState<{ id: string; label: string } | null>(null)
   const [notes, setNotes] = useState('')
@@ -46,7 +67,7 @@ export function CheckoutPage() {
   const [submitting, setSubmitting] = useState(false)
 
   if (cartList.isPending || addresses.isPending) return <LoadingState variant="skeleton" shape="detail" label="Loading checkout" />
-  if (cartList.isError) return <ErrorState kind="retryable" title="Checkout did not load" onRetry={() => void cartList.refetch()} />
+  if (cartList.isError) return <ErrorState {...errorFrom(cartList.error)} title="Checkout did not load" onRetry={() => void cartList.refetch()} />
   const cart = cartList.data.results[0]
   const header = <HeaderBlock level={1} source="explicit" title="Checkout" breadcrumbs={[{ label: 'Cart', href: '/cart' }, { label: 'Checkout' }]}
     description="Each seller receives their own order. Prices and stock are checked again when you place them." />
@@ -66,7 +87,9 @@ export function CheckoutPage() {
                 </li>
               ))}
             </ul>
-            {placed.some(o => o.status === 'pending_approval') ? <p className="text-md">Orders awaiting approval reach the seller once a colleague approves them. They have been notified.</p> : <p className="text-md">The sellers have been notified. You will hear from them as each order is confirmed and shipped.</p>}
+            {placed.some(o => o.status === 'pending_approval') ? <p className="text-md">Orders awaiting approval are paid once a colleague approves them; you are told when they do.</p> : null}
+            {placed.some(o => o.status === 'awaiting_payment') ? <p className="text-md">Pay each order below to send it to its seller. The packs stay held for you while you do.</p> : null}
+            {placed.filter(o => o.status === 'awaiting_payment').map(o => <PlacedOrderPayment key={o.id} id={o.id} />)}
             <div className="flex flex-wrap gap-2"><Link href="/orders" className={buttonStyles({ variant: 'primary' })}>Your orders</Link><Link href="/catalogue" className={buttonStyles({ variant: 'secondary' })}>Keep shopping</Link></div>
           </section>
         </CheckoutSummaryBlock>
@@ -86,9 +109,9 @@ export function CheckoutPage() {
   const options = (addresses.data?.results ?? []).map(a => ({ value: a.id, label: a.label, description: [a.line1, a.city].filter(Boolean).join(', ') }))
   const chosen = addresses.data?.results.find(a => a.id === address?.id)
   const groups: CheckoutGroup[] = cart.groups.map(g => ({ seller: g.seller.label, lines: g.lines.filter(l => l.state !== 'unavailable').length, subtotal: g.subtotal }))
-  // A mirror of the server's rule, for warning only: the strictest active policy each seller's total reaches.
-  const active = (policies.data?.results ?? []).filter(p => p.is_active)
-  const needsApproval = (subtotal: string) => active.filter(p => compareMoney(subtotal, p.threshold_amount) >= 0).sort((a, b) => compareMoney(b.threshold_amount, a.threshold_amount))[0]
+  // A mirror of the server's rule, for warning only (lib/client/approval.ts).
+  const role = activeMembership(session)?.role_key
+  const needsApproval = (subtotal: string) => policyFor(policies.data?.results ?? [], role, subtotal)
   const blocked = cart.state !== 'valid' ? (cart.state === 'repricing' ? 'Some prices changed. Accept the new prices in your cart first.' : 'Some lines are unavailable. Remove them in your cart first.')
     : step === 'address' && !address ? 'Choose where to deliver.' : undefined
 

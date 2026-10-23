@@ -94,6 +94,17 @@ def address_of(org: Organization) -> Address:
     return Address.objects.create(organization=org, label="Shop", line1="Moi Avenue", city="Naivasha", region="Nakuru")
 
 
+def pay(client: Client, order_id: str, outcome: str = "approve") -> dict:
+    """Pay an order through the sandbox: send the prompt, then answer it on the sandbox phone."""
+    status, order = call(client, "post", f"orders/{order_id}/pay", {"phone": "0712 345 678"})
+    assert status == 200, order
+    intent = order["payments"][0]
+    assert intent["status"] == "pending" and intent["sandbox"]
+    status, answered = call(client, "post", f"payments/{intent['id']}/simulate", {"outcome": outcome})
+    assert status == 200, answered
+    return call(client, "get", f"orders/{order_id}")[1]
+
+
 def fill_cart(client: Client, *variants: tuple[Variant, int]) -> dict:
     for v, q in variants:
         assert call(client, "post", "cart-lines", {"variant": str(v.pk), "quantity": q})[0] == 201
@@ -234,7 +245,11 @@ def test_checkout_places_one_order_per_seller_and_fulfilment_moves_through_guard
         f"carts/{cart['id']}/checkout",
         {"delivery_address": str(address.pk), "special_instructions": "Back gate"},
     )
-    assert status == 200 and len(placed["orders"]) == 2 and {o["status"] for o in placed["orders"]} == {"submitted"}
+    assert (
+        status == 200 and len(placed["orders"]) == 2 and {o["status"] for o in placed["orders"]} == {"awaiting_payment"}
+    )
+    for o in placed["orders"]:
+        assert pay(grace, o["id"])["status"] == "submitted"
     again = call(grace, "post", f"carts/{cart['id']}/checkout", {"delivery_address": str(address.pk)})
     assert again[0] in (404, 409) and Order.objects.count() == 2  # a repeated submit places nothing
     order = Order.objects.get(seller_organization=catalogue.seller)
@@ -268,6 +283,7 @@ def test_checkout_places_one_order_per_seller_and_fulfilment_moves_through_guard
     assert status == 200
     detail = call(grace, "get", f"orders/{order.pk}")[1]
     assert detail["shipments"][0]["delayed"] and [t["to"] for t in detail["transitions"]] == [
+        "awaiting_payment",
         "submitted",
         "confirmed",
         "picking",
@@ -335,14 +351,30 @@ def test_orders_over_the_threshold_wait_for_another_approver(world, catalogue): 
     view = call(grace, "get", f"orders/{placed['id']}")[1]
     assert view["approval"]["can_decide"] and view["approval"]["policy"] == "Large orders"
     status, approved = call(grace, "post", f"orders/{placed['id']}/approve", {"comment": "Fine for this week"})
-    assert status == 200 and approved["status"] == "submitted"
+    assert status == 200 and approved["status"] == "awaiting_payment"
+    assert call(manager, "get", f"orders/{placed['id']}")[0] == 404  # still not the seller's: unpaid
+    assert pay(brian, placed["id"])["status"] == "submitted"
     assert call(manager, "get", f"orders/{placed['id']}")[1]["side"] == "seller"
     # Rejection needs a reason and cancels the order.
     cart = fill_cart(brian, (Variant.objects.get(sku="MVN-2K-12"), 5))
     second = call(brian, "post", f"carts/{cart['id']}/checkout", {"delivery_address": str(address.pk)})[1]["orders"][0]
     assert call(grace, "post", f"orders/{second['id']}/reject", {})[0] == 422
     assert call(grace, "post", f"orders/{second['id']}/reject", {"comment": "Over budget"})[1]["status"] == "cancelled"
-    # The only owner cannot approve their own order, so the API refuses it rather than strand it.
+    # An approver's own order skips the policy by default, and the order says why.
+    cart = fill_cart(grace, (Variant.objects.get(sku="MVN-2K-12"), 5))
+    own = call(grace, "post", f"carts/{cart['id']}/checkout", {"delivery_address": str(address.pk)})[1]["orders"][0]
+    assert own["status"] == "awaiting_payment"
+    pay(grace, own["id"])
+    approval = call(grace, "get", f"orders/{own['id']}")[1]["approval"]
+    assert approval["state"] == "not_required" and approval["placed_as"] == "buyer_owner" and not approval["can_decide"]
+    assert call(manager, "get", f"orders/{own['id']}")[1]["side"] == "seller"
+    # With the exemption off, the only owner cannot approve their own order: refused rather than stranded.
+    policy = ApprovalPolicy.objects.get(buyer_organization=buyer)
+    assert call(brian, "patch", f"approval-policies/{policy.pk}", {"exempt_approvers": False})[0] == 403
+    assert (
+        call(grace, "patch", f"approval-policies/{policy.pk}", {"exempt_approvers": False})[1]["exempt_approvers"]
+        is False
+    )
     cart = fill_cart(grace, (Variant.objects.get(sku="MVN-2K-12"), 5))
     status, body = call(grace, "post", f"carts/{cart['id']}/checkout", {"delivery_address": str(address.pk)})
     assert status == 409 and "nobody else" in body["detail"]
@@ -386,7 +418,8 @@ def test_quotes_move_cart_lines_and_accepted_offers_become_orders(world, catalog
     assert status == 200 and responded["status"] == "responded" and responded["offered_total"] == "33000.00"
     assert call(manager, "post", f"quotes/{q['id']}/accept", {})[0] == 403
     status, accepted = call(brian, "post", f"quotes/{q['id']}/accept", {})
-    assert status == 200 and accepted["status"] == "accepted" and accepted["order"]["status"] == "submitted"
+    assert status == 200 and accepted["status"] == "accepted"
+    assert pay(brian, accepted["order"]["id"])["status"] == "submitted"
     order = Order.objects.get(pk=accepted["order"]["id"])
     assert order.quote_id == Quote.objects.get(pk=q["id"]).pk and order.lines.get().unit_price == Decimal("1650.00")  # pyright: ignore[reportAttributeAccessIssue]
     assert call(manager, "post", f"quotes/{q['id']}/respond", {"offers": {line: "1"}})[0] == 409  # frozen once accepted

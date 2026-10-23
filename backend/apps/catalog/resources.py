@@ -963,7 +963,7 @@ variant = register(
             derive(Variant, "units_per_pack", weight=25),
             derive(Variant, "minimum_order_quantity", weight=30),
             derive(Variant, "unit_price", widget="currency", currency="KES", weight=35),
-            derive(Variant, "stock_on_hand", weight=40),
+            derive(Variant, "stock_on_hand", read_only=True, weight=40),  # from the ledger (SM-F-07)
             derive(Variant, "is_active", filter=("eq",), weight=45),
             Field("pack_label", "string", "text", label="Pack", read_only=True, weight=50),
             derive(Variant, "updated_at", read_only=True, widget="relative-time"),
@@ -980,7 +980,6 @@ variant = register(
             "units_per_pack",
             "minimum_order_quantity",
             "unit_price",
-            "stock_on_hand",
             "is_active",
         ),
         permissions={

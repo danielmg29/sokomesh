@@ -53,7 +53,11 @@ export default function RootLayout({ children }: LayoutProps<'/'>) {
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
-      <body className="flex min-h-full flex-col"><Providers>{children}</Providers></body>
+      <body className="flex min-h-full flex-col">
+        {/* The first stop for keyboard users: every layout's <main> carries id="main". */}
+        <a href="#main" className="sr-only z-50 bg-primary px-4 py-2.5 font-semibold text-primary-foreground focus:not-sr-only focus:fixed focus:top-3 focus:left-3">Skip to content</a>
+        <Providers>{children}</Providers>
+      </body>
     </html>
   )
 }

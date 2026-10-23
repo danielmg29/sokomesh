@@ -8,7 +8,7 @@ import { ActionBar } from '@/components/kernel/actions/ActionBar'
 import { DetailBlock } from '@/components/kernel/blocks/DataBlocks'
 import { HeaderBlock } from '@/components/kernel/blocks/HeaderBlock'
 import { ListBlock } from '@/components/kernel/blocks/ListBlock'
-import { ErrorState } from '@/components/kernel/feedback/ErrorState'
+import { ErrorState, errorFrom } from '@/components/kernel/feedback/ErrorState'
 import { LoadingState } from '@/components/kernel/feedback/LoadingState'
 import { asFile, choiceLabel } from '@/components/kernel/fields/types'
 import { SellerOnboardingReviewBlock, type SellerDecision, type SellerDocument, type SellerStatus } from '@/components/commerce/catalog'
@@ -39,7 +39,7 @@ export function AdminSellerReview({ id }: { id: string }) {
   const profileCommand = useCommand(SellerProfileMeta, [SellerDocumentMeta, OrganizationMeta])
   const docCommand = useCommand(SellerDocumentMeta, [SellerProfileMeta])
   if (record.isPending) return <LoadingState variant="skeleton" shape="detail" label="Loading the application" />
-  if (record.isError || !record.data) return <ErrorState kind="retryable" title="The application did not load" onRetry={() => void record.refetch()} />
+  if (record.isError || !record.data) return <ErrorState {...errorFrom(record.error)} title="The application did not load" onRetry={() => void record.refetch()} />
   const p = record.data
   const documents: SellerDocument[] = p.documents.map(d => ({
     id: d.id,

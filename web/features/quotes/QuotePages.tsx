@@ -14,9 +14,10 @@ import { ActionBar, type RunAction } from '@/components/kernel/actions/ActionBar
 import { DetailBlock } from '@/components/kernel/blocks/DataBlocks'
 import { HeaderBlock } from '@/components/kernel/blocks/HeaderBlock'
 import { ListBlock } from '@/components/kernel/blocks/ListBlock'
-import { ErrorState } from '@/components/kernel/feedback/ErrorState'
+import { ErrorState, errorFrom } from '@/components/kernel/feedback/ErrorState'
 import { LoadingState } from '@/components/kernel/feedback/LoadingState'
 import { PageSection } from '@/components/layout/section'
+import { DensityRegion } from '@/components/layout/primitives'
 import { buttonStyles } from '@/components/ui/button'
 import { TBody, THead, Table, Td, Th, Tr } from '@/components/ui/table'
 import { useToast } from '@/components/ui/toast'
@@ -44,7 +45,7 @@ export function QuotesPage({ side }: { side: Side }) {
           ? 'Buyers asking you to price their orders. Offer a price per line before the quote expires, or decline with a reason.'
           : 'Prices you asked sellers for. Accept an offer to place the order at those prices; ask for a new quote from your cart.'}
         actions={side === 'buyer' ? <Link href="/cart" className={buttonStyles({ variant: 'secondary' })}>Ask from your cart</Link> : null} />
-      <ListBlock meta={meta} records={[]} query="server" source={source} href={r => quoteHref(side, r.id)}
+      <ListBlock meta={meta} records={[]} query="server" source={source} narrow="collapse" href={r => quoteHref(side, r.id)}
         empty={side === 'seller'
           ? { kind: 'no-data', title: 'No quote requests', description: 'When a buyer asks you to price their cart, the request appears here.' }
           : { kind: 'no-data', title: 'No quotes yet', description: 'In your cart, ask a seller for a quote on their lines; the lines wait here until you accept or decline.' }} />
@@ -80,7 +81,7 @@ export function QuotePage({ id }: { id: string }) {
   const router = useRouter()
   const toast = useToast()
   if (record.isPending) return <LoadingState variant="skeleton" shape="detail" label="Loading the quote" />
-  if (record.isError || !record.data) return <ErrorState kind="retryable" title="The quote did not load" onRetry={() => void record.refetch()} />
+  if (record.isError || !record.data) return <ErrorState {...errorFrom(record.error)} title="The quote did not load" onRetry={() => void record.refetch()} />
   const q = record.data
   const side: Side = q.side === 'seller' ? 'seller' : 'buyer'
   // Accepting answers with the order it placed, so the buyer goes straight to it.
@@ -107,7 +108,7 @@ export function QuotePage({ id }: { id: string }) {
         <QuoteDecisionPanel reference={q.reference} buyer={q.buyer.label} lines={linesOf(q)} expiresAt={q.expires_at} accepted={{ at: q.accepted_at ?? q.expires_at, total: q.offered_total }} />
       ) : (
         <PageSection title="Lines" description={q.status === 'responded' ? 'The seller’s offer per pack, against the list price when the quote was asked.' : 'List prices when the quote was asked; the seller offers their own.'}>
-          <div className="overflow-x-auto border border-border bg-surface" data-density="compact">
+          <DensityRegion density="compact" className="overflow-x-auto border border-border bg-surface">
             <Table caption={`Lines of ${q.reference}`}>
               <THead><tr><Th>Product</Th><Th>SKU</Th><Th numeric>Quantity</Th><Th numeric>List price</Th><Th numeric>Offer</Th></tr></THead>
               <TBody>
@@ -122,7 +123,7 @@ export function QuotePage({ id }: { id: string }) {
                 ))}
               </TBody>
             </Table>
-          </div>
+          </DensityRegion>
           <p className="mt-3 flex flex-wrap justify-end gap-x-6 text-md"><span className="text-muted">List total {formatMoney(q.list_total)}</span>{q.status === 'responded' ? <span className="font-semibold">Offered {formatMoney(q.offered_total)}</span> : null}</p>
         </PageSection>
       )}

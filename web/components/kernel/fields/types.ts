@@ -31,6 +31,8 @@ export type FilterProps = {
   options?: readonly ComboOption[]
   /** Facet counts per choice value from the search response; zero-count choices stay visible but disabled. */
   counts?: Record<string, number>
+  /** The lowest and highest value in the current results (a range filter offers a slider between them). */
+  bounds?: { min: string | null; max: string | null }
 }
 
 export type DiffState = 'unchanged' | 'changed' | 'conflict'

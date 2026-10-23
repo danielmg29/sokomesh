@@ -5,7 +5,7 @@
 // go to sign-in and unconfirmed addresses to the code page; access itself is enforced by the API.
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Bell, Building2, ClipboardCheck, LogOut, ScrollText, Settings, ShoppingBag, Store, UserRound, type LucideIcon } from 'lucide-react'
+import { Bell, Boxes, Building2, ChartColumn, ClipboardCheck, FileText, History, House, LogOut, Package, PackageCheck, Receipt, Scale, ScrollText, Settings, Shapes, ShoppingBag, ShoppingCart, Store, Undo2, UserRound, Users, type LucideIcon } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, type ReactNode } from 'react'
@@ -17,13 +17,19 @@ import { BrandLogo } from '@/components/ui/BrandLogo'
 import { Avatar } from '@/components/ui/badge'
 import { Select } from '@/components/ui/select'
 import { Stamp } from '@/components/ui/stamp'
-import { Menu, MenuContent, MenuItem, MenuLabel, MenuSeparator, MenuTrigger } from '@/components/ui/overlay'
+import { Menu, MenuCheckboxItem, MenuContent, MenuGroup, MenuItem, MenuLabel, MenuSeparator, MenuSub, MenuSubContent, MenuSubTrigger, MenuTrigger } from '@/components/ui/overlay'
+import { themeOptions, useThemePreference } from '@/components/ui/theme'
 import { api } from '@/lib/client/api'
 import { activeMembership, sessionKey, useSession, useSessionWrite, type Session } from '@/lib/client/session'
+import { useStoredFlag } from '@/lib/client/use-stored-flag'
 
+// Every entry has an icon: the collapsed navigation shows nothing else (the label stays for screen readers).
 const ICONS: Record<string, LucideIcon> = {
-  notifications: Bell, organization: Building2, sell: Store, catalogue: ShoppingBag,
-  'admin-sellers': ClipboardCheck, 'admin-organizations': ScrollText, account: UserRound, settings: Settings,
+  home: House, notifications: Bell, organization: Building2, account: UserRound, settings: Settings,
+  catalogue: ShoppingBag, cart: ShoppingCart, orders: Receipt, quotes: FileText, returns: Undo2,
+  sales: Receipt, fulfilment: PackageCheck, inventory: Boxes, 'sell-returns': Undo2, 'sell-quotes': FileText, products: Package,
+  buyers: Users, analytics: ChartColumn, sell: Store,
+  'admin-sellers': ClipboardCheck, 'admin-organizations': ScrollText, 'admin-categories': Shapes, 'admin-reconciliation': Scale, 'admin-audit': History,
 }
 const APPROVAL: Record<string, { tone: 'success' | 'info' | 'danger' | 'warning'; label: string }> = {
   approved: { tone: 'success', label: 'Approved' }, pending: { tone: 'info', label: 'Pending review' },
@@ -69,6 +75,7 @@ function AccountMenu({ session }: { session: Session }) {
     onSuccess: s => { client.clear(); client.setQueryData(sessionKey, s); router.replace('/login') },
   })
   const user = session.user!
+  const [theme, setTheme] = useThemePreference()
   return (
     <Menu>
       <MenuTrigger className="flex items-center gap-2 rounded-sm px-1.5 py-1 hover:bg-sunken" aria-label={`Account menu for ${user.display_name || user.email}`}>
@@ -79,6 +86,16 @@ function AccountMenu({ session }: { session: Session }) {
         <MenuLabel>{user.email}</MenuLabel>
         <MenuItem href="/account" icon={<UserRound className="size-4" aria-hidden />}>Profile</MenuItem>
         <MenuItem href="/account/settings" icon={<Settings className="size-4" aria-hidden />}>Settings</MenuItem>
+        <MenuSub>
+          <MenuSubTrigger>Appearance</MenuSubTrigger>
+          <MenuSubContent>
+            <MenuGroup aria-label="Colour theme">
+              {themeOptions.map(o => (
+                <MenuCheckboxItem key={o.value} checked={theme === o.value} onCheckedChange={() => setTheme(o.value)}>{o.label}</MenuCheckboxItem>
+              ))}
+            </MenuGroup>
+          </MenuSubContent>
+        </MenuSub>
         <MenuSeparator />
         <MenuItem tone="danger" icon={<LogOut className="size-4" aria-hidden />} onSelect={() => signOut.mutate()}>Sign out</MenuItem>
       </MenuContent>
@@ -94,6 +111,8 @@ export function AppFrame({ children }: { children: ReactNode }) {
   const ready = Boolean(data?.user?.email_verified)
   const summary = useNotificationSummary(ready)
   const client = useQueryClient()
+  // Collapsing the navigation is this browser's choice, remembered between visits.
+  const [collapsed, setCollapsed] = useStoredFlag('sokomesh-nav-collapsed')
 
   useEffect(() => {
     if (!data) return
@@ -115,10 +134,11 @@ export function AppFrame({ children }: { children: ReactNode }) {
   const markRead = async (id: string) => { await api(`notifications/${id}/read`, { method: 'POST', body: {} }); await client.invalidateQueries({ queryKey: ['notifications'] }) }
   const markAll = async () => { await api('notifications/read-all', { method: 'POST', body: {} }); await client.invalidateQueries({ queryKey: ['notifications'] }) }
   const brand = <Link href="/" aria-label="SokoMesh home" className="-m-2"><BrandLogo variant="wordmark" width={196} /></Link>
+  const mark = <Link href="/" aria-label="SokoMesh home"><BrandLogo variant="mark" width={32} /></Link>
 
   return (
-    <AppShell
-      nav={<AppNav items={items} current={current} brand={brand} grouped context={<OrganizationContext session={data} />} />}
+    <AppShell collapsed={collapsed}
+      nav={<AppNav items={items} current={current} brand={brand} mark={mark} grouped collapsed={collapsed} onCollapsedChange={setCollapsed} context={<OrganizationContext session={data} />} />}
       header={
         <header className="flex items-center gap-3 border-b border-border bg-surface px-3 py-2 sm:px-5">
           <div className="lg:hidden"><MobileNav items={items} current={current} brand="SokoMesh" grouped context={<OrganizationContext session={data} />} /></div>

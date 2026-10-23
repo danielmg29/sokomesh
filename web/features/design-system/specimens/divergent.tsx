@@ -1,22 +1,16 @@
 'use client'
 
 import { useState, type ReactNode } from 'react'
-import { PaymentStatusPanel } from '@/components/commerce/checkout'
-import { PriceTierTable } from '@/components/commerce/pricing'
-import { InventoryLedgerBlock, ReservationCountdown, ReservationIndicator, StockAvailabilityIndicator } from '@/components/commerce/stock'
 import { Projection } from '@/components/kernel/Projection'
-import { Thread } from '@/components/ui/thread'
-import { Segmented } from '@/components/ui/choice'
-import { cn } from '@/lib/cn'
-import { formatTime } from '@/lib/format'
 import { CategoryContractBuilder, attributeToField, type Attribute, type ContractDraft } from '@/features/categories/CategoryContractBuilder'
 import { VariantMeta } from '@/lib/contract/generated'
 import { ProductComparisonBlock, type CompareProduct } from '@/features/comparison/ProductComparisonBlock'
-import { FulfillmentPickPackBlock, type PickLine } from '@/features/fulfillment/FulfillmentPickPackBlock'
-import { CategoryShowcase, MarketingCTA, MarketingFooter, MercantileHero, ProductRail as MarketingProductRail, StorySplit, buyerValue, sellerValue, statementCopy, heroPanels, TradeRibbon, TradeStatement, WholesaleMetricsStrip, cta, type HeroEmphasis } from '@/features/marketing/Marketing'
+import { FulfillmentPickPackBlock, type Pick, type PickLine, type TaskStatus } from '@/features/fulfillment/FulfillmentPickPackBlock'
+import { CategoryShowcase, MarketingCTA, MarketingFooter, MercantileHero, ProductRail as MarketingProductRail, StorySplit, buyerValue, sellerValue, statementCopy, heroPanels, TradeRibbon, TradeStatement, WholesaleMetricsStrip, cta } from '@/features/marketing/Marketing'
 import { BuyerSellerValueSplit, InventoryTrustProof, MarketingHeader, MarketMeshVisualization, TradeFlowStory, type MeshRecord } from '@/features/marketing/MarketingInteractive'
 import { DEMO_NOW, images, productMeta, products, scenes, sellers, stockFor } from '../fixtures'
 import { Plate, Plates } from '../kit'
+import { flowSteps as storyFlow, meshRecord as storyMesh, trustProofs as storyProofs } from '@/features/marketing/stories'
 
 export const maizeContract: Attribute[] = [
   { key: 'pack_size', label: 'Pack size', type: 'enum', required: true, facet: true, comparable: true, card: true, choices: [{ value: '1kg', label: '1 kg' }, { value: '2kg', label: '2 kg' }, { value: '5kg', label: '5 kg' }] },
@@ -69,13 +63,30 @@ function Comparison() {
 }
 
 export const pickLines: PickLine[] = [
-  { id: 'p1', bin: 'C-04', product: 'Mavuno Maize Flour 2 kg', sku: 'MVN-2K-12', barcode: '6161100100014', ordered: 24, unit: 'bale', onShelf: 96 },
-  { id: 'p2', bin: 'C-11', product: 'Sukari Bora Sugar 1 kg', sku: 'SKB-1K-24', barcode: '6161100200028', ordered: 12, unit: 'bale', onShelf: 9, substitutable: 'Sukari Bora Sugar 2 kg × 6 (same weight)' },
-  { id: 'p3', bin: 'D-02', product: 'Mwea Pishori Rice 25 kg', sku: 'MWP-25K-01', barcode: '6161100300031', ordered: 4, unit: 'sack', onShelf: 6 },
+  { id: 'p1', bin: 'C-04', product: 'Mavuno Maize Flour', packLabel: '12 × 2 kg bale', sku: 'MVN-2K-12', ordered: 24, unit: 'bale', onShelf: 96, picked: 0, outcome: 'pending' },
+  { id: 'p2', bin: 'C-11', product: 'Sukari Bora Sugar', packLabel: '24 × 1 kg bale', sku: 'SKB-1K-24', ordered: 12, unit: 'bale', onShelf: 9, picked: 0, outcome: 'pending' },
+  { id: 'p3', bin: 'D-02', product: 'Mwea Pishori Rice', packLabel: '25 kg sack', sku: 'MWP-25K-01', ordered: 4, unit: 'sack', onShelf: 6, picked: 0, outcome: 'pending' },
 ]
 
+/** The block against a pretend pick list: each command answers after a moment, as the API would. */
+export function PickPackDemo({ initial = 'queued' }: { initial?: TaskStatus }) {
+  const [status, setStatus] = useState<TaskStatus>(initial)
+  const [lines, setLines] = useState<PickLine[]>(pickLines)
+  const [pending, setPending] = useState<string | null>(null)
+  const later = (name: string, apply: () => void) => new Promise<void>(resolve => { setPending(name); setTimeout(() => { apply(); setPending(null); resolve() }, 500) })
+  const record = (picks: Pick[]) => later('record_picks', () => {
+    setStatus('picking')
+    setLines(ls => ls.map(l => { const p = picks.find(x => x.line === l.id); return p ? { ...l, picked: p.picked, reason: p.reason, outcome: p.picked === l.ordered ? 'full' : p.picked === 0 ? 'rejected' : 'short' } : l }))
+  })
+  return (
+    <FulfillmentPickPackBlock key={`${status}|${lines.map(l => l.outcome + l.picked).join()}`} order="SM-ORD-004215" status={status} lines={lines} buyer="Wanjiru General Stores"
+      deliverTo="Kenyatta Avenue, Nakuru" instructions="Deliver before noon; the loading bay is at the back." pending={pending}
+      onRecordPicks={record} onPack={() => later('pack', () => setStatus('packed'))} onHandOver={() => later('hand_over', () => setStatus('handed_over'))} />
+  )
+}
+
 function PickPack() {
-  return <Plates cols={1}><Plate label="Pick, pack, hand over" note="Try scanning 6161100100014"><div className="max-w-2xl"><FulfillmentPickPackBlock order="SM-ORD-004215 · Wanjiru General Stores" lines={pickLines} /></div></Plate></Plates>
+  return <Plates cols={1}><Plate label="Pick, pack, hand over" note="Try scanning MVN-2K-12"><div className="max-w-2xl"><PickPackDemo /></div></Plate></Plates>
 }
 
 function Header() {
@@ -94,60 +105,20 @@ export function ProductRail({ title = 'Restock this week', records = products.sl
   return <MarketingProductRail title={title} meta={productMeta} records={records} href={() => '#product'} all={{ label: 'All products', href: '#products' }} now={DEMO_NOW} />
 }
 
-/** The hero's market: four product cells from the real projection, and the hold one buyer has on the first. */
-export function MarketShelf() {
-  return (
-    <div className="flex flex-col border border-border-strong bg-surface">
-      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-b border-border px-4 py-2.5 text-sm">
-        <span className="font-semibold">Demo market, Rift Valley</span>
-        <span className="text-muted tabular">Prices and stock at {formatTime(DEMO_NOW)}</span>
-      </div>
-      <ul className="grid grid-cols-2" data-density="compact">
-        {products.slice(0, 4).map((p, i) => (
-          <li key={p.id} className={cn('flex border-border', i % 2 === 0 && 'border-r', i < 2 && 'border-b')}>
-            <Projection meta={productMeta} record={p} context="list" override={{ intent: 'media', surface: 'flat', density: 'compact' }} now={DEMO_NOW} className="w-full" />
-          </li>
-        ))}
-      </ul>
-      <div className="flex flex-wrap items-center gap-2 border-t border-signal-border bg-signal-soft px-4 py-3 text-sm">
-        <ReservationIndicator reservation={{ id: 'RSV-88213', quantity: 24, unit: 'bale', status: 'active', expiresAt: '2026-10-12T11:52:00+03:00', product: 'Mavuno Maize Flour 2 kg' }} />
-        <span>for Wanjiru General Stores while they pay</span>
-      </div>
-    </div>
-  )
-}
-
 function Hero() {
-  const [emphasis, setEmphasis] = useState<HeroEmphasis>('default')
   return (
     <Plates cols={1}>
       <Plate label="photo split: two doors" note="Unsplash photographs, graded; credits under the ledger" tone="canvas"><MercantileHero panels={heroPanels} /></Plate>
-      <Plate label="emphasis, with the live shelf" tone="canvas">
-        <div className="mb-2"><Segmented label="Emphasis" size="sm" value={emphasis} onValueChange={setEmphasis} items={[{ value: 'default', label: 'Default' }, { value: 'buyer', label: 'Buyer' }, { value: 'seller', label: 'Seller' }]} /></div>
-        <div className="px-2"><MercantileHero emphasis={emphasis} board={<MarketShelf />} /></div>
-      </Plate>
-      <Plate label="compact" tone="canvas"><MercantileHero emphasis="buyer" compact /></Plate>
+      <Plate label="narrow: each photograph above its words" tone="canvas"><div className="max-w-md"><MercantileHero panels={heroPanels} /></div></Plate>
     </Plates>
   )
 }
 
 /** One product's record as the demo seed tells it: received, listed, held, paid, handed over. */
-export const meshRecord: MeshRecord = {
-  product: { name: 'Mavuno Maize Flour 2 kg', listing: 'Mwangaza Wholesalers Ltd, sold by the bale of 12 × 2 kg', image: { src: images.maize.url, width: images.maize.width, height: images.maize.height } },
-  unit: 'bale',
-  stations: [
-    { key: 'sellers', label: 'Sellers', figure: '4 wholesalers', role: 'Receive stock into the record and set its price.',
-      entry: { label: 'Received', reference: 'GRN-3302', detail: 'Peter Kamau, Mwangaza store in Nakuru', at: '10 Oct, 07:40', change: 120, available: 120 } },
-    { key: 'catalogue', label: 'Catalogue', figure: '2 category contracts', role: 'Decide what a listing must say before it goes live.',
-      entry: { label: 'Published', detail: 'Under the Maize flour v3 contract by Faith Chebet', at: '11 Oct, 16:00', available: 120 } },
-    { key: 'buyers', label: 'Buyers', figure: '2 retail shops', role: 'Hold stock for 15 minutes while they pay.',
-      entry: { label: 'Held at checkout', reference: 'RSV-88213', detail: 'Wanjiru General Stores, for 15 minutes', at: '12 Oct, 11:22', change: -24, available: 96 } },
-    { key: 'orders', label: 'Orders', figure: 'One change per event', role: 'Turn a paid hold into a sale, exactly once.',
-      entry: { label: 'Paid and confirmed', reference: 'SM-ORD-004215', detail: 'M-Pesa through SellaPay, applied once', at: '12 Oct, 11:30', available: 96 } },
-    { key: 'fulfilment', label: 'Fulfilment', figure: 'Pick, pack, hand over', role: 'Record each handover against the order.',
-      entry: { label: 'Handed over', detail: 'To Rift Express, expected 12:00 to 14:00', at: '12 Oct, 11:50', available: 96 } },
-  ],
-}
+export const meshRecord: MeshRecord = storyMesh({
+  name: 'Mavuno Maize Flour 2 kg', listing: 'Mwangaza Wholesalers Ltd, sold by the bale of 12 × 2 kg',
+  image: { src: images.maize.url, width: images.maize.width, height: images.maize.height },
+})
 
 function Mesh() {
   return (
@@ -186,35 +157,13 @@ function ValueSplit() {
   return <Plates cols={1}><Plate label="stories" note="A photograph per side, left then right" tone="canvas"><BuyerSellerValueSplit layout="stories" buyer={buyerValue} seller={sellerValue} scenes={{ buyer: scenes['story-delivery'], seller: scenes['story-stock'] }} /></Plate><Plate label="split"><BuyerSellerValueSplit buyer={buyerValue} seller={sellerValue} /></Plate><Plate label="tabs"><BuyerSellerValueSplit layout="tabs" buyer={buyerValue} seller={sellerValue} /></Plate></Plates>
 }
 
-export function flowSteps() {
-  return [
-    { key: 'discover' as const, title: 'Discover', body: 'Search permitted products with filters from the category.', example: <div className="max-w-xs"><Projection meta={productMeta} record={products[0]!} context="list" now={DEMO_NOW} /></div> },
-    { key: 'compare' as const, title: 'Compare', body: 'See your price by quantity before you commit.', example: <PriceTierTable tiers={[{ minQuantity: 5, maxQuantity: 9, unitPrice: '1740.00' }, { minQuantity: 10, maxQuantity: 49, unitPrice: '1690.00' }, { minQuantity: 50, unitPrice: '1640.00' }]} unit="bale" quantity={20} /> },
-    { key: 'order' as const, title: 'Order', body: 'Stock is reserved while you pay by M-Pesa.', example: <ReservationCountdown expiresAt="2026-10-12T11:52:00+03:00" totalSeconds={900} pausedAt="2026-10-12T11:41:00+03:00" /> },
-    { key: 'fulfil' as const, title: 'Fulfil', body: 'Sellers pick, pack and hand over; you see each step.', example: <Thread label="Fulfilment" orientation="vertical" steps={[{ key: 'a', label: 'Confirmed by Mwangaza', state: 'done' }, { key: 'b', label: 'Picked 3 of 3 lines', state: 'done' }, { key: 'c', label: 'Handed to Rift Express', state: 'current', detail: 'Expected 12:00 to 14:00' }, { key: 'd', label: 'Delivered', state: 'upcoming' }]} /> },
-  ]
-}
+export const flowSteps = () => storyFlow(<Projection meta={productMeta} record={products[0]!} context="list" now={DEMO_NOW} />)
 
 function Flow() {
   return <Plates cols={1}><Plate label="Discover, compare, order, fulfil"><TradeFlowStory steps={flowSteps()} /></Plate></Plates>
 }
 
-export function trustProofs() {
-  return {
-    stock: { title: 'Stock is the sum of its movements', body: 'Available units are calculated from receipts, holds, releases and shipments, never typed in.', example: <InventoryLedgerBlock unit="bale" now={DEMO_NOW} movements={[
-      { id: 'a', type: 'reservation', quantity: -24, unit: 'bale', balanceAfter: 96, at: '2026-10-12T11:22:00+03:00', actor: 'Checkout', reference: 'RSV-88213' },
-      { id: 'b', type: 'release', quantity: 12, unit: 'bale', balanceAfter: 120, at: '2026-10-12T10:58:00+03:00', actor: 'Expiry worker', reference: 'RSV-88190', reason: 'Hold expired' },
-      { id: 'c', type: 'receipt', quantity: 120, unit: 'bale', balanceAfter: 108, at: '2026-10-10T07:40:00+03:00', actor: 'Peter Kamau', reference: 'GRN-3302' },
-    ]} /> },
-    reservation: { title: 'The first hold wins; the second buyer gets a way forward', body: 'Reservations lock the stock row inside one transaction, so two checkouts can never sell the same bales.', example: (
-      <div className="grid grid-cols-1 gap-px border border-border bg-border sm:grid-cols-2">
-        <div className="flex flex-col gap-2 bg-surface p-3"><span className="text-sm font-semibold">Wanjiru General Stores · 11:22:03</span><ReservationIndicator reservation={{ id: 'RSV-88213', quantity: 24, unit: 'bale', status: 'active', expiresAt: '2026-10-12T11:37:03+03:00', product: 'Mavuno Maize Flour 2 kg' }} variant="full" /></div>
-        <div className="flex flex-col gap-2 bg-surface p-3"><span className="text-sm font-semibold">Baraka Mini-Mart · 11:22:04</span><StockAvailabilityIndicator stock={{ state: 'out-of-stock', available: 0, unit: 'bale', restockOn: '2026-10-15T09:00:00+03:00' }} variant="full" /></div>
-      </div>
-    ) },
-    payment: { title: 'A payment changes the order once', body: 'Repeated confirmations for the same transaction are recorded and ignored, never applied twice.', example: <PaymentStatusPanel state="reconciled" amount="48250.00" orderReference="SM-ORD-004215" transactionId="TXN-1770727500-12345" sentAt="2026-10-12T11:30:00+03:00" confirmations={2} /> },
-  }
-}
+export const trustProofs = () => storyProofs(DEMO_NOW)
 
 function Trust() {
   return <Plates cols={1}><Plate label="stock, reservation, payment"><InventoryTrustProof proofs={trustProofs()} /></Plate></Plates>

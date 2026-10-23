@@ -22,6 +22,7 @@ from apps.catalog import contracts, media, pricing
 from apps.catalog.models import BuyerGroupMember, Category, CategoryContract, MediaAsset, PriceRule, Product, Variant
 from apps.delivery.models import Shipment, ShipmentEvent
 from apps.demo import catalogue, data, products
+from apps.demo.operations import History, Placed
 from apps.media.models import FileAsset
 from apps.media.services import store
 from apps.notifications.models import Notification, NotificationPreference
@@ -31,6 +32,7 @@ from apps.orders.models import ApprovalPolicy, Order, OrderLine, OrderTransition
 from apps.organizations.models import Address, Membership, Organization
 from apps.quotes.models import Quote, QuoteLine
 from apps.sellers.models import SellerDocument, SellerProfile, SellerStatusChange
+from core.events.models import AuditEvent, OutboxEvent
 from core.richtext import sanitize
 
 AVATARS = Path(__file__).resolve().parents[2] / "avatars"
@@ -65,8 +67,9 @@ def demo_pdf(title: str) -> bytes:
 class Command(BaseCommand):
     help = (
         "Seed the demo marketplace: organizations, people, documents, category contracts, products and "
-        "variants, price books, a cart, quotes, orders with their history and deliveries, photographs and "
-        "notifications."
+        "variants, price books, a cart, quotes, orders with their history and deliveries, photographs, "
+        "notifications, the stock ledger and holds, payments, pick lists, return cases, an integration and "
+        "the audit trail."
     )
 
     def add_arguments(self, parser: Any) -> None:
@@ -90,6 +93,9 @@ class Command(BaseCommand):
         users = User.objects.filter(memberships__organization__in=orgs) | User.objects.filter(
             email__in=[a["email"] for a in data.ACCOUNTS]
         )
+        ids = list(orgs.values_list("pk", flat=True))
+        AuditEvent.objects.filter(organization_id__in=ids).delete()
+        OutboxEvent.objects.filter(organization_id__in=ids).delete()  # with their webhook deliveries
         Order.objects.filter(buyer_organization__in=orgs).delete()
         Quote.objects.filter(buyer_organization__in=orgs).delete()
         Cart.objects.filter(buyer_organization__in=orgs).delete()
@@ -174,6 +180,8 @@ class Command(BaseCommand):
             for i, (slug, name, desc) in enumerate(data.CATEGORIES)
         }
         published = self.contracts(categories, amina, now)
+        # Stock is not written on the packs: the ledger opens with it once the orders exist (operations.py).
+        opening: dict[str, int] = {}
         items = [{**item, **catalogue.COMMERCE[item["slug"]]} for item in products.PRODUCTS] + catalogue.MORE_PRODUCTS
         for i, item in enumerate(items):
             seller, name = item["seller"], item["name"]
@@ -209,19 +217,21 @@ class Command(BaseCommand):
                     units_per_pack=spec["per"],
                     minimum_order_quantity=spec["moq"],
                     unit_price=spec["price"],
-                    stock_on_hand=spec["stock"],
                     attributes=spec["attributes"],
                 )
                 variant.full_clean()
                 variant.save()
+                if spec["stock"] is not None:
+                    opening[spec["sku"]] = spec["stock"]
 
         self.price_books(orgs, now)
         self.cart(people, orgs)
         policies = self.approval_policies(orgs)
         quotes = self.quotes(people, orgs, now)
-        self.orders(people, orgs, now, quotes, policies)
+        placed = self.orders(people, orgs, now, quotes, policies)
         self.media()
         self.notifications(people, orgs, now)
+        History(people, orgs, placed, now, demo_pdf).build(opening)
 
     def contracts(self, categories: dict[str, Category], admin: User, now: Any) -> dict[str, CategoryContract]:
         """Each category's contract versions, oldest first; returns the published version per category."""
@@ -343,9 +353,11 @@ class Command(BaseCommand):
         now: Any,
         quotes: dict[str, Quote],
         policies: dict[str, ApprovalPolicy],
-    ) -> None:
+    ) -> list[Placed]:
         """Order history with every transition (SM-F-15), shipments (SM-F-17) and approvals (SM-F-12): the
-        hand-kept Wanjiru orders plus months of generated Mwangaza sales, numbered in the order placed."""
+        hand-kept Wanjiru orders plus months of generated Mwangaza sales, numbered in the order placed. Every
+        order but the one awaiting approval was paid before it reached its seller (SM-F-14)."""
+        placed: list[Placed] = []
         specs = [
             {**s, "buyer": "wanjiru", "at": now - timedelta(days=s.get("days_ago", 0), hours=s.get("hours_ago", 0))}
             for s in catalogue.ORDERS
@@ -405,7 +417,7 @@ class Command(BaseCommand):
                 line.order = order
                 line.save()
             moves = self.path(spec, emails)
-            first = "pending_approval" if status == "pending_approval" else "submitted"
+            first = "pending_approval" if status == "pending_approval" else "awaiting_payment"
             OrderTransition.objects.create(
                 order=order,
                 from_status="",
@@ -415,6 +427,16 @@ class Command(BaseCommand):
                 occurred_at=at,
             )
             previous = first
+            if first == "awaiting_payment":
+                OrderTransition.objects.create(
+                    order=order,
+                    from_status=first,
+                    to_status="submitted",
+                    actor=None,
+                    reason="Paid by M-Pesa",
+                    occurred_at=at + timedelta(minutes=2),
+                )
+                previous = "submitted"
             shipped_at = delivered_at = None
             for to, hours, actor, reason in moves:
                 when = at + timedelta(hours=hours)
@@ -426,6 +448,8 @@ class Command(BaseCommand):
                 delivered_at = when if to == "delivered" else delivered_at
             if shipped_at:
                 self.shipment(order, spec, shipped_at, delivered_at, now)
+            placed.append(Placed(order, spec, shipped_at, delivered_at))
+        return placed
 
     def path(self, spec: dict[str, Any], emails: dict[str, User]) -> list[tuple[str, int, User | None, str]]:
         """The moves after submission that bring an order to its status."""

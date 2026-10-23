@@ -5,6 +5,8 @@ the time so history never changes when products or prices do. Its status moves o
 transitions in apps.orders.lifecycle, each recorded as an append-only OrderTransition with actor, time and
 reason. An order that needs approval waits in `pending_approval` until the buyer's policy is met; the
 policy that applied is copied onto the order, so a later policy change never rewrites past approvals.
+Then it waits in `awaiting_payment` with its stock on hold (SM-F-13) until the buyer pays (SM-F-14); only a
+confirmed payment submits it to the seller. Its `correlation_id` ties every record of its journey together.
 """
 
 import uuid
@@ -13,10 +15,17 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
 
+from core.events.context import new_id
+
+
+def _correlation() -> str:
+    return new_id("ord")
+
 
 class Order(models.Model):
     class Status(models.TextChoices):
         PENDING_APPROVAL = "pending_approval", "Awaiting approval"
+        AWAITING_PAYMENT = "awaiting_payment", "Awaiting payment"
         SUBMITTED = "submitted", "Submitted"
         CONFIRMED = "confirmed", "Confirmed"
         PICKING = "picking", "Picking"
@@ -61,6 +70,8 @@ class Order(models.Model):
         "orders.ApprovalPolicy", null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
     )
     approval_snapshot = models.JSONField(default=dict, blank=True)
+    # SM-F-24: reservations, payments, fulfilment and returns for this order share this id in the audit trail.
+    correlation_id = models.CharField(max_length=64, default=_correlation, db_index=True, editable=False)
     version = models.PositiveIntegerField(default=1)
 
     class Meta:
@@ -114,7 +125,11 @@ class OrderTransition(models.Model):
 
 
 class ApprovalPolicy(models.Model):
-    """SM-F-12: orders from this value up need approval from members holding one of the approver roles."""
+    """SM-F-12: orders from this value up need approval from members holding one of the approver roles.
+
+    The people trusted to approve large orders are, by default, trusted with their own (an owner's restock goes
+    straight to the seller); `exempt_approvers` off asks for a second person on every large order.
+    """
 
     APPROVER_ROLES = ("buyer_owner", "buyer_purchaser")
     MAX_APPROVALS = 5
@@ -130,6 +145,13 @@ class ApprovalPolicy(models.Model):
     )
     approver_role_keys = models.JSONField("Who can approve", default=list)
     minimum_approvals = models.PositiveSmallIntegerField("Approvals needed", default=1)
+    exempt_approvers = models.BooleanField(
+        "Approvers' own orders skip approval",
+        default=True,
+        db_default=True,
+        help_text="Orders placed by someone who can approve go straight to the seller. "
+        "Turn this off to have a second person check every large order.",
+    )
     is_active = models.BooleanField("On", default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField("Updated", auto_now=True)

@@ -1,6 +1,8 @@
 'use client'
 
 import { Menu as MenuIcon, PanelLeftClose, PanelLeftOpen, type LucideIcon } from 'lucide-react'
+import type { Route } from 'next'
+import Link from 'next/link'
 import type { ReactNode } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -16,6 +18,8 @@ type Props = {
   items: readonly NavItem[]
   current?: string
   brand?: ReactNode
+  /** What stands for the brand while collapsed (the logo mark). */
+  mark?: ReactNode
   context?: ReactNode
   collapsed?: boolean
   onCollapsedChange?: (collapsed: boolean) => void
@@ -44,9 +48,10 @@ function NavList({ items, current, collapsed, grouped }: { items: readonly NavIt
           <ul className="flex flex-col gap-0.5">
             {g.items.map(i => {
               const active = i.key === current
+              // Client-side navigation keeps the session and cached lists between pages.
               const link = (
-                <a
-                  href={i.href}
+                <Link
+                  href={i.href as Route}
                   aria-current={active ? 'page' : undefined}
                   className={cn(
                     'flex h-9 items-center gap-2.5 rounded-sm px-2.5 text-md text-foreground motion-bind transition-colors hover:bg-sunken',
@@ -54,10 +59,11 @@ function NavList({ items, current, collapsed, grouped }: { items: readonly NavIt
                     collapsed && 'justify-center px-0',
                   )}
                 >
-                  {i.icon ? <Icon icon={i.icon} className="size-4.5" /> : null}
+                  {i.icon ? <Icon icon={i.icon} className="size-4.5" /> : collapsed ? <span aria-hidden className="font-display font-bold">{i.label.slice(0, 1)}</span> : null}
                   <span className={cn('flex-1 truncate', collapsed && 'sr-only')}>{i.label}</span>
                   {i.count !== undefined && !collapsed ? <Badge emphasis={active ? 'strong' : 'quiet'}>{i.count}</Badge> : null}
-                </a>
+                  {i.count !== undefined && collapsed ? <span className="sr-only">, {i.count}</span> : null}
+                </Link>
               )
               return <li key={i.key}>{collapsed ? <Tooltip content={i.label} side="right">{link}</Tooltip> : link}</li>
             })}
@@ -69,11 +75,11 @@ function NavList({ items, current, collapsed, grouped }: { items: readonly NavIt
 }
 
 /** Navigation derived from the contract's models and the viewer's role. */
-export function AppNav({ items, current, brand, context, collapsed = false, onCollapsedChange, grouped = true }: Props) {
+export function AppNav({ items, current, brand, mark, context, collapsed = false, onCollapsedChange, grouped = true }: Props) {
   return (
     <nav aria-label="Main" className="flex h-full flex-col gap-4 p-3">
-      <div className={cn('flex items-center gap-2', collapsed ? 'justify-center' : 'justify-between')}>
-        {!collapsed ? brand : null}
+      <div className={cn('flex items-center gap-2', collapsed ? 'flex-col justify-center' : 'justify-between')}>
+        {collapsed ? mark : brand}
         {onCollapsedChange ? (
           <Button variant="ghost" size="icon-sm" aria-label={collapsed ? 'Expand navigation' : 'Collapse navigation'} aria-expanded={!collapsed} onClick={() => onCollapsedChange(!collapsed)}>
             <Icon icon={collapsed ? PanelLeftOpen : PanelLeftClose} />
@@ -87,7 +93,7 @@ export function AppNav({ items, current, brand, context, collapsed = false, onCo
 }
 
 /** The same navigation in a sheet for narrow containers. */
-export function MobileNav({ items, current, brand, context, grouped = true }: Omit<Props, 'collapsed' | 'onCollapsedChange'>) {
+export function MobileNav({ items, current, brand, context, grouped = true }: Omit<Props, 'collapsed' | 'onCollapsedChange' | 'mark'>) {
   return (
     <Sheet
       side="left"

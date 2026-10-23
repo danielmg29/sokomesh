@@ -24,6 +24,7 @@ import { FieldView } from '../fields/FieldView'
 import { rendererFor } from '../fields/registry'
 import { asRelation } from '../fields/types'
 import { FiltersBlock } from './FiltersBlock'
+import { displayOf } from '@/lib/contract/display'
 
 export type ListState = 'ready' | 'loading' | 'empty' | 'error' | 'stale'
 export type NarrowStrategy = 'scroll' | 'collapse' | 'priority'
@@ -41,7 +42,8 @@ type Props = {
   onRefresh?: () => void
   selectable?: boolean
   selected?: readonly string[]
-  onSelectedChange?: (ids: string[]) => void
+  /** The selected ids, and the selected rows this list has shown (a selection can span pages). */
+  onSelectedChange?: (ids: string[], rows: Rec[]) => void
   onRun?: RunAction
   href?: (r: Rec) => string
   sort?: { field: string; dir: 'asc' | 'desc' }
@@ -102,8 +104,9 @@ export function ListBlock(props: Props) {
   const maxSelect = limits.maxBulk
   const allSelected = shown.length > 0 && shown.every(r => selected.includes(r.id))
   const someSelected = shown.some(r => selected.includes(r.id))
-  const toggle = (id: string) => onSelectedChange?.(selected.includes(id) ? selected.filter(x => x !== id) : [...selected, id].slice(0, maxSelect))
-  const toggleAll = () => onSelectedChange?.(allSelected ? selected.filter(id => !shown.some(r => r.id === id)) : [...new Set([...selected, ...shown.map(r => r.id)])].slice(0, maxSelect))
+  const choose = (ids: string[]) => onSelectedChange?.(ids, shown.filter(r => ids.includes(r.id)))
+  const toggle = (id: string) => choose(selected.includes(id) ? selected.filter(x => x !== id) : [...selected, id].slice(0, maxSelect))
+  const toggleAll = () => choose(allSelected ? selected.filter(id => !shown.some(r => r.id === id)) : [...new Set([...selected, ...shown.map(r => r.id)])].slice(0, maxSelect))
   const label = (meta.labelPlural ?? meta.label).toLowerCase()
   const noun = { one: meta.label.toLowerCase(), other: label }
   const changeSort = (field: string) => {
@@ -226,7 +229,7 @@ export function ListBlock(props: Props) {
       <TBody>
         {shown.map(r => (
           <Tr key={r.id} interactive selected={selected.includes(r.id)}>
-            {selectable ? <Td><Checkbox aria-label={`Select ${String(r[meta.displayField ?? 'id'])}`} checked={selected.includes(r.id)} onCheckedChange={() => toggle(r.id)} /></Td> : null}
+            {selectable ? <Td><Checkbox aria-label={`Select ${displayOf(meta, r)}`} checked={selected.includes(r.id)} onCheckedChange={() => toggle(r.id)} /></Td> : null}
             {columns.map((f, i) => (
               <Td key={f.name} numeric={rendererFor(f.widget)?.align === 'end'} className={cn('max-w-72', narrow === 'priority' && priorityClass(i))}>
                 {i === 0 && href ? <a href={href(r)} className="font-semibold text-foreground hover:underline"><FieldView field={f} value={r[f.name]} context="compact" now={now} /></a>

@@ -141,7 +141,7 @@ export function ReservationCountdown({ expiresAt, totalSeconds, pausedAt, onExpi
 }
 
 const movementLabel: Record<MovementType, string> = {
-  receipt: 'Receipt', reservation: 'Reservation', release: 'Release', allocation: 'Allocation', adjustment: 'Adjustment', shipment: 'Shipment',
+  receipt: 'Receipt', reservation: 'Reservation', release: 'Release', allocation: 'Allocation', adjustment: 'Adjustment', shipment: 'Shipment', return: 'Return',
 }
 
 const movementAccess: Accessors<InventoryMovement> = {
@@ -158,6 +158,7 @@ export function InventoryLedgerBlock({ movements, unit, now, density = 'compact'
   const types = asStringList(t.query.filters.type?.value)
   const counts = t.counts('type')
   const present = [...new Set(movements.map(m => m.type))] as MovementType[]
+  const physical = movements.some(m => m.onHandAfter !== undefined)
   return (
     <section className="flex min-w-0 flex-col gap-3" aria-label="Inventory ledger" data-density={density}>
       <TableToolbar active={t.active} onClear={t.clear}
@@ -170,7 +171,7 @@ export function InventoryLedgerBlock({ movements, unit, now, density = 'compact'
         ) : (
         <ScrollArea label="Inventory movements, scrolls sideways">
           <Table caption="Inventory movements">
-            <THead><tr><Th>When</Th><Th>Movement</Th><Th>Reference</Th><Th numeric>Change</Th><Th numeric>Balance</Th><Th>By</Th><Th>Reason</Th></tr></THead>
+            <THead><tr><Th>When</Th><Th>Movement</Th><Th>Reference</Th><Th numeric>Change</Th><Th numeric>Available after</Th>{physical ? <Th numeric>On hand after</Th> : null}<Th>By</Th><Th>Reason</Th></tr></THead>
             <TBody>
               {t.result.rows.map(m => {
                 const inbound = m.quantity > 0
@@ -180,10 +181,15 @@ export function InventoryLedgerBlock({ movements, unit, now, density = 'compact'
                     <Td><span className="font-medium">{movementLabel[m.type]}</span></Td>
                     <Td><code className="font-mono text-sm">{m.reference}</code></Td>
                     <Td numeric className={cn('font-semibold whitespace-nowrap', inbound ? 'text-tone-success' : 'text-foreground')}>
-                      <Icon icon={inbound ? ArrowDownLeft : ArrowUpRight} className="mr-1 inline" label={inbound ? 'In' : 'Out'} />
-                      {inbound ? '+' : '−'}{Math.abs(m.quantity).toLocaleString('en-KE')}
+                      {m.quantity === 0 ? <span className="font-normal text-muted">No change</span> : (
+                        <>
+                          <Icon icon={inbound ? ArrowDownLeft : ArrowUpRight} className="mr-1 inline" label={inbound ? 'In' : 'Out'} />
+                          {inbound ? '+' : '−'}{Math.abs(m.quantity).toLocaleString('en-KE')}
+                        </>
+                      )}
                     </Td>
                     <Td numeric className="font-semibold">{m.balanceAfter.toLocaleString('en-KE')}</Td>
+                    {physical ? <Td numeric>{m.onHandAfter?.toLocaleString('en-KE') ?? <Empty label="Not recorded" />}</Td> : null}
                     <Td className="whitespace-nowrap">{m.actor}</Td>
                     <Td className="max-w-64 text-muted">{m.reason ?? <Empty label="No reason recorded" />}</Td>
                   </Tr>
@@ -195,7 +201,7 @@ export function InventoryLedgerBlock({ movements, unit, now, density = 'compact'
         )}
         <TablePager result={t.result} onPage={t.setPage} onPageSize={t.setPageSize} noun={{ one: 'movement', other: 'movements' }} unfiltered={movements.length} className="border-t border-border" />
         <p className="border-t border-border px-3 py-2.5 text-sm text-muted">
-          Quantities in {unitLabel(unit, 2)}. Rows are never edited: corrections are new adjustment movements with a reason.
+          Quantities in {unitLabel(unit, 2)}. Change is in available stock (holds and allocations take packs off sale before they leave). Rows are never edited: corrections are new adjustment movements with a reason.
         </p>
       </div>
     </section>

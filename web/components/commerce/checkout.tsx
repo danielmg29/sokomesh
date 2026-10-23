@@ -73,7 +73,7 @@ export function CheckoutSummaryBlock({ step, state, groups, address, blockedReas
   )
 }
 
-export type PaymentState = 'created' | 'pending' | 'confirmed' | 'failed' | 'cancelled' | 'reconciled' | 'stale'
+export type PaymentState = 'created' | 'pending' | 'confirmed' | 'failed' | 'cancelled' | 'reconciled' | 'stale' | 'refunded'
 
 const paymentLook: Record<PaymentState, { tone: Tone; label: string; condition?: 'pending' | 'processing' }> = {
   created: { tone: 'neutral', label: 'Ready to pay' },
@@ -83,6 +83,7 @@ const paymentLook: Record<PaymentState, { tone: Tone; label: string; condition?:
   cancelled: { tone: 'neutral', label: 'Cancelled on phone' },
   reconciled: { tone: 'success', label: 'Reconciled' },
   stale: { tone: 'warning', label: 'Not confirmed yet' },
+  refunded: { tone: 'neutral', label: 'Refunded' },
 }
 
 /**
@@ -97,7 +98,7 @@ function confirmationSteps(state: PaymentState, sentAt?: string): ThreadStep[] {
     label: 'Your approval on the phone',
     state: state === 'created' ? 'upcoming' : state === 'pending' ? 'current' : state === 'stale' ? 'stale' : state === 'failed' || state === 'cancelled' ? 'failed' : 'done',
   }
-  const result: ThreadStep = { key: 'result', label: 'Confirmed by M-Pesa', state: state === 'confirmed' || state === 'reconciled' ? 'done' : 'upcoming' }
+  const result: ThreadStep = { key: 'result', label: 'Confirmed by M-Pesa', state: state === 'confirmed' || state === 'reconciled' || state === 'refunded' ? 'done' : 'upcoming' }
   return [sent, phone, result]
 }
 
@@ -108,9 +109,12 @@ const phoneField: FieldMeta = { name: 'phone', type: 'string', widget: 'phone', 
  * payment is confirmed only on a successful result after the buyer acts on that prompt (see
  * confirmationSteps). The order changes once per confirmed payment, however many confirmations arrive.
  */
-export function PaymentStatusPanel({ state, amount, orderReference, phone: initialPhone, transactionId, sentAt, staleMinutes, failure, confirmations = 0, retryable, onSend, onResend, onCheckAgain }: {
+export function PaymentStatusPanel({ state, amount, orderReference, phone: initialPhone, transactionId, sentAt, staleMinutes, failure, confirmations = 0, retryable, onSend, onResend, onCheckAgain, providerLabel = 'SellaPay · M-Pesa', sending, maskedPhone, notice = 'Paid through SellaPay. SokoMesh never sees your M-Pesa PIN.' }: {
   state: PaymentState; amount: Money; orderReference: string; phone?: string; transactionId?: string; sentAt?: string; staleMinutes?: number
   failure?: string; confirmations?: number; retryable?: boolean; onSend?: (phone: string) => void; onResend?: () => void; onCheckAgain?: () => void
+  providerLabel?: string; sending?: boolean
+  /** The number as the API shows it once the prompt is sent (already masked). */
+  maskedPhone?: string; notice?: string
 }) {
   const [phone, setPhone] = useState(initialPhone ?? '')
   const look = paymentLook[state]
@@ -130,19 +134,16 @@ export function PaymentStatusPanel({ state, amount, orderReference, phone: initi
       {state === 'created' ? (
         <form className="flex flex-col gap-3" onSubmit={e => { e.preventDefault(); if (valid) onSend?.(phone) }}>
           <FieldInput field={phoneField} value={phone} onChange={v => setPhone(String(v ?? ''))} />
-          <Button type="submit" variant="primary" size="lg" leadingIcon={Smartphone} disabled={!valid}>Send M-Pesa prompt</Button>
-          <p className="flex items-center gap-1.5 text-sm text-muted"><Icon icon={Lock} />Paid through SellaPay. SokoMesh never sees your M-Pesa PIN.</p>
+          <Button type="submit" variant="primary" size="lg" leadingIcon={Smartphone} disabled={!valid} loading={sending} loadingLabel="Sending the prompt…">Send M-Pesa prompt</Button>
+          <p className="flex items-center gap-1.5 text-sm text-muted"><Icon icon={Lock} />{notice}</p>
         </form>
       ) : null}
 
       {state === 'pending' ? (
         <div className="flex flex-col gap-3">
-          <p className="text-lg font-semibold">Check the phone {phone ? maskPhone(phone) : ''} and enter your M-Pesa PIN.</p>
+          <p className="text-lg font-semibold">Check the phone {maskedPhone ?? (phone ? maskPhone(phone) : '')} and enter your M-Pesa PIN.</p>
           <p className="text-md text-muted">The prompt was sent{sentAt ? ` at ${formatTime(sentAt)}` : ''}. The payment is confirmed only once you approve it and M-Pesa reports success; keep this page open and it updates by itself.</p>
-          <div className="flex flex-wrap gap-2">
-            <Button variant="secondary" onClick={onResend}>Resend prompt</Button>
-            <Button variant="ghost">Use another number</Button>
-          </div>
+          {onCheckAgain ? <Button variant="secondary" className="self-start" onClick={onCheckAgain}>Check now</Button> : null}
         </div>
       ) : null}
 
@@ -150,7 +151,10 @@ export function PaymentStatusPanel({ state, amount, orderReference, phone: initi
         <div role="alert" className="flex flex-col gap-2 rounded-sm border border-tone-warning bg-tone-warning-bg/60 p-3">
           <p className="font-semibold">No result from M-Pesa for {staleMinutes ?? 'several'} minutes, so the payment is not confirmed.</p>
           <p className="text-md">Do not pay again. It is confirmed only if a successful result arrives; if money left your M-Pesa, it will be matched to this order and any duplicate refunded. Your stock stays reserved while we check.</p>
-          <Button size="sm" variant="secondary" className="self-start" onClick={onCheckAgain}>Check again</Button>
+          <div className="flex flex-wrap gap-2">
+            <Button size="sm" variant="secondary" onClick={onCheckAgain}>Check again</Button>
+            {retryable && onResend ? <Button size="sm" variant="ghost" onClick={onResend}>Send a new prompt</Button> : null}
+          </div>
         </div>
       ) : null}
 
@@ -170,16 +174,18 @@ export function PaymentStatusPanel({ state, amount, orderReference, phone: initi
       ) : null}
 
       {state === 'confirmed' || state === 'reconciled' ? (
-        <p className="text-md">{state === 'confirmed' ? 'Approved on the phone and reported successful by M-Pesa. Sellers have been told to start picking.' : 'Payment matched to the order and the sellers’ payout ledgers.'}
+        <p className="text-md">{state === 'confirmed' ? 'Approved on the phone and reported successful by M-Pesa. The order has gone to the seller.' : 'Payment matched to the order and the sellers’ payout ledgers.'}
           {confirmations > 1 ? <span className="mt-1 block text-sm text-muted">{confirmations} confirmations received; applied once.</span> : null}
         </p>
       ) : null}
+
+      {state === 'refunded' ? <p className="text-md">The payment was returned to the M-Pesa number it came from{failure ? `: ${failure}` : '.'}</p> : null}
 
       {transactionId ? (
         <dl className="grid grid-cols-[8rem_minmax(0,1fr)] gap-x-3 gap-y-1 border-t border-border pt-3 text-sm">
           <dt className="text-muted">Transaction</dt><dd className="flex items-center gap-1"><code className="font-mono">{transactionId}</code><CopyValue value={transactionId} label="Copy transaction ID" /></dd>
           {sentAt ? <><dt className="text-muted">Requested</dt><dd className="tabular">{formatDateTime(sentAt)}</dd></> : null}
-          <dt className="text-muted">Provider</dt><dd>SellaPay · M-Pesa</dd>
+          <dt className="text-muted">Provider</dt><dd>{providerLabel}</dd>
         </dl>
       ) : null}
     </section>

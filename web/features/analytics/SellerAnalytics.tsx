@@ -10,10 +10,14 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { SellerAnalyticsGrid, type AnalyticsPeriod, type AnalyticsRange } from '@/components/commerce/admin'
 import type { Metric } from '@/components/kernel/blocks/DataBlocks'
 import { HeaderBlock } from '@/components/kernel/blocks/HeaderBlock'
-import { ErrorState } from '@/components/kernel/feedback/ErrorState'
+import { ListBlock } from '@/components/kernel/blocks/ListBlock'
+import { ErrorState, errorFrom } from '@/components/kernel/feedback/ErrorState'
+import { PageSection } from '@/components/layout/section'
 import { api } from '@/lib/client/api'
 import type { AnalyticsAnswer, MetricResult } from '@/lib/client/records'
-import { API_BASE } from '@/lib/contract/generated'
+import { useSource } from '@/lib/client/resources'
+import { API_BASE, MetricDefinitionMeta } from '@/lib/contract/generated'
+import type { ModelMeta } from '@/lib/contract/types'
 import { formatDay } from '@/lib/format'
 import { formatMoney } from '@/lib/money'
 
@@ -57,7 +61,11 @@ export function card(m: MetricResult): Metric {
   }
 }
 
+// The definitions list shows what each figure means rather than its storage keys (configured, not divergent).
+const definitionsMeta: ModelMeta = { ...MetricDefinitionMeta, list: { ...MetricDefinitionMeta.list, fields: ['name', 'description', 'better', 'unit', 'version'] } }
+
 export function SellerAnalytics() {
+  const definitions = useSource(MetricDefinitionMeta)
   const params = useSearchParams()
   const router = useRouter()
   const pathname = usePathname()
@@ -67,7 +75,7 @@ export function SellerAnalytics() {
   const cards = useQuery({ queryKey: ['analytics', range, from], queryFn: ({ signal }) => api<AnalyticsAnswer>(`analytics?metrics=${CARDS}&dimension=day&${query}`, { signal }) })
   const top = useQuery({ queryKey: ['analytics', range, from, 'product'], queryFn: ({ signal }) => api<AnalyticsAnswer>(`analytics?metrics=product_revenue&dimension=product&${query}`, { signal }) })
   const header = <HeaderBlock level={1} source="explicit" title="Analytics" description="How your orders are doing, from the same definitions the export uses. Days run in East Africa Time." />
-  if (cards.isError) return <>{header}<ErrorState kind="retryable" title="Analytics did not load" onRetry={() => void cards.refetch()} /></>
+  if (cards.isError) return <>{header}<ErrorState {...errorFrom(cards.error)} title="Analytics did not load" onRetry={() => void cards.refetch()} /></>
   const answer = cards.data
   const revenue = answer?.metrics.find(m => m.key === 'revenue')
   const breakdown = top.data?.metrics[0]?.breakdown ?? []
@@ -84,6 +92,10 @@ export function SellerAnalytics() {
         periods={period ? { [range]: period } : {}} state={!answer ? 'loading' : empty ? 'empty' : 'ready'} definitionVersion={answer?.definitions_version ?? '…'}
         exportHref={`${API_BASE}analytics/export?metrics=${CARDS},product_revenue&dimension=day&${query}`}
         note={revenue ? `${revenue.description} Daily figures use the day the order was placed.` : undefined} />
+      <PageSection title="How each figure is counted" description="The versioned definitions behind every card, the chart and the export. A new version is published when a definition changes; past figures keep the version they were counted with.">
+        <ListBlock meta={definitionsMeta} records={[]} query="server" source={definitions} narrow="collapse" density="compact"
+          empty={{ kind: 'no-data', title: 'No definitions published', description: 'Figures appear once the marketplace publishes its metric definitions.' }} />
+      </PageSection>
     </>
   )
 }

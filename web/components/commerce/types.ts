@@ -28,8 +28,9 @@ export const stockFrom = (s: StockRecord): Stock => ({ state: fromStatus[s.state
 export type ReservationStatus = 'active' | 'expiring' | 'expired' | 'consumed' | 'released'
 export type Reservation = { id: string; quantity: number; unit: string; status: ReservationStatus; expiresAt: string; product: string; orderReference?: string }
 
-export type MovementType = 'receipt' | 'reservation' | 'release' | 'allocation' | 'adjustment' | 'shipment'
-export type InventoryMovement = { id: string; type: MovementType; quantity: number; unit: string; balanceAfter: number; at: string; actor: string; reference: string; reason?: string }
+export type MovementType = 'receipt' | 'reservation' | 'release' | 'allocation' | 'adjustment' | 'shipment' | 'return'
+/** `quantity` is the change in available stock; `onHandAfter`, when given, is what is physically held after it. */
+export type InventoryMovement = { id: string; type: MovementType; quantity: number; unit: string; balanceAfter: number; onHandAfter?: number; at: string; actor: string; reference: string; reason?: string }
 
 export type PriceTier = { minQuantity: number; maxQuantity?: number; unitPrice: Money; note?: string }
 

@@ -167,8 +167,10 @@ def navigation(user: User, active: Membership | None) -> list[dict[str, str]]:
     from core.policies import allowed
 
     org = active.organization if active else None
-    # Work first, then the organization, then the person's own pages.
+    # Home, then work, then the organization, then the person's own pages.
     items: list[dict[str, str]] = []
+    if is_admin(user) or org is not None:
+        items.append({"key": "home", "label": "Home", "href": "/dashboard", "group": ""})
     if is_admin(user):
         items += [
             {"key": "admin-sellers", "label": "Seller reviews", "href": "/admin/sellers", "group": "Marketplace"},
@@ -184,11 +186,24 @@ def navigation(user: User, active: Membership | None) -> list[dict[str, str]]:
                 "href": "/admin/categories",
                 "group": "Marketplace",
             },
+            {
+                "key": "admin-reconciliation",
+                "label": "Reconciliation",
+                "href": "/admin/reconciliation",
+                "group": "Marketplace",
+            },
+            {"key": "admin-audit", "label": "Audit trail", "href": "/admin/audit", "group": "Marketplace"},
         ]
     if org is not None and allowed(user, "organization.get", org):
         items.append({"key": "organization", "label": "Organization", "href": "/organization", "group": "Organization"})
     if org is not None and org.organization_type == "seller" and allowed(user, "order.list", org):
         items.append({"key": "sales", "label": "Orders", "href": "/sell/orders", "group": "Sell"})
+    if org is not None and org.organization_type == "seller" and allowed(user, "fulfillment_task.list", org):
+        items.append({"key": "fulfilment", "label": "Fulfilment", "href": "/sell/fulfilment", "group": "Sell"})
+    if org is not None and org.organization_type == "seller" and allowed(user, "inventory.list", org):
+        items.append({"key": "inventory", "label": "Stock", "href": "/sell/inventory", "group": "Sell"})
+    if org is not None and org.organization_type == "seller" and allowed(user, "return_case.list", org):
+        items.append({"key": "sell-returns", "label": "Returns", "href": "/sell/returns", "group": "Sell"})
     if org is not None and org.organization_type == "seller" and allowed(user, "quote.list", org):
         items.append({"key": "sell-quotes", "label": "Quotes", "href": "/sell/quotes", "group": "Sell"})
     if org is not None and org.organization_type == "seller" and allowed(user, "catalog_product.list", org):
@@ -207,6 +222,8 @@ def navigation(user: User, active: Membership | None) -> list[dict[str, str]]:
             items.append({"key": "orders", "label": "Orders", "href": "/orders", "group": "Buy"})
         if allowed(user, "quote.list", org):
             items.append({"key": "quotes", "label": "Quotes", "href": "/quotes", "group": "Buy"})
+        if allowed(user, "return_case.list", org):
+            items.append({"key": "returns", "label": "Returns", "href": "/returns", "group": "Buy"})
     items += [
         {"key": "notifications", "label": "Notifications", "href": "/notifications", "group": "You"},
         {"key": "account", "label": "Profile", "href": "/account", "group": "You"},

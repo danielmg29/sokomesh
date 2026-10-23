@@ -1,8 +1,8 @@
-// AUTO-GENERATED from contract/ac-contract.json (contract 0.6.0) by tools/gen-contract.mts — do not edit.
+// AUTO-GENERATED from contract/ac-contract.json (contract 1.0.0) by tools/gen-contract.mts — do not edit.
 import { z } from 'zod'
 import type { ModelMeta } from '@/lib/contract/types'
 import { decimalString } from '@/lib/contract/decimal'
-export const CONTRACT_VERSION = "0.6.0"
+export const CONTRACT_VERSION = "1.0.0"
 export const API_BASE = "/api/v1/"
 export const auth = {
   "mode": "multi",
@@ -229,6 +229,8 @@ export const rolePermissions = {
     "cart_line.list",
     "cart_line.remove",
     "cart_line.update",
+    "integration.list",
+    "integration.manage",
     "membership.invite",
     "membership.list",
     "membership.update",
@@ -237,6 +239,7 @@ export const rolePermissions = {
     "order.dispute",
     "order.get",
     "order.list",
+    "order.pay",
     "order.reorder",
     "organization.get",
     "organization.update",
@@ -244,6 +247,10 @@ export const rolePermissions = {
     "quote.create",
     "quote.get",
     "quote.list",
+    "return_case.create",
+    "return_case.evidence",
+    "return_case.get",
+    "return_case.list",
     "shipment.get",
     "shipment.list"
   ],
@@ -266,12 +273,17 @@ export const rolePermissions = {
     "order.dispute",
     "order.get",
     "order.list",
+    "order.pay",
     "order.reorder",
     "organization.get",
     "quote.accept",
     "quote.create",
     "quote.get",
     "quote.list",
+    "return_case.create",
+    "return_case.evidence",
+    "return_case.get",
+    "return_case.list",
     "shipment.get",
     "shipment.list"
   ],
@@ -293,6 +305,14 @@ export const rolePermissions = {
     "catalog_product.list",
     "catalog_product.publish",
     "catalog_product.update",
+    "fulfillment_task.get",
+    "fulfillment_task.list",
+    "fulfillment_task.update",
+    "integration.list",
+    "integration.manage",
+    "inventory.adjust",
+    "inventory.list",
+    "inventory.receive",
     "media_asset.create",
     "media_asset.get",
     "media_asset.list",
@@ -315,6 +335,10 @@ export const rolePermissions = {
     "quote.get",
     "quote.list",
     "quote.respond",
+    "return_case.decide",
+    "return_case.evidence",
+    "return_case.get",
+    "return_case.list",
     "seller_document.create",
     "seller_document.delete",
     "seller_document.list",
@@ -333,6 +357,11 @@ export const rolePermissions = {
     "address.list",
     "catalog_product.get",
     "catalog_product.list",
+    "fulfillment_task.get",
+    "fulfillment_task.list",
+    "fulfillment_task.update",
+    "inventory.list",
+    "inventory.receive",
     "media_asset.get",
     "media_asset.list",
     "membership.list",
@@ -342,6 +371,9 @@ export const rolePermissions = {
     "organization.get",
     "price_rule.get",
     "price_rule.list",
+    "return_case.evidence",
+    "return_case.get",
+    "return_case.list",
     "seller_document.list",
     "seller_profile.get",
     "shipment.get",
@@ -550,6 +582,7 @@ export const AddressMeta = {
           "value": "RW"
         }
       ],
+      "default": "KE",
       "label": "Country",
       "maxLength": 2,
       "name": "country_code",
@@ -599,12 +632,277 @@ export const AddressMeta = {
   "tenantScoped": true,
   "versioned": false
 } as const satisfies ModelMeta
+export const ApiClientSchema = z.object({
+  id: z.uuid().nullish(),
+  name: z.string().max(80).min(1),
+  status: z.enum(["active", "revoked"]).nullish(),
+  created_at: z.iso.datetime({ offset: true }).nullish(),
+})
+export type ApiClient = z.infer<typeof ApiClientSchema>
+export const ApiClientWriteSchema = ApiClientSchema.omit({ status: true, created_at: true })
+export const ApiClientMeta = {
+  "key": "api_client",
+  "actions": [
+    {
+      "confirm": true,
+      "icon": "ban",
+      "kind": "command",
+      "label": "Revoke",
+      "name": "revoke",
+      "policy": "integration.manage",
+      "tone": "danger",
+      "when": {
+        "status": [
+          "active"
+        ]
+      }
+    }
+  ],
+  "displayField": "name",
+  "fields": [
+    {
+      "label": "Id",
+      "name": "id",
+      "type": "uuid",
+      "widget": "hidden"
+    },
+    {
+      "help": "What connects with it, such as Stock sync (ERP).",
+      "label": "Name",
+      "maxLength": 80,
+      "name": "name",
+      "required": true,
+      "type": "string",
+      "widget": "text"
+    },
+    {
+      "choices": [
+        {
+          "label": "Active",
+          "tone": "success",
+          "value": "active"
+        },
+        {
+          "label": "Revoked",
+          "tone": "neutral",
+          "value": "revoked"
+        }
+      ],
+      "label": "Status",
+      "name": "status",
+      "readOnly": true,
+      "type": "enum",
+      "widget": "status"
+    },
+    {
+      "label": "Created at",
+      "name": "created_at",
+      "readOnly": true,
+      "type": "datetime",
+      "widget": "relative-time"
+    }
+  ],
+  "label": "API client",
+  "labelPlural": "API clients",
+  "list": {
+    "defaultPageSize": 25,
+    "fields": [
+      "name",
+      "status",
+      "created_at"
+    ],
+    "maxPageSize": 100
+  },
+  "lookup": "pk",
+  "ordering": [
+    "name"
+  ],
+  "path": "integrations/clients",
+  "primaryKey": "id",
+  "public": false,
+  "search": [
+    "name"
+  ],
+  "tenantScoped": true,
+  "versioned": false
+} as const satisfies ModelMeta
+export const ApiTokenSchema = z.object({
+  id: z.uuid().nullish(),
+  client: z.uuid(),
+  name: z.string().max(80).min(1),
+  scopes: z.unknown(),
+  expires_at: z.iso.datetime({ offset: true }).nullish(),
+  last4: z.string().max(4).min(1),
+  status: z.enum(["active", "revoked"]).nullish(),
+  last_used_at: z.iso.datetime({ offset: true }).nullish(),
+  created_at: z.iso.datetime({ offset: true }).nullish(),
+})
+export type ApiToken = z.infer<typeof ApiTokenSchema>
+export const ApiTokenWriteSchema = ApiTokenSchema.omit({ last4: true, status: true, last_used_at: true, created_at: true })
+export const ApiTokenMeta = {
+  "key": "api_token",
+  "actions": [
+    {
+      "confirm": true,
+      "icon": "ban",
+      "kind": "command",
+      "label": "Revoke",
+      "name": "revoke",
+      "policy": "integration.manage",
+      "tone": "danger",
+      "when": {
+        "status": [
+          "active"
+        ]
+      }
+    }
+  ],
+  "displayField": "name",
+  "fields": [
+    {
+      "label": "Id",
+      "name": "id",
+      "type": "uuid",
+      "widget": "hidden"
+    },
+    {
+      "filter": [
+        "eq"
+      ],
+      "label": "Client",
+      "name": "client",
+      "relation": {
+        "display": "name",
+        "model": "api_client"
+      },
+      "required": true,
+      "type": "relation",
+      "weight": 5,
+      "widget": "relation"
+    },
+    {
+      "label": "Name",
+      "maxLength": 80,
+      "name": "name",
+      "required": true,
+      "type": "string",
+      "weight": 10,
+      "widget": "text"
+    },
+    {
+      "choices": [
+        {
+          "label": "Read products and packs",
+          "value": "catalogue.read"
+        },
+        {
+          "label": "Read stock",
+          "value": "inventory.read"
+        },
+        {
+          "label": "Record goods received",
+          "value": "inventory.write"
+        },
+        {
+          "label": "Read orders",
+          "value": "orders.read"
+        }
+      ],
+      "help": "Give each connection only what it needs.",
+      "label": "Access",
+      "name": "scopes",
+      "required": true,
+      "type": "multiselect",
+      "weight": 15,
+      "widget": "multiselect"
+    },
+    {
+      "label": "Expires",
+      "name": "expires_at",
+      "type": "datetime",
+      "weight": 20,
+      "widget": "datetime"
+    },
+    {
+      "label": "Last4",
+      "maxLength": 4,
+      "name": "last4",
+      "readOnly": true,
+      "required": true,
+      "type": "string",
+      "widget": "code"
+    },
+    {
+      "choices": [
+        {
+          "label": "Active",
+          "tone": "success",
+          "value": "active"
+        },
+        {
+          "label": "Revoked",
+          "tone": "neutral",
+          "value": "revoked"
+        }
+      ],
+      "filter": [
+        "in"
+      ],
+      "label": "Status",
+      "name": "status",
+      "readOnly": true,
+      "type": "enum",
+      "widget": "status"
+    },
+    {
+      "label": "Last used",
+      "name": "last_used_at",
+      "readOnly": true,
+      "type": "datetime",
+      "widget": "relative-time"
+    },
+    {
+      "label": "Created",
+      "name": "created_at",
+      "readOnly": true,
+      "type": "datetime",
+      "widget": "relative-time"
+    }
+  ],
+  "label": "API token",
+  "labelPlural": "API tokens",
+  "list": {
+    "defaultPageSize": 25,
+    "fields": [
+      "name",
+      "client",
+      "scopes",
+      "last4",
+      "status",
+      "last_used_at"
+    ],
+    "maxPageSize": 100
+  },
+  "lookup": "pk",
+  "ordering": [
+    "-created_at"
+  ],
+  "path": "integrations/tokens",
+  "primaryKey": "id",
+  "public": false,
+  "search": [
+    "name"
+  ],
+  "tenantScoped": true,
+  "versioned": false
+} as const satisfies ModelMeta
 export const ApprovalPolicySchema = z.object({
   id: z.uuid().nullish(),
   name: z.string().max(80).min(1),
   threshold_amount: decimalString(14, 2),
   approver_role_keys: z.unknown(),
   minimum_approvals: z.number().int().nullish(),
+  exempt_approvers: z.boolean().nullish(),
   is_active: z.boolean().nullish(),
   currency: z.string().max(3).nullish(),
   updated_at: z.iso.datetime({ offset: true }).nullish(),
@@ -689,11 +987,21 @@ export const ApprovalPolicyMeta = {
       "widget": "multiselect"
     },
     {
+      "default": 1,
       "label": "Approvals needed",
       "name": "minimum_approvals",
       "type": "integer",
       "weight": 40,
       "widget": "integer"
+    },
+    {
+      "default": true,
+      "help": "Orders placed by someone who can approve go straight to the seller. Turn this off to have a second person check every large order.",
+      "label": "Approvers' own orders skip approval",
+      "name": "exempt_approvers",
+      "type": "boolean",
+      "weight": 50,
+      "widget": "boolean"
     },
     {
       "filter": [
@@ -730,6 +1038,7 @@ export const ApprovalPolicyMeta = {
       "threshold_amount",
       "approver_role_keys",
       "minimum_approvals",
+      "exempt_approvers",
       "is_active"
     ],
     "maxPageSize": 100
@@ -744,6 +1053,197 @@ export const ApprovalPolicyMeta = {
   "public": false,
   "search": [
     "name"
+  ],
+  "tenantScoped": true,
+  "versioned": false
+} as const satisfies ModelMeta
+export const AuditEventSchema = z.object({
+  id: z.uuid().nullish(),
+  occurred_at: z.iso.datetime({ offset: true }),
+  domain: z.enum(["account", "catalog", "price", "inventory", "order", "payment", "fulfilment", "return", "integration"]).nullish(),
+  event_type: z.string().max(60).min(1),
+  summary: z.string().max(500).min(1),
+  actor_label: z.string().max(150).nullish(),
+  reason: z.string().nullish(),
+  correlation_id: z.string().max(64).nullish(),
+  request_id: z.string().max(64).nullish(),
+  resource_type: z.string().max(40).min(1),
+  resource_id: z.string().max(64).min(1),
+})
+export type AuditEvent = z.infer<typeof AuditEventSchema>
+export const AuditEventWriteSchema = AuditEventSchema.omit({ occurred_at: true, domain: true, event_type: true, summary: true, actor_label: true, reason: true, correlation_id: true, request_id: true, resource_type: true, resource_id: true })
+export const AuditEventMeta = {
+  "key": "audit_event",
+  "actions": [],
+  "displayField": "event_type",
+  "fields": [
+    {
+      "label": "Id",
+      "name": "id",
+      "type": "uuid",
+      "widget": "hidden"
+    },
+    {
+      "filter": [
+        "range"
+      ],
+      "label": "When",
+      "name": "occurred_at",
+      "readOnly": true,
+      "required": true,
+      "type": "datetime",
+      "widget": "datetime"
+    },
+    {
+      "choices": [
+        {
+          "label": "Accounts",
+          "value": "account"
+        },
+        {
+          "label": "Catalogue",
+          "value": "catalog"
+        },
+        {
+          "label": "Prices",
+          "value": "price"
+        },
+        {
+          "label": "Inventory",
+          "tone": "signal",
+          "value": "inventory"
+        },
+        {
+          "label": "Orders",
+          "tone": "info",
+          "value": "order"
+        },
+        {
+          "label": "Payments",
+          "tone": "success",
+          "value": "payment"
+        },
+        {
+          "label": "Fulfilment",
+          "value": "fulfilment"
+        },
+        {
+          "label": "Returns",
+          "tone": "warning",
+          "value": "return"
+        },
+        {
+          "label": "Integrations",
+          "tone": "neutral",
+          "value": "integration"
+        }
+      ],
+      "filter": [
+        "in"
+      ],
+      "label": "Area",
+      "name": "domain",
+      "readOnly": true,
+      "type": "enum",
+      "widget": "status"
+    },
+    {
+      "filter": [
+        "eq"
+      ],
+      "label": "Event",
+      "maxLength": 60,
+      "name": "event_type",
+      "readOnly": true,
+      "required": true,
+      "type": "string",
+      "widget": "code"
+    },
+    {
+      "label": "What happened",
+      "maxLength": 500,
+      "name": "summary",
+      "readOnly": true,
+      "required": true,
+      "type": "string",
+      "widget": "text"
+    },
+    {
+      "label": "By",
+      "maxLength": 150,
+      "name": "actor_label",
+      "readOnly": true,
+      "type": "string",
+      "widget": "text"
+    },
+    {
+      "label": "Reason",
+      "name": "reason",
+      "readOnly": true,
+      "type": "text",
+      "widget": "textarea"
+    },
+    {
+      "filter": [
+        "eq"
+      ],
+      "label": "Correlation",
+      "maxLength": 64,
+      "name": "correlation_id",
+      "readOnly": true,
+      "type": "string",
+      "widget": "code"
+    },
+    {
+      "label": "Request",
+      "maxLength": 64,
+      "name": "request_id",
+      "readOnly": true,
+      "type": "string",
+      "widget": "code"
+    },
+    {
+      "label": "Record type",
+      "maxLength": 40,
+      "name": "resource_type",
+      "readOnly": true,
+      "required": true,
+      "type": "string",
+      "widget": "text"
+    },
+    {
+      "label": "Record",
+      "maxLength": 64,
+      "name": "resource_id",
+      "readOnly": true,
+      "required": true,
+      "type": "string",
+      "widget": "code"
+    }
+  ],
+  "label": "Audit event",
+  "labelPlural": "Audit trail",
+  "list": {
+    "defaultPageSize": 50,
+    "fields": [
+      "occurred_at",
+      "domain",
+      "event_type",
+      "summary",
+      "actor_label"
+    ],
+    "maxPageSize": 100
+  },
+  "lookup": "pk",
+  "ordering": [
+    "-occurred_at"
+  ],
+  "path": "audit-events",
+  "primaryKey": "id",
+  "public": false,
+  "search": [
+    "summary",
+    "event_type"
   ],
   "tenantScoped": true,
   "versioned": false
@@ -1791,6 +2291,740 @@ export const CategoryContractMeta = {
   "tenantScoped": false,
   "versioned": false
 } as const satisfies ModelMeta
+export const FulfillmentTaskSchema = z.object({
+  id: z.uuid().nullish(),
+  order: z.uuid(),
+  status: z.enum(["queued", "picking", "packed", "handed_over", "cancelled"]).nullish(),
+  assigned_to: z.uuid().nullish(),
+  packages: z.number().int().nullish(),
+  weight_kg: decimalString(8, 2).nullish(),
+  driver_name: z.string().max(80).nullish(),
+  vehicle_registration: z.string().max(20).nullish(),
+  created_at: z.iso.datetime({ offset: true }).nullish(),
+  handed_over_at: z.iso.datetime({ offset: true }).nullish(),
+})
+export type FulfillmentTask = z.infer<typeof FulfillmentTaskSchema>
+export const FulfillmentTaskWriteSchema = FulfillmentTaskSchema.omit({ order: true, status: true, assigned_to: true, created_at: true, handed_over_at: true })
+export const FulfillmentTaskMeta = {
+  "key": "fulfillment_task",
+  "actions": [
+    {
+      "icon": "package",
+      "kind": "command",
+      "label": "Start picking",
+      "name": "start",
+      "policy": "fulfillment_task.update",
+      "when": {
+        "status": [
+          "queued"
+        ]
+      }
+    },
+    {
+      "input": [
+        "picks"
+      ],
+      "kind": "command",
+      "label": "Record picks",
+      "name": "record_picks",
+      "policy": "fulfillment_task.update",
+      "when": {
+        "status": [
+          "queued",
+          "picking"
+        ]
+      }
+    },
+    {
+      "icon": "package-check",
+      "input": [
+        "packages",
+        "weight_kg"
+      ],
+      "kind": "command",
+      "label": "Packed",
+      "name": "pack",
+      "policy": "fulfillment_task.update",
+      "when": {
+        "status": [
+          "picking"
+        ]
+      }
+    },
+    {
+      "icon": "truck",
+      "input": [
+        "carrier_name",
+        "carrier_reference",
+        "estimated_end_at",
+        "driver_name",
+        "vehicle_registration",
+        "evidence_file"
+      ],
+      "kind": "command",
+      "label": "Hand over",
+      "name": "hand_over",
+      "policy": "fulfillment_task.update",
+      "when": {
+        "status": [
+          "packed"
+        ]
+      }
+    }
+  ],
+  "displayField": "order",
+  "fields": [
+    {
+      "label": "Id",
+      "name": "id",
+      "type": "uuid",
+      "widget": "hidden"
+    },
+    {
+      "label": "Order",
+      "name": "order",
+      "readOnly": true,
+      "relation": {
+        "display": "order_number",
+        "model": "order"
+      },
+      "required": true,
+      "type": "relation",
+      "widget": "relation"
+    },
+    {
+      "choices": [
+        {
+          "label": "To pick",
+          "tone": "info",
+          "value": "queued"
+        },
+        {
+          "label": "Picking",
+          "tone": "signal",
+          "value": "picking"
+        },
+        {
+          "label": "Packed",
+          "tone": "warning",
+          "value": "packed"
+        },
+        {
+          "label": "Handed over",
+          "tone": "success",
+          "value": "handed_over"
+        },
+        {
+          "label": "Cancelled",
+          "tone": "neutral",
+          "value": "cancelled"
+        }
+      ],
+      "filter": [
+        "in"
+      ],
+      "label": "Status",
+      "name": "status",
+      "readOnly": true,
+      "type": "enum",
+      "widget": "status"
+    },
+    {
+      "label": "Picker",
+      "name": "assigned_to",
+      "readOnly": true,
+      "relation": {
+        "display": "display_name",
+        "model": "user"
+      },
+      "type": "relation",
+      "widget": "relation"
+    },
+    {
+      "label": "Packages",
+      "name": "packages",
+      "type": "integer",
+      "widget": "integer"
+    },
+    {
+      "decimalPlaces": 2,
+      "label": "Total weight (kg)",
+      "maxDigits": 8,
+      "name": "weight_kg",
+      "type": "decimal",
+      "widget": "decimal"
+    },
+    {
+      "label": "Driver",
+      "maxLength": 80,
+      "name": "driver_name",
+      "type": "string",
+      "widget": "text"
+    },
+    {
+      "label": "Vehicle registration",
+      "maxLength": 20,
+      "name": "vehicle_registration",
+      "type": "string",
+      "widget": "code"
+    },
+    {
+      "filter": [
+        "range"
+      ],
+      "label": "Queued",
+      "name": "created_at",
+      "readOnly": true,
+      "type": "datetime",
+      "widget": "relative-time"
+    },
+    {
+      "label": "Handed over at",
+      "name": "handed_over_at",
+      "readOnly": true,
+      "type": "datetime",
+      "widget": "relative-time"
+    },
+    {
+      "help": "For each line: packs picked, and why if short.",
+      "inputOnly": true,
+      "label": "Picks",
+      "name": "picks",
+      "type": "json",
+      "widget": "json"
+    },
+    {
+      "inputOnly": true,
+      "label": "Carrier",
+      "maxLength": 80,
+      "name": "carrier_name",
+      "type": "string",
+      "widget": "text"
+    },
+    {
+      "inputOnly": true,
+      "label": "Tracking reference",
+      "maxLength": 80,
+      "name": "carrier_reference",
+      "type": "string",
+      "widget": "code"
+    },
+    {
+      "inputOnly": true,
+      "label": "Expected by",
+      "name": "estimated_end_at",
+      "type": "datetime",
+      "widget": "datetime"
+    },
+    {
+      "help": "The loaded goods with the delivery note.",
+      "inputOnly": true,
+      "label": "Handover photo",
+      "name": "evidence_file",
+      "type": "file",
+      "widget": "file"
+    }
+  ],
+  "label": "Pick list",
+  "labelPlural": "Pick lists",
+  "list": {
+    "defaultPageSize": 25,
+    "fields": [
+      "order",
+      "status",
+      "assigned_to",
+      "created_at"
+    ],
+    "maxPageSize": 100
+  },
+  "lookup": "pk",
+  "ordering": [
+    "created_at",
+    "-created_at"
+  ],
+  "path": "fulfilment/tasks",
+  "primaryKey": "id",
+  "public": false,
+  "search": [
+    "order"
+  ],
+  "tenantScoped": true,
+  "versioned": false
+} as const satisfies ModelMeta
+export const InventoryBalanceSchema = z.object({
+  id: z.uuid().nullish(),
+  variant: z.uuid(),
+  location: z.uuid(),
+  bin_label: z.string().max(20).nullish(),
+  on_hand: z.number().int().nullish(),
+  reserved: z.number().int().nullish(),
+  allocated: z.number().int().nullish(),
+  updated_at: z.iso.datetime({ offset: true }).nullish(),
+  product: z.uuid().nullish(),
+  available: z.number().int().nullish(),
+  stock_state: z.enum(["ok", "low", "out"]).nullish(),
+})
+export type InventoryBalance = z.infer<typeof InventoryBalanceSchema>
+export const InventoryBalanceWriteSchema = InventoryBalanceSchema.omit({ location: true, on_hand: true, reserved: true, allocated: true, updated_at: true, product: true, available: true, stock_state: true })
+export const InventoryBalanceMeta = {
+  "key": "inventory_balance",
+  "actions": [
+    {
+      "icon": "plus",
+      "input": [
+        "quantity",
+        "note"
+      ],
+      "kind": "command",
+      "label": "Receive goods",
+      "name": "receive",
+      "policy": "inventory.receive"
+    },
+    {
+      "input": [
+        "quantity_change",
+        "reason_code",
+        "note"
+      ],
+      "kind": "command",
+      "label": "Adjust stock",
+      "name": "adjust",
+      "policy": "inventory.adjust",
+      "tone": "warning"
+    }
+  ],
+  "displayField": "product",
+  "fields": [
+    {
+      "label": "Id",
+      "name": "id",
+      "type": "uuid",
+      "widget": "hidden"
+    },
+    {
+      "filter": [
+        "eq"
+      ],
+      "label": "Pack",
+      "name": "variant",
+      "relation": {
+        "display": "sku",
+        "model": "variant"
+      },
+      "required": true,
+      "type": "relation",
+      "weight": 5,
+      "widget": "relation"
+    },
+    {
+      "filter": [
+        "eq"
+      ],
+      "label": "Location",
+      "name": "location",
+      "readOnly": true,
+      "relation": {
+        "display": "name",
+        "model": "location"
+      },
+      "required": true,
+      "type": "relation",
+      "widget": "relation"
+    },
+    {
+      "help": "Where the pack sits, such as A-03.",
+      "label": "Bin",
+      "maxLength": 20,
+      "name": "bin_label",
+      "type": "string",
+      "weight": 10,
+      "widget": "text"
+    },
+    {
+      "label": "On hand",
+      "name": "on_hand",
+      "readOnly": true,
+      "type": "integer",
+      "widget": "integer"
+    },
+    {
+      "label": "Held for checkouts",
+      "name": "reserved",
+      "readOnly": true,
+      "type": "integer",
+      "widget": "integer"
+    },
+    {
+      "label": "Allocated to paid orders",
+      "name": "allocated",
+      "readOnly": true,
+      "type": "integer",
+      "widget": "integer"
+    },
+    {
+      "label": "Updated",
+      "name": "updated_at",
+      "readOnly": true,
+      "type": "datetime",
+      "widget": "relative-time"
+    },
+    {
+      "label": "Product",
+      "name": "product",
+      "readOnly": true,
+      "relation": {
+        "display": "name",
+        "model": "product"
+      },
+      "type": "relation",
+      "weight": 1,
+      "widget": "relation"
+    },
+    {
+      "help": "On hand less the packs held for checkouts and allocated to paid orders.",
+      "label": "Available",
+      "name": "available",
+      "readOnly": true,
+      "type": "integer",
+      "widget": "integer"
+    },
+    {
+      "choices": [
+        {
+          "label": "In stock",
+          "tone": "success",
+          "value": "ok"
+        },
+        {
+          "label": "Running low",
+          "tone": "warning",
+          "value": "low"
+        },
+        {
+          "label": "Below one order",
+          "tone": "danger",
+          "value": "out"
+        }
+      ],
+      "label": "Stock",
+      "name": "stock_state",
+      "readOnly": true,
+      "type": "enum",
+      "widget": "status"
+    },
+    {
+      "help": "Whole packs, as counted at the door.",
+      "inputOnly": true,
+      "label": "Packs received",
+      "name": "quantity",
+      "type": "integer",
+      "widget": "integer"
+    },
+    {
+      "help": "Positive to add packs, negative to remove them.",
+      "inputOnly": true,
+      "label": "Change on hand",
+      "name": "quantity_change",
+      "type": "integer",
+      "widget": "integer"
+    },
+    {
+      "choices": [
+        {
+          "label": "Stock count correction",
+          "value": "count"
+        },
+        {
+          "label": "Damaged in the warehouse",
+          "value": "damage"
+        },
+        {
+          "label": "Lost or stolen",
+          "value": "loss"
+        },
+        {
+          "label": "Found in the warehouse",
+          "value": "found"
+        },
+        {
+          "label": "Past its date",
+          "value": "expired"
+        },
+        {
+          "label": "Other (explain in the note)",
+          "value": "other"
+        }
+      ],
+      "inputOnly": true,
+      "label": "Why",
+      "name": "reason_code",
+      "type": "enum",
+      "widget": "select"
+    },
+    {
+      "help": "Delivery note number, count sheet, who checked.",
+      "inputOnly": true,
+      "label": "Note",
+      "maxLength": 300,
+      "name": "note",
+      "type": "text",
+      "widget": "textarea"
+    }
+  ],
+  "label": "Stock balance",
+  "labelPlural": "Stock balances",
+  "list": {
+    "defaultPageSize": 50,
+    "fields": [
+      "product",
+      "variant",
+      "available",
+      "stock_state",
+      "on_hand",
+      "reserved",
+      "allocated",
+      "bin_label"
+    ],
+    "maxPageSize": 100
+  },
+  "lookup": "pk",
+  "ordering": [
+    "variant",
+    "-updated_at",
+    "on_hand"
+  ],
+  "path": "inventory/balances",
+  "primaryKey": "id",
+  "public": false,
+  "search": [
+    "variant"
+  ],
+  "tenantScoped": true,
+  "versioned": false
+} as const satisfies ModelMeta
+export const InventoryMovementSchema = z.object({
+  id: z.uuid().nullish(),
+  occurred_at: z.iso.datetime({ offset: true }),
+  variant: z.uuid(),
+  movement_type: z.enum(["receipt", "reservation", "release", "allocation", "adjustment", "shipment", "return"]),
+  quantity: z.number().int(),
+  available_after: z.number().int(),
+  on_hand_after: z.number().int(),
+  unit: z.string().max(20).min(1),
+  reference_label: z.string().max(80).nullish(),
+  reason_code: z.enum(["count", "damage", "loss", "found", "expired", "other"]).nullish(),
+  note: z.string().max(300).nullish(),
+  actor: z.uuid().nullish(),
+})
+export type InventoryMovement = z.infer<typeof InventoryMovementSchema>
+export const InventoryMovementWriteSchema = InventoryMovementSchema.omit({ occurred_at: true, variant: true, movement_type: true, quantity: true, available_after: true, on_hand_after: true, unit: true, reference_label: true, reason_code: true, note: true, actor: true })
+export const InventoryMovementMeta = {
+  "key": "inventory_movement",
+  "actions": [],
+  "displayField": "reference_label",
+  "fields": [
+    {
+      "label": "Id",
+      "name": "id",
+      "type": "uuid",
+      "widget": "hidden"
+    },
+    {
+      "filter": [
+        "range"
+      ],
+      "label": "When",
+      "name": "occurred_at",
+      "readOnly": true,
+      "required": true,
+      "type": "datetime",
+      "widget": "datetime"
+    },
+    {
+      "filter": [
+        "eq"
+      ],
+      "label": "Pack",
+      "name": "variant",
+      "readOnly": true,
+      "relation": {
+        "display": "sku",
+        "model": "variant"
+      },
+      "required": true,
+      "type": "relation",
+      "widget": "relation"
+    },
+    {
+      "choices": [
+        {
+          "label": "Receipt",
+          "tone": "success",
+          "value": "receipt"
+        },
+        {
+          "label": "Reservation",
+          "tone": "signal",
+          "value": "reservation"
+        },
+        {
+          "label": "Release",
+          "tone": "info",
+          "value": "release"
+        },
+        {
+          "label": "Allocation",
+          "tone": "info",
+          "value": "allocation"
+        },
+        {
+          "label": "Adjustment",
+          "tone": "warning",
+          "value": "adjustment"
+        },
+        {
+          "label": "Shipment",
+          "tone": "neutral",
+          "value": "shipment"
+        },
+        {
+          "label": "Return to stock",
+          "tone": "success",
+          "value": "return"
+        }
+      ],
+      "filter": [
+        "in"
+      ],
+      "label": "Movement",
+      "name": "movement_type",
+      "readOnly": true,
+      "required": true,
+      "type": "enum",
+      "widget": "status"
+    },
+    {
+      "label": "Change in available",
+      "name": "quantity",
+      "readOnly": true,
+      "required": true,
+      "type": "integer",
+      "widget": "integer"
+    },
+    {
+      "label": "Available after",
+      "name": "available_after",
+      "readOnly": true,
+      "required": true,
+      "type": "integer",
+      "widget": "integer"
+    },
+    {
+      "label": "On hand after",
+      "name": "on_hand_after",
+      "readOnly": true,
+      "required": true,
+      "type": "integer",
+      "widget": "integer"
+    },
+    {
+      "label": "Unit",
+      "maxLength": 20,
+      "name": "unit",
+      "readOnly": true,
+      "required": true,
+      "type": "string",
+      "widget": "text"
+    },
+    {
+      "label": "Reference",
+      "maxLength": 80,
+      "name": "reference_label",
+      "readOnly": true,
+      "type": "string",
+      "widget": "text"
+    },
+    {
+      "choices": [
+        {
+          "label": "Stock count correction",
+          "value": "count"
+        },
+        {
+          "label": "Damaged in the warehouse",
+          "value": "damage"
+        },
+        {
+          "label": "Lost or stolen",
+          "value": "loss"
+        },
+        {
+          "label": "Found in the warehouse",
+          "value": "found"
+        },
+        {
+          "label": "Past its date",
+          "value": "expired"
+        },
+        {
+          "label": "Other (explain in the note)",
+          "value": "other"
+        }
+      ],
+      "label": "Reason",
+      "name": "reason_code",
+      "readOnly": true,
+      "type": "enum",
+      "widget": "select"
+    },
+    {
+      "label": "Note",
+      "maxLength": 300,
+      "name": "note",
+      "readOnly": true,
+      "type": "string",
+      "widget": "text"
+    },
+    {
+      "label": "Actor",
+      "name": "actor",
+      "readOnly": true,
+      "relation": {
+        "display": "display_name",
+        "model": "user"
+      },
+      "type": "relation",
+      "widget": "relation"
+    }
+  ],
+  "label": "Stock movement",
+  "labelPlural": "Stock movements",
+  "list": {
+    "defaultPageSize": 50,
+    "fields": [
+      "occurred_at",
+      "variant",
+      "movement_type",
+      "quantity",
+      "available_after",
+      "reference_label"
+    ],
+    "maxPageSize": 100
+  },
+  "lookup": "pk",
+  "ordering": [
+    "-occurred_at"
+  ],
+  "path": "inventory/movements",
+  "primaryKey": "id",
+  "public": false,
+  "search": [
+    "reference_label",
+    "note"
+  ],
+  "tenantScoped": true,
+  "versioned": false
+} as const satisfies ModelMeta
 export const MediaAssetSchema = z.object({
   id: z.uuid().nullish(),
   product: z.uuid().nullish(),
@@ -1873,6 +3107,7 @@ export const MediaAssetMeta = {
       "widget": "text"
     },
     {
+      "default": 0,
       "label": "Order",
       "name": "sort_order",
       "type": "integer",
@@ -2672,6 +3907,7 @@ export const NotificationPreferenceMeta = {
       "widget": "select"
     },
     {
+      "default": true,
       "label": "Enabled",
       "name": "enabled",
       "type": "boolean",
@@ -2725,7 +3961,7 @@ export const OrderSchema = z.object({
   buyer_organization: z.uuid(),
   submitted_by: z.uuid().nullish(),
   delivery_address: z.uuid().nullish(),
-  status: z.enum(["pending_approval", "submitted", "confirmed", "picking", "partially_fulfilled", "shipped", "delivered", "cancelled", "disputed"]).nullish(),
+  status: z.enum(["pending_approval", "awaiting_payment", "submitted", "confirmed", "picking", "partially_fulfilled", "shipped", "delivered", "cancelled", "disputed"]).nullish(),
   submitted_at: z.iso.datetime({ offset: true }),
   subtotal: decimalString(14, 2),
   total: decimalString(14, 2),
@@ -2763,6 +3999,21 @@ export const OrderMeta = {
       "when": {
         "status": [
           "pending_approval"
+        ]
+      }
+    },
+    {
+      "icon": "smartphone",
+      "input": [
+        "phone"
+      ],
+      "kind": "command",
+      "label": "Pay with M-Pesa",
+      "name": "pay",
+      "policy": "order.pay",
+      "when": {
+        "status": [
+          "awaiting_payment"
         ]
       }
     },
@@ -2848,6 +4099,7 @@ export const OrderMeta = {
       "when": {
         "status": [
           "pending_approval",
+          "awaiting_payment",
           "submitted",
           "confirmed",
           "picking"
@@ -2955,6 +4207,10 @@ export const OrderMeta = {
           "label": "Awaiting approval",
           "tone": "warning",
           "value": "pending_approval"
+        },
+        {
+          "label": "Awaiting payment",
+          "value": "awaiting_payment"
         },
         {
           "label": "Submitted",
@@ -3096,6 +4352,14 @@ export const OrderMeta = {
       "name": "estimated_end_at",
       "type": "datetime",
       "widget": "datetime"
+    },
+    {
+      "help": "The Safaricom number that receives the payment prompt. It is not kept.",
+      "inputOnly": true,
+      "label": "M-Pesa number",
+      "name": "phone",
+      "type": "string",
+      "widget": "phone"
     }
   ],
   "label": "Order",
@@ -3259,6 +4523,7 @@ export const OrganizationMeta = {
           "value": "KES"
         }
       ],
+      "default": "KES",
       "label": "Currency",
       "maxLength": 3,
       "name": "default_currency",
@@ -3285,6 +4550,7 @@ export const OrganizationMeta = {
           "value": "Africa/Kigali"
         }
       ],
+      "default": "Africa/Nairobi",
       "label": "Time zone",
       "maxLength": 64,
       "name": "timezone",
@@ -3484,6 +4750,7 @@ export const PriceRuleMeta = {
       "widget": "text"
     },
     {
+      "default": 1,
       "help": "In packs.",
       "label": "From quantity",
       "name": "minimum_quantity",
@@ -3503,6 +4770,7 @@ export const PriceRuleMeta = {
       "widget": "currency"
     },
     {
+      "default": 0,
       "help": "Where rules overlap, the higher one wins.",
       "label": "Priority",
       "name": "priority",
@@ -3525,6 +4793,7 @@ export const PriceRuleMeta = {
       "widget": "datetime"
     },
     {
+      "default": true,
       "filter": [
         "eq"
       ],
@@ -4143,6 +5412,414 @@ export const QuoteMeta = {
   ],
   "tenantScoped": true,
   "versioned": true
+} as const satisfies ModelMeta
+export const ReturnCaseSchema = z.object({
+  id: z.uuid().nullish(),
+  reference: z.string().max(20).min(1),
+  order: z.uuid(),
+  order_line: z.uuid().nullish(),
+  case_type: z.enum(["return", "dispute", "damage", "shortage", "wrong_item", "quality_issue"]),
+  reason_code: z.enum(["damaged_in_transit", "short_delivered", "wrong_product", "past_date", "quality", "not_as_described", "other"]),
+  quantity: z.number().int().nullish(),
+  reason_details: z.string().min(1),
+  status: z.enum(["open", "evidence_requested", "reviewing", "approved", "rejected", "resolved"]).nullish(),
+  decision: z.enum(["approved", "partial", "replacement", "rejected"]).nullish(),
+  approved_quantity: z.number().int().nullish(),
+  stock_disposition: z.enum(["restock", "quarantine", "scrap", "supplier_return", "none"]).nullish(),
+  decision_notes: z.string().nullish(),
+  evidence_note: z.string().max(300).nullish(),
+  refund_amount: decimalString(14, 2).nullish(),
+  refunded_amount: decimalString(14, 2).nullish(),
+  opened_by: z.uuid().nullish(),
+  opened_at: z.iso.datetime({ offset: true }).nullish(),
+  decided_at: z.iso.datetime({ offset: true }).nullish(),
+})
+export type ReturnCase = z.infer<typeof ReturnCaseSchema>
+export const ReturnCaseWriteSchema = ReturnCaseSchema.omit({ reference: true, status: true, evidence_note: true, refund_amount: true, refunded_amount: true, opened_by: true, opened_at: true, decided_at: true })
+export const ReturnCaseMeta = {
+  "key": "return_case",
+  "actions": [
+    {
+      "icon": "message-square",
+      "input": [
+        "note"
+      ],
+      "kind": "command",
+      "label": "Ask for evidence",
+      "name": "request_evidence",
+      "policy": "return_case.decide"
+    },
+    {
+      "icon": "upload",
+      "input": [
+        "evidence_file",
+        "note"
+      ],
+      "kind": "command",
+      "label": "Add evidence",
+      "name": "add_evidence",
+      "policy": "return_case.evidence"
+    },
+    {
+      "icon": "scale",
+      "input": [
+        "decision",
+        "approved_quantity",
+        "stock_disposition",
+        "decision_notes"
+      ],
+      "kind": "command",
+      "label": "Record decision",
+      "name": "decide",
+      "policy": "return_case.decide"
+    },
+    {
+      "confirm": true,
+      "kind": "command",
+      "label": "Withdraw case",
+      "name": "withdraw",
+      "policy": "return_case.create",
+      "tone": "danger"
+    }
+  ],
+  "displayField": "reference",
+  "fields": [
+    {
+      "label": "Id",
+      "name": "id",
+      "type": "uuid",
+      "widget": "hidden"
+    },
+    {
+      "label": "Case",
+      "maxLength": 20,
+      "name": "reference",
+      "readOnly": true,
+      "required": true,
+      "type": "string",
+      "widget": "code"
+    },
+    {
+      "filter": [
+        "eq"
+      ],
+      "label": "Order",
+      "name": "order",
+      "relation": {
+        "display": "order_number",
+        "model": "order"
+      },
+      "required": true,
+      "type": "relation",
+      "weight": 5,
+      "widget": "relation"
+    },
+    {
+      "label": "Line",
+      "name": "order_line",
+      "relation": {
+        "display": "product_name_snapshot",
+        "model": "order_line"
+      },
+      "type": "relation",
+      "weight": 10,
+      "widget": "relation"
+    },
+    {
+      "choices": [
+        {
+          "label": "Return",
+          "value": "return"
+        },
+        {
+          "label": "Dispute",
+          "value": "dispute"
+        },
+        {
+          "label": "Damaged goods",
+          "value": "damage"
+        },
+        {
+          "label": "Short delivery",
+          "value": "shortage"
+        },
+        {
+          "label": "Wrong item",
+          "value": "wrong_item"
+        },
+        {
+          "label": "Quality issue",
+          "value": "quality_issue"
+        }
+      ],
+      "filter": [
+        "in"
+      ],
+      "label": "Type",
+      "name": "case_type",
+      "required": true,
+      "type": "enum",
+      "weight": 15,
+      "widget": "select"
+    },
+    {
+      "choices": [
+        {
+          "label": "Damaged on the way",
+          "value": "damaged_in_transit"
+        },
+        {
+          "label": "Fewer packs than invoiced",
+          "value": "short_delivered"
+        },
+        {
+          "label": "A different product arrived",
+          "value": "wrong_product"
+        },
+        {
+          "label": "Past its date or too close to it",
+          "value": "past_date"
+        },
+        {
+          "label": "Not of the expected quality",
+          "value": "quality"
+        },
+        {
+          "label": "Not as described",
+          "value": "not_as_described"
+        },
+        {
+          "label": "Something else",
+          "value": "other"
+        }
+      ],
+      "label": "Reason",
+      "name": "reason_code",
+      "required": true,
+      "type": "enum",
+      "weight": 20,
+      "widget": "select"
+    },
+    {
+      "label": "Packs affected",
+      "name": "quantity",
+      "type": "integer",
+      "weight": 25,
+      "widget": "integer"
+    },
+    {
+      "label": "What happened",
+      "name": "reason_details",
+      "required": true,
+      "type": "text",
+      "weight": 30,
+      "widget": "textarea"
+    },
+    {
+      "choices": [
+        {
+          "label": "Open",
+          "tone": "info",
+          "value": "open"
+        },
+        {
+          "label": "Evidence requested",
+          "tone": "warning",
+          "value": "evidence_requested"
+        },
+        {
+          "label": "Under review",
+          "tone": "signal",
+          "value": "reviewing"
+        },
+        {
+          "label": "Approved",
+          "tone": "success",
+          "value": "approved"
+        },
+        {
+          "label": "Rejected",
+          "tone": "danger",
+          "value": "rejected"
+        },
+        {
+          "label": "Resolved",
+          "tone": "neutral",
+          "value": "resolved"
+        }
+      ],
+      "filter": [
+        "in"
+      ],
+      "label": "Status",
+      "name": "status",
+      "readOnly": true,
+      "type": "enum",
+      "widget": "status"
+    },
+    {
+      "choices": [
+        {
+          "label": "Approve in full",
+          "value": "approved"
+        },
+        {
+          "label": "Approve part of the claim",
+          "value": "partial"
+        },
+        {
+          "label": "Send a replacement",
+          "value": "replacement"
+        },
+        {
+          "label": "Reject",
+          "value": "rejected"
+        }
+      ],
+      "label": "Decision",
+      "name": "decision",
+      "type": "enum",
+      "widget": "select"
+    },
+    {
+      "label": "Packs accepted",
+      "name": "approved_quantity",
+      "type": "integer",
+      "widget": "integer"
+    },
+    {
+      "choices": [
+        {
+          "label": "Restock",
+          "value": "restock"
+        },
+        {
+          "label": "Quarantine for inspection",
+          "value": "quarantine"
+        },
+        {
+          "label": "Scrap",
+          "value": "scrap"
+        },
+        {
+          "label": "Return to supplier",
+          "value": "supplier_return"
+        },
+        {
+          "label": "No stock returned",
+          "value": "none"
+        }
+      ],
+      "label": "Returned stock",
+      "name": "stock_disposition",
+      "type": "enum",
+      "widget": "select"
+    },
+    {
+      "label": "Decision explanation",
+      "name": "decision_notes",
+      "type": "text",
+      "widget": "textarea"
+    },
+    {
+      "label": "Evidence asked for",
+      "maxLength": 300,
+      "name": "evidence_note",
+      "readOnly": true,
+      "type": "string",
+      "widget": "text"
+    },
+    {
+      "currency": "KES",
+      "decimalPlaces": 2,
+      "label": "Refund",
+      "maxDigits": 14,
+      "name": "refund_amount",
+      "readOnly": true,
+      "type": "decimal",
+      "widget": "currency"
+    },
+    {
+      "currency": "KES",
+      "decimalPlaces": 2,
+      "label": "Refunded",
+      "maxDigits": 14,
+      "name": "refunded_amount",
+      "readOnly": true,
+      "type": "decimal",
+      "widget": "currency"
+    },
+    {
+      "label": "Opened by",
+      "name": "opened_by",
+      "readOnly": true,
+      "relation": {
+        "display": "display_name",
+        "model": "user"
+      },
+      "type": "relation",
+      "widget": "relation"
+    },
+    {
+      "filter": [
+        "range"
+      ],
+      "label": "Opened",
+      "name": "opened_at",
+      "readOnly": true,
+      "type": "datetime",
+      "widget": "relative-time"
+    },
+    {
+      "label": "Decided",
+      "name": "decided_at",
+      "readOnly": true,
+      "type": "datetime",
+      "widget": "relative-time"
+    },
+    {
+      "inputOnly": true,
+      "label": "Note",
+      "maxLength": 300,
+      "name": "note",
+      "type": "text",
+      "widget": "textarea"
+    },
+    {
+      "help": "JPEG, PNG or PDF of what you received.",
+      "inputOnly": true,
+      "label": "Photo or document",
+      "name": "evidence_file",
+      "type": "file",
+      "widget": "file"
+    }
+  ],
+  "label": "Case",
+  "labelPlural": "Returns and disputes",
+  "list": {
+    "defaultPageSize": 25,
+    "fields": [
+      "reference",
+      "order",
+      "case_type",
+      "status",
+      "opened_at"
+    ],
+    "maxPageSize": 100
+  },
+  "lookup": "pk",
+  "ordering": [
+    "-opened_at",
+    "opened_at"
+  ],
+  "path": "returns",
+  "primaryKey": "id",
+  "public": false,
+  "search": [
+    "reference"
+  ],
+  "tenantScoped": true,
+  "versioned": false
 } as const satisfies ModelMeta
 export const SellerDocumentSchema = z.object({
   id: z.uuid().nullish(),
@@ -4872,7 +6549,7 @@ export const VariantSchema = z.object({
   updated_at: z.iso.datetime({ offset: true }).nullish(),
 })
 export type Variant = z.infer<typeof VariantSchema>
-export const VariantWriteSchema = VariantSchema.omit({ pack_label: true, updated_at: true })
+export const VariantWriteSchema = VariantSchema.omit({ stock_on_hand: true, pack_label: true, updated_at: true })
 export const VariantMeta = {
   "key": "variant",
   "actions": [],
@@ -4974,6 +6651,7 @@ export const VariantMeta = {
       "widget": "decimal"
     },
     {
+      "default": 1,
       "help": "In packs.",
       "label": "Minimum order",
       "name": "minimum_order_quantity",
@@ -4993,14 +6671,16 @@ export const VariantMeta = {
       "widget": "currency"
     },
     {
-      "help": "Leave empty if you do not track stock here yet.",
-      "label": "Packs in stock",
+      "help": "From the stock ledger: on hand less held and allocated packs.",
+      "label": "Packs available",
       "name": "stock_on_hand",
+      "readOnly": true,
       "type": "integer",
       "weight": 40,
       "widget": "integer"
     },
     {
+      "default": true,
       "filter": [
         "eq"
       ],
@@ -5055,5 +6735,334 @@ export const VariantMeta = {
   "tenantScoped": true,
   "versioned": false
 } as const satisfies ModelMeta
-export const registry = { account: () => ({ schema: AccountSchema, write: AccountWriteSchema, meta: AccountMeta }), address: () => ({ schema: AddressSchema, write: AddressWriteSchema, meta: AddressMeta }), approval_policy: () => ({ schema: ApprovalPolicySchema, write: ApprovalPolicyWriteSchema, meta: ApprovalPolicyMeta }), buyer_group_member: () => ({ schema: BuyerGroupMemberSchema, write: BuyerGroupMemberWriteSchema, meta: BuyerGroupMemberMeta }), cart: () => ({ schema: CartSchema, write: CartWriteSchema, meta: CartMeta }), cart_line: () => ({ schema: CartLineSchema, write: CartLineWriteSchema, meta: CartLineMeta }), catalog_product: () => ({ schema: CatalogProductSchema, write: CatalogProductWriteSchema, meta: CatalogProductMeta }), category: () => ({ schema: CategorySchema, write: CategoryWriteSchema, meta: CategoryMeta }), category_contract: () => ({ schema: CategoryContractSchema, write: CategoryContractWriteSchema, meta: CategoryContractMeta }), media_asset: () => ({ schema: MediaAssetSchema, write: MediaAssetWriteSchema, meta: MediaAssetMeta }), membership: () => ({ schema: MembershipSchema, write: MembershipWriteSchema, meta: MembershipMeta }), metric_definition: () => ({ schema: MetricDefinitionSchema, write: MetricDefinitionWriteSchema, meta: MetricDefinitionMeta }), notification: () => ({ schema: NotificationSchema, write: NotificationWriteSchema, meta: NotificationMeta }), notification_preference: () => ({ schema: NotificationPreferenceSchema, write: NotificationPreferenceWriteSchema, meta: NotificationPreferenceMeta }), order: () => ({ schema: OrderSchema, write: OrderWriteSchema, meta: OrderMeta }), organization: () => ({ schema: OrganizationSchema, write: OrganizationWriteSchema, meta: OrganizationMeta }), price_rule: () => ({ schema: PriceRuleSchema, write: PriceRuleWriteSchema, meta: PriceRuleMeta }), product: () => ({ schema: ProductSchema, write: ProductWriteSchema, meta: ProductMeta }), quote: () => ({ schema: QuoteSchema, write: QuoteWriteSchema, meta: QuoteMeta }), seller_document: () => ({ schema: SellerDocumentSchema, write: SellerDocumentWriteSchema, meta: SellerDocumentMeta }), seller_profile: () => ({ schema: SellerProfileSchema, write: SellerProfileWriteSchema, meta: SellerProfileMeta }), shipment: () => ({ schema: ShipmentSchema, write: ShipmentWriteSchema, meta: ShipmentMeta }), variant: () => ({ schema: VariantSchema, write: VariantWriteSchema, meta: VariantMeta }) } as const
+export const WebhookDeliverySchema = z.object({
+  id: z.uuid().nullish(),
+  endpoint: z.uuid(),
+  topic: z.string().max(60).min(1),
+  status: z.enum(["queued", "delivered", "retrying", "failed"]).nullish(),
+  attempts: z.number().int().nullish(),
+  response_status: z.number().int().nullish(),
+  last_error: z.string().max(200).nullish(),
+  next_attempt_at: z.iso.datetime({ offset: true }),
+  delivered_at: z.iso.datetime({ offset: true }).nullish(),
+  created_at: z.iso.datetime({ offset: true }).nullish(),
+})
+export type WebhookDelivery = z.infer<typeof WebhookDeliverySchema>
+export const WebhookDeliveryWriteSchema = WebhookDeliverySchema.omit({ endpoint: true, topic: true, status: true, attempts: true, response_status: true, last_error: true, next_attempt_at: true, delivered_at: true, created_at: true })
+export const WebhookDeliveryMeta = {
+  "key": "webhook_delivery",
+  "actions": [
+    {
+      "icon": "refresh-cw",
+      "kind": "command",
+      "label": "Send again",
+      "name": "retry",
+      "policy": "integration.manage",
+      "when": {
+        "status": [
+          "failed"
+        ]
+      }
+    }
+  ],
+  "displayField": "topic",
+  "fields": [
+    {
+      "label": "Id",
+      "name": "id",
+      "type": "uuid",
+      "widget": "hidden"
+    },
+    {
+      "filter": [
+        "eq"
+      ],
+      "label": "Endpoint",
+      "name": "endpoint",
+      "readOnly": true,
+      "relation": {
+        "display": "url",
+        "model": "webhook_endpoint"
+      },
+      "required": true,
+      "type": "relation",
+      "widget": "relation"
+    },
+    {
+      "label": "Topic",
+      "maxLength": 60,
+      "name": "topic",
+      "readOnly": true,
+      "required": true,
+      "type": "string",
+      "widget": "text"
+    },
+    {
+      "choices": [
+        {
+          "label": "Queued",
+          "tone": "info",
+          "value": "queued"
+        },
+        {
+          "label": "Delivered",
+          "tone": "success",
+          "value": "delivered"
+        },
+        {
+          "label": "Retrying",
+          "tone": "warning",
+          "value": "retrying"
+        },
+        {
+          "label": "Failed",
+          "tone": "danger",
+          "value": "failed"
+        }
+      ],
+      "filter": [
+        "in"
+      ],
+      "label": "Status",
+      "name": "status",
+      "readOnly": true,
+      "type": "enum",
+      "widget": "status"
+    },
+    {
+      "label": "Attempts",
+      "name": "attempts",
+      "readOnly": true,
+      "type": "integer",
+      "widget": "integer"
+    },
+    {
+      "label": "Response status",
+      "name": "response_status",
+      "readOnly": true,
+      "type": "integer",
+      "widget": "integer"
+    },
+    {
+      "label": "Last error",
+      "maxLength": 200,
+      "name": "last_error",
+      "readOnly": true,
+      "type": "string",
+      "widget": "text"
+    },
+    {
+      "label": "Next attempt at",
+      "name": "next_attempt_at",
+      "readOnly": true,
+      "required": true,
+      "type": "datetime",
+      "widget": "relative-time"
+    },
+    {
+      "label": "Delivered at",
+      "name": "delivered_at",
+      "readOnly": true,
+      "type": "datetime",
+      "widget": "relative-time"
+    },
+    {
+      "label": "Created at",
+      "name": "created_at",
+      "readOnly": true,
+      "type": "datetime",
+      "widget": "relative-time"
+    }
+  ],
+  "label": "Delivery",
+  "labelPlural": "Deliveries",
+  "list": {
+    "defaultPageSize": 25,
+    "fields": [
+      "topic",
+      "endpoint",
+      "status",
+      "attempts",
+      "response_status",
+      "created_at"
+    ],
+    "maxPageSize": 100
+  },
+  "lookup": "pk",
+  "ordering": [
+    "-created_at"
+  ],
+  "path": "integrations/deliveries",
+  "primaryKey": "id",
+  "public": false,
+  "search": [
+    "topic"
+  ],
+  "tenantScoped": true,
+  "versioned": false
+} as const satisfies ModelMeta
+export const WebhookEndpointSchema = z.object({
+  id: z.uuid().nullish(),
+  url: z.string().max(300).min(1),
+  events: z.unknown(),
+  is_active: z.boolean().nullish(),
+  created_at: z.iso.datetime({ offset: true }).nullish(),
+  rotated_at: z.iso.datetime({ offset: true }).nullish(),
+})
+export type WebhookEndpoint = z.infer<typeof WebhookEndpointSchema>
+export const WebhookEndpointWriteSchema = WebhookEndpointSchema.omit({ is_active: true, created_at: true, rotated_at: true })
+export const WebhookEndpointMeta = {
+  "key": "webhook_endpoint",
+  "actions": [
+    {
+      "confirm": true,
+      "icon": "refresh-cw",
+      "kind": "command",
+      "label": "Replace secret",
+      "name": "rotate_secret",
+      "policy": "integration.manage",
+      "tone": "warning"
+    },
+    {
+      "confirm": true,
+      "icon": "ban",
+      "kind": "command",
+      "label": "Switch off",
+      "name": "switch_off",
+      "policy": "integration.manage",
+      "when": {
+        "is_active": [
+          "true"
+        ]
+      }
+    },
+    {
+      "icon": "check",
+      "kind": "command",
+      "label": "Switch on",
+      "name": "switch_on",
+      "policy": "integration.manage",
+      "when": {
+        "is_active": [
+          "false"
+        ]
+      }
+    }
+  ],
+  "displayField": "url",
+  "fields": [
+    {
+      "label": "Id",
+      "name": "id",
+      "type": "uuid",
+      "widget": "hidden"
+    },
+    {
+      "help": "An https:// address on the public internet.",
+      "label": "Address",
+      "maxLength": 300,
+      "name": "url",
+      "required": true,
+      "type": "string",
+      "weight": 5,
+      "widget": "url"
+    },
+    {
+      "choices": [
+        {
+          "label": "Order paid and submitted",
+          "value": "order.submitted"
+        },
+        {
+          "label": "Order shipped",
+          "value": "order.shipped"
+        },
+        {
+          "label": "Order delivered",
+          "value": "order.delivered"
+        },
+        {
+          "label": "Order cancelled",
+          "value": "order.cancelled"
+        },
+        {
+          "label": "Payment confirmed",
+          "value": "payment.confirmed"
+        },
+        {
+          "label": "Payment refunded",
+          "value": "payment.refunded"
+        },
+        {
+          "label": "Stock running low",
+          "value": "inventory.low"
+        },
+        {
+          "label": "Case opened",
+          "value": "return.opened"
+        },
+        {
+          "label": "Case decided",
+          "value": "return.decided"
+        }
+      ],
+      "help": "Each event is sent as a signed POST; see the integration guide.",
+      "label": "Events",
+      "name": "events",
+      "required": true,
+      "type": "multiselect",
+      "weight": 10,
+      "widget": "multiselect"
+    },
+    {
+      "filter": [
+        "eq"
+      ],
+      "label": "On",
+      "name": "is_active",
+      "readOnly": true,
+      "type": "boolean",
+      "widget": "boolean"
+    },
+    {
+      "label": "Created",
+      "name": "created_at",
+      "readOnly": true,
+      "type": "datetime",
+      "widget": "relative-time"
+    },
+    {
+      "label": "Rotated at",
+      "name": "rotated_at",
+      "readOnly": true,
+      "type": "datetime",
+      "widget": "relative-time"
+    }
+  ],
+  "label": "Webhook",
+  "labelPlural": "Webhooks",
+  "list": {
+    "defaultPageSize": 25,
+    "fields": [
+      "url",
+      "events",
+      "is_active",
+      "created_at"
+    ],
+    "maxPageSize": 100
+  },
+  "lookup": "pk",
+  "ordering": [
+    "created_at"
+  ],
+  "path": "integrations/webhooks",
+  "primaryKey": "id",
+  "public": false,
+  "search": [
+    "url"
+  ],
+  "tenantScoped": true,
+  "versioned": false
+} as const satisfies ModelMeta
+export const registry = { account: () => ({ schema: AccountSchema, write: AccountWriteSchema, meta: AccountMeta }), address: () => ({ schema: AddressSchema, write: AddressWriteSchema, meta: AddressMeta }), api_client: () => ({ schema: ApiClientSchema, write: ApiClientWriteSchema, meta: ApiClientMeta }), api_token: () => ({ schema: ApiTokenSchema, write: ApiTokenWriteSchema, meta: ApiTokenMeta }), approval_policy: () => ({ schema: ApprovalPolicySchema, write: ApprovalPolicyWriteSchema, meta: ApprovalPolicyMeta }), audit_event: () => ({ schema: AuditEventSchema, write: AuditEventWriteSchema, meta: AuditEventMeta }), buyer_group_member: () => ({ schema: BuyerGroupMemberSchema, write: BuyerGroupMemberWriteSchema, meta: BuyerGroupMemberMeta }), cart: () => ({ schema: CartSchema, write: CartWriteSchema, meta: CartMeta }), cart_line: () => ({ schema: CartLineSchema, write: CartLineWriteSchema, meta: CartLineMeta }), catalog_product: () => ({ schema: CatalogProductSchema, write: CatalogProductWriteSchema, meta: CatalogProductMeta }), category: () => ({ schema: CategorySchema, write: CategoryWriteSchema, meta: CategoryMeta }), category_contract: () => ({ schema: CategoryContractSchema, write: CategoryContractWriteSchema, meta: CategoryContractMeta }), fulfillment_task: () => ({ schema: FulfillmentTaskSchema, write: FulfillmentTaskWriteSchema, meta: FulfillmentTaskMeta }), inventory_balance: () => ({ schema: InventoryBalanceSchema, write: InventoryBalanceWriteSchema, meta: InventoryBalanceMeta }), inventory_movement: () => ({ schema: InventoryMovementSchema, write: InventoryMovementWriteSchema, meta: InventoryMovementMeta }), media_asset: () => ({ schema: MediaAssetSchema, write: MediaAssetWriteSchema, meta: MediaAssetMeta }), membership: () => ({ schema: MembershipSchema, write: MembershipWriteSchema, meta: MembershipMeta }), metric_definition: () => ({ schema: MetricDefinitionSchema, write: MetricDefinitionWriteSchema, meta: MetricDefinitionMeta }), notification: () => ({ schema: NotificationSchema, write: NotificationWriteSchema, meta: NotificationMeta }), notification_preference: () => ({ schema: NotificationPreferenceSchema, write: NotificationPreferenceWriteSchema, meta: NotificationPreferenceMeta }), order: () => ({ schema: OrderSchema, write: OrderWriteSchema, meta: OrderMeta }), organization: () => ({ schema: OrganizationSchema, write: OrganizationWriteSchema, meta: OrganizationMeta }), price_rule: () => ({ schema: PriceRuleSchema, write: PriceRuleWriteSchema, meta: PriceRuleMeta }), product: () => ({ schema: ProductSchema, write: ProductWriteSchema, meta: ProductMeta }), quote: () => ({ schema: QuoteSchema, write: QuoteWriteSchema, meta: QuoteMeta }), return_case: () => ({ schema: ReturnCaseSchema, write: ReturnCaseWriteSchema, meta: ReturnCaseMeta }), seller_document: () => ({ schema: SellerDocumentSchema, write: SellerDocumentWriteSchema, meta: SellerDocumentMeta }), seller_profile: () => ({ schema: SellerProfileSchema, write: SellerProfileWriteSchema, meta: SellerProfileMeta }), shipment: () => ({ schema: ShipmentSchema, write: ShipmentWriteSchema, meta: ShipmentMeta }), variant: () => ({ schema: VariantSchema, write: VariantWriteSchema, meta: VariantMeta }), webhook_delivery: () => ({ schema: WebhookDeliverySchema, write: WebhookDeliveryWriteSchema, meta: WebhookDeliveryMeta }), webhook_endpoint: () => ({ schema: WebhookEndpointSchema, write: WebhookEndpointWriteSchema, meta: WebhookEndpointMeta }) } as const
 export type ModelKey = keyof typeof registry

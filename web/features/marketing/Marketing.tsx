@@ -5,7 +5,6 @@
 
 import { ArrowRight } from 'lucide-react'
 import Image from 'next/image'
-import type { ReactNode } from 'react'
 import { Projection } from '@/components/kernel/Projection'
 import { BrandLogo } from '@/components/ui/BrandLogo'
 import { buttonStyles } from '@/components/ui/button'
@@ -68,26 +67,7 @@ export const statementCopy = {
   body: 'One record of stock, price and order sits between every buyer and seller, so nobody restocks against a guess.',
 }
 
-export type HeroEmphasis = 'default' | 'buyer' | 'seller'
-
 type Link = { label: string; href: string }
-const heroCopy: Record<HeroEmphasis, { line: string; body: string; primary: Link; secondary: Link }> = {
-  default: {
-    line: 'Order wholesale against real stock.',
-    body: 'One cart across several wholesalers. Stock is held for you while you pay by M-Pesa.',
-    primary: cta.buy, secondary: cta.sell,
-  },
-  buyer: {
-    line: 'Every wholesaler you use, in one cart.',
-    body: 'Each price shows how it was set, stock is held for 15 minutes at checkout, and you pay by M-Pesa.',
-    primary: cta.buy, secondary: cta.flow,
-  },
-  seller: {
-    line: 'One catalogue, one stock ledger, every buyer.',
-    body: 'Publish against category contracts, set buyer-group and quantity prices, and fulfil from the order record.',
-    primary: cta.sell, secondary: cta.manage,
-  },
-}
 
 /** Commercial terms that hold for every order (PRODUCT.md), shown as quantities rather than claims. */
 const heroTerms = [
@@ -127,59 +107,35 @@ function HeroTerms({ wide }: { wide?: boolean }) {
 }
 
 /**
- * Landing hero, in two compositions. With `panels`, two photographs side by side, each a door into one
- * side of the market with its own headline and action (after Tanini Home's split), and the trade terms as
- * a ruled row beneath. With `board`, the headline beside a live product shelf with the ribbon behind it.
+ * Landing hero: two photographs side by side, each a door into one side of the market with its own headline
+ * and action (after Tanini Home's split), and the trade terms as a ruled row beneath.
  */
-export function MercantileHero({ emphasis = 'default', compact = false, board, panels }: { emphasis?: HeroEmphasis; compact?: boolean; board?: ReactNode; panels?: readonly [HeroPanel, HeroPanel] }) {
-  const c = heroCopy[emphasis]
-  if (panels) {
-    return (
-      <section className="@container flex flex-col" aria-labelledby="hero-title">
-        <div className="grid grid-cols-1 gap-px bg-border @3xl:grid-cols-2">
-          {panels.map((panel, i) => {
-            const Heading = i === 0 ? 'h1' : 'h2'
-            const light = panel.text === 'light'
-            return (
-              // Wide: the words sit on the photograph's prepared area (darkened below, veiled above). Narrow: the
-              // photograph sits above the words, which stand on a solid ground matching their tone, so contrast never
-              // depends on the crop. The same ground shows while the photograph loads or if it fails.
-              <div key={panel.heading} className={cn('relative isolate flex flex-col overflow-hidden bg-background @3xl:min-h-[38rem]', light ? '@3xl:bg-chrome' : '@3xl:bg-well')}>
-                <div className="relative aspect-[4/3] @3xl:absolute @3xl:inset-0 @3xl:-z-10 @3xl:aspect-auto">
-                  <Image src={panel.scene.src} alt={panel.scene.alt} fill sizes="(min-width: 768px) 50vw, 100vw" preload={i === 0}
-                    placeholder={panel.scene.blurDataURL ? 'blur' : 'empty'} blurDataURL={panel.scene.blurDataURL} style={focusOf(panel.scene)} className="object-cover" />
-                </div>
-                <div className={cn('flex max-w-xl flex-col gap-4 p-6 text-foreground @xl:p-10', panel.place === 'bottom' ? '@3xl:mt-auto' : '', light && '@3xl:text-chrome-foreground')}>
-                  <Heading id={i === 0 ? 'hero-title' : undefined} className={cn('font-extrabold tracking-display', i === 0 ? 'text-3xl @md:text-4xl @6xl:text-5xl' : 'text-3xl @6xl:text-4xl')}>{panel.heading}</Heading>
-                  <p className={cn('max-w-[40ch] text-lg text-foreground', light && '@3xl:text-chrome-foreground/90')}>{panel.body}</p>
-                  <a href={panel.cta.href} className={cn(buttonStyles({ variant: light ? 'signal' : 'primary', size: 'lg' }), 'group self-start active:scale-[0.98]')}>{panel.cta.label}<Icon icon={ArrowRight} className="motion-bind transition-transform group-hover:translate-x-1" /></a>
-                </div>
-              </div>
-            )
-          })}
-        </div>
-        <HeroTerms wide />
-      </section>
-    )
-  }
+export function MercantileHero({ panels }: { panels: readonly [HeroPanel, HeroPanel] }) {
   return (
-    <section className="@container relative isolate" aria-labelledby="hero-title">
-      <div className={cn('grid grid-cols-1 items-start gap-10', board && '@4xl:grid-cols-2', compact ? 'py-8' : 'pt-12 @4xl:pt-16', !board && !compact && 'pb-12')}>
-        <div className="flex max-w-2xl flex-col gap-7">
-          <h1 id="hero-title" className={cn('font-extrabold tracking-display text-foreground', compact ? 'text-3xl @md:text-4xl' : 'text-4xl @6xl:text-5xl @7xl:text-6xl')}>
-            {c.line}
-          </h1>
-          <p className="max-w-[46ch] text-lg text-muted">{c.body}</p>
-          <div className="flex flex-wrap gap-3">
-            <a href={c.primary.href} className={buttonStyles({ variant: 'primary', size: 'lg' })}>{c.primary.label}<Icon icon={ArrowRight} /></a>
-            <a href={c.secondary.href} className={buttonStyles({ variant: 'secondary', size: 'lg' })}>{c.secondary.label}</a>
-          </div>
-          {compact ? null : <HeroTerms />}
-        </div>
-        {board ? <div className="min-w-0">{board}</div> : null}
+    <section className="@container flex flex-col" aria-labelledby="hero-title">
+      <div className="grid grid-cols-1 gap-px bg-border @3xl:grid-cols-2">
+        {panels.map((panel, i) => {
+          const Heading = i === 0 ? 'h1' : 'h2'
+          const light = panel.text === 'light'
+          return (
+            // Wide: the words sit on the photograph's prepared area (darkened below, veiled above). Narrow: the
+            // photograph sits above the words, which stand on a solid ground matching their tone, so contrast never
+            // depends on the crop. The same ground shows while the photograph loads or if it fails.
+            <div key={panel.heading} className={cn('relative isolate flex flex-col overflow-hidden bg-background @3xl:min-h-[38rem]', light ? '@3xl:bg-chrome' : '@3xl:bg-well')}>
+              <div className="relative aspect-[4/3] @3xl:absolute @3xl:inset-0 @3xl:-z-10 @3xl:aspect-auto">
+                <Image src={panel.scene.src} alt={panel.scene.alt} fill sizes="(min-width: 768px) 50vw, 100vw" preload={i === 0}
+                  placeholder={panel.scene.blurDataURL ? 'blur' : 'empty'} blurDataURL={panel.scene.blurDataURL} style={focusOf(panel.scene)} className="object-cover" />
+              </div>
+              <div className={cn('flex max-w-xl flex-col gap-4 p-6 text-foreground @xl:p-10', panel.place === 'bottom' ? '@3xl:mt-auto' : '', light && '@3xl:text-chrome-foreground')}>
+                <Heading id={i === 0 ? 'hero-title' : undefined} className={cn('font-extrabold tracking-display', i === 0 ? 'text-3xl @md:text-4xl @6xl:text-5xl' : 'text-3xl @6xl:text-4xl')}>{panel.heading}</Heading>
+                <p className={cn('max-w-[40ch] text-lg text-foreground', light && '@3xl:text-chrome-foreground/90')}>{panel.body}</p>
+                <a href={panel.cta.href} className={cn(buttonStyles({ variant: light ? 'signal' : 'primary', size: 'lg' }), 'group self-start active:scale-[0.98]')}>{panel.cta.label}<Icon icon={ArrowRight} className="motion-bind transition-transform group-hover:translate-x-1" /></a>
+              </div>
+            </div>
+          )
+        })}
       </div>
-      {/* Behind the shelf's last row only: the text column ends higher, so the band never runs under copy. */}
-      {board && !compact ? <TradeRibbon className="relative -z-10 -mt-20 h-32 @4xl:-mt-28 @4xl:h-44" /> : null}
+      <HeroTerms wide />
     </section>
   )
 }

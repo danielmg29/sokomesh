@@ -52,6 +52,7 @@ export function homeFor(session: Session): Route {
   if (!session.user) return '/login'
   if (!session.user.email_verified) return '/verify'
   const keys = session.nav.map(n => n.key)
+  if (keys.includes('home')) return '/dashboard'
   if (keys.includes('admin-sellers')) return '/admin/sellers'
   if (keys.includes('sell')) return '/sell'
   if (keys.includes('catalogue')) return '/catalogue'

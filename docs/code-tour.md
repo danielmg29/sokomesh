@@ -1,8 +1,8 @@
 # SokoMesh code tour
 
-A guided read of everything built so far: the foundation (contract pipeline, design tokens, kernels, design system), the four foundation features (`SM-F-01`, `SM-F-02`, `SM-F-22`, `SM-F-21`), the six Core CRUD features (`SM-F-03`, `SM-F-04`, `SM-F-08`, `SM-F-09`, `SM-F-10`, `SM-F-20`) and the seven Integrated features (`SM-F-05`, `SM-F-06`, `SM-F-15`, `SM-F-12`, `SM-F-11`, `SM-F-19`, `SM-F-17`). Sections follow a sensible reading order; each lists the files, what each is for, and what to look for. Links are relative to this file.
+A guided read of the whole application: the foundation (contract pipeline, design tokens, kernels, design system), the four foundation features (`SM-F-01`, `SM-F-02`, `SM-F-22`, `SM-F-21`), the six Core CRUD features (`SM-F-03`, `SM-F-04`, `SM-F-08`, `SM-F-09`, `SM-F-10`, `SM-F-20`), the seven Integrated features (`SM-F-05`, `SM-F-06`, `SM-F-15`, `SM-F-12`, `SM-F-11`, `SM-F-19`, `SM-F-17`), and the five Advanced and two Hard features (`SM-F-07`, `SM-F-13`, `SM-F-14`, `SM-F-16`, `SM-F-18`, `SM-F-23`, `SM-F-24`). Sections follow a sensible reading order; each lists the files, what each is for, and what to look for. Links are relative to this file.
 
-**How to use it.** Read section 0 for the shape, then 1 (foundation) before any feature. Each feature section goes backend first (model, then resource declaration, then views), then web (data hooks, then pages). Read 6 (category contracts) before 7 to 11: every later catalogue surface derives from a contract. Read 14 (order lifecycle) before 15 to 18: approval, quotes and delivery all place or move orders through it. Section 23 has end-to-end traces to follow with the code open.
+**How to use it.** Read section 0 for the shape, then 1 (foundation) before any feature. Each feature section goes backend first (model, then resource declaration, then views), then web (data hooks, then pages). Read 6 (category contracts) before 7 to 11: every later catalogue surface derives from a contract. Read 14 (order lifecycle) before 15 to 18: approval, quotes and delivery all place or move orders through it. Read 19 (the audit trail and outbox) before 20 to 25: every one of them records through it, and 20 (stock) before 21 (holds) and 22 (payment), which follow one order from checkout to its seller. Section 31 has end-to-end traces to follow with the code open.
 
 ---
 
@@ -38,7 +38,7 @@ Rules that run through everything (from the root `CLAUDE.md`): the backend owns 
 | [backend/core/contract/build.py](../backend/core/contract/build.py) | Assembles the contract from backend sources: settings (auth, limits, locales, rich text, list grammar), the error registry, role policies, and `export_models()` from the registry. Also derives the password rule text from Django's validators. |
 | [backend/core/contract/compat.py](../backend/core/contract/compat.py) | Classifies changes between two contracts (additive, breaking, presentational) and works out the version bump each needs. Dropping a `required` or `readOnly` flag counts as relaxing (additive). |
 | [backend/core/contract/management/commands/contract.py](../backend/core/contract/management/commands/contract.py) | `contract export` (refuses to write without the right version bump) and `contract check` (CI drift check). |
-| [contract/ac-contract.json](../contract/ac-contract.json) | The generated, committed contract (0.6.0). Never edit by hand. |
+| [contract/ac-contract.json](../contract/ac-contract.json) | The generated, committed contract (0.7.0). Never edit by hand. |
 | [contract/CHANGELOG.md](../contract/CHANGELOG.md) | What each contract version added. |
 | [web/tools/contract.mts](../web/tools/contract.mts), [web/tools/gen-contract.mts](../web/tools/gen-contract.mts) | Turn the contract into TypeScript: constants (`auth`, `limits`, `listQuery`, `locales`, `richText`, `uploads`, `errors`, `roles`, `rolePermissions`) and, per model, a Zod schema, a write schema and a `*Meta` object (input-only command fields stay out of the schemas). |
 | [web/lib/contract/generated.ts](../web/lib/contract/generated.ts) | The output. Look at `SellerProfileMeta` to see what the kernel reads. Never edit. |
@@ -265,7 +265,7 @@ Read this before 15 to 18: approval, quotes and delivery all place or move order
 | [backend/apps/orders/checkout.py](../backend/apps/orders/checkout.py) | **Placing orders.** `checkout()` locks the cart, checks every line again (on sale, minimum, stock, price), places one order per seller with `place()` and converts the cart; `place()` applies the approval policy, writes lines and the first transition and tells the right people; `next_reference()` numbers orders and quotes. |
 | [backend/apps/orders/lifecycle.py](../backend/apps/orders/lifecycle.py) | The transition table (`SELLER_MOVES`, who may cancel or dispute from which state), `side_of()` (is the viewer the buyer or the seller), `move()` and `record()`, `next_actions()`, and `tell()` for notifications. |
 | [backend/apps/orders/resources.py](../backend/apps/orders/resources.py) | The `order` resource: input-only command fields, the commands, `_can` narrowed by side and state, sellers' visibility (only orders submitted to them), the detail's lines, history, approval, shipments and reorder preview; the `approval_policy` resource. `apps/carts/resources.py` adds the `checkout` command. |
-| [backend/core/operations/registry.py](../backend/core/operations/registry.py) | `Field(input_only=True)` and `action_input()` (command inputs checked like fields), `organization_of` returning both organizations, `after_create`. |
+| [backend/core/operations/registry.py](../backend/core/operations/registry.py) | `Field(input_only=True)` and `action_input()` (command inputs checked like fields), `organization_of` returning both organizations, `after_create`, and plain model defaults published as `default` so forms open on them. |
 | [web/features/checkout/CheckoutPage.tsx](../web/features/checkout/CheckoutPage.tsx), [web/components/commerce/checkout.tsx](../web/components/commerce/checkout.tsx) | Delivery, review and the placed orders, in `CheckoutSummaryBlock` without a payment step; the API's refusals shown in place. |
 | [web/features/orders/OrderPages.tsx](../web/features/orders/OrderPages.tsx), [web/components/commerce/orders.tsx](../web/components/commerce/orders.tsx) | Order lists for buyers (`/orders`) and sellers (`/sell/orders`) and the order page: commands in the header, approval, reorder, delivery, lines with their price reasons, `OrderTimelineBlock`; status labels from the contract. |
 
@@ -275,9 +275,9 @@ Read this before 15 to 18: approval, quotes and delivery all place or move order
 
 | File | What it is for |
 |---|---|
-| [backend/apps/orders/models.py](../backend/apps/orders/models.py) | `ApprovalPolicy` (threshold, approver roles, approvals needed, on or off) and `ApprovalDecision` (one per approver per order). |
+| [backend/apps/orders/models.py](../backend/apps/orders/models.py) | `ApprovalPolicy` (threshold, approver roles, approvals needed, whether an approver's own orders skip it, on or off) and `ApprovalDecision` (one per approver per order). |
 | [backend/apps/orders/approvals.py](../backend/apps/orders/approvals.py) | `can_decide()` (a role in the copied policy, not the person who placed it, not decided yet), `decide()` (a rejection needs a reason and cancels; enough approvals submit the order to the seller), `approval_view()`. |
-| [backend/apps/orders/checkout.py](../backend/apps/orders/checkout.py) `applicable_policy`, `place` | The strictest policy the total reaches is copied onto the order; an order nobody else could approve is refused. |
+| [backend/apps/orders/checkout.py](../backend/apps/orders/checkout.py) `applicable_policy`, `exempt_role`, `place` | The strictest policy the total reaches is copied onto the order; an approver's own order skips it when the policy allows (recorded as `placed_as`); otherwise an order nobody else could approve is refused. [web/lib/client/approval.ts](../web/lib/client/approval.ts) mirrors the rule for the cart and checkout warnings. |
 | [web/components/commerce/cart.tsx](../web/components/commerce/cart.tsx) `ApprovalFlowBlock`, [web/features/orders/OrderPages.tsx](../web/features/orders/OrderPages.tsx) `Approval`, [web/features/organizations/OrganizationPage.tsx](../web/features/organizations/OrganizationPage.tsx) `Approvals` | The approval block on the order page; policies on the organization page's Approvals tab; the cart warns when a seller's part will need approval. |
 
 ---
@@ -315,7 +315,96 @@ Read this before 15 to 18: approval, quotes and delivery all place or move order
 
 ---
 
-## 19. Demo data and photography
+## 19. The audit trail and the outbox (kernel for `SM-F-23` and `SM-F-24`)
+
+| File | What it is for |
+|---|---|
+| [backend/core/events/models.py](../backend/core/events/models.py) | `AuditEvent` (what happened, to which record, who did it, under which request and correlation id, the reason, redacted details) and `OutboxEvent` (what to tell integrations, published by the relay). Both are append-only: `save()` refuses to rewrite a row. |
+| [backend/core/events/context.py](../backend/core/events/context.py), [middleware.py](../backend/core/events/middleware.py) | **Read this first.** The request id and correlation id of the code running now (context variables), `bound()` to record a block under an order's journey, and the middleware that sets both and answers with `X-Request-ID`. |
+| [backend/core/events/record.py](../backend/core/events/record.py) | `audit()` and `emit()`, the only way the apps write either table; phone numbers, tokens, secrets, PINs and emails are redacted from the details. |
+
+---
+
+## 20. `SM-F-07` Inventory ledger
+
+| File | What it is for |
+|---|---|
+| [backend/apps/inventory/models.py](../backend/apps/inventory/models.py) | `Location`, `Balance` (on hand, held for checkouts, allocated to paid orders, a version; the `never_oversold` check constraint), the append-only `Movement` (the change in available, on hand after, reference, reason, actor, correlation), `Reservation` and `ExpiryRun`. |
+| [backend/apps/inventory/services.py](../backend/apps/inventory/services.py) | **The heart of stock.** `_apply()` changes a locked balance and appends its movement, refusing anything that would oversell; `receive()`, `adjust()` (never below what is held or allocated), `ship()` and `restock()`; `sync_variant()` keeps `Variant.stock_on_hand` equal to the ledger for carts, pages and search. |
+| [backend/apps/inventory/resources.py](../backend/apps/inventory/resources.py) | `inventory_balance` (track a pack; `receive` and `adjust` commands; product, available and stock state for reading) and the read-only `inventory_movement` ledger with its filters. |
+| [backend/apps/inventory/migrations/0002_opening_balances.py](../backend/apps/inventory/migrations/0002_opening_balances.py) | Stock reported before the ledger becomes each pack's opening balance and receipt. |
+| [web/features/inventory/InventoryPage.tsx](../web/features/inventory/InventoryPage.tsx), [web/components/commerce/stock.tsx](../web/components/commerce/stock.tsx) `InventoryLedgerBlock` | `/sell/inventory`: balances projected with their commands, "Track a pack", and the chosen pack's ledger (`?variant=`), whose rows explain every figure. The variant editor now shows stock read-only (`VariantMatrixEditor`). |
+
+---
+
+## 21. `SM-F-13` Stock reservation
+
+| File | What it is for |
+|---|---|
+| [backend/apps/inventory/services.py](../backend/apps/inventory/services.py) `reserve`, `release`, `consume`, `expire_due` | Holds for an order, all or nothing, locking balances in id order so two checkouts never wait on each other in a circle; idempotent by key; released on cancel, consumed (allocated) on payment; `expire_due()` claims lapsed holds with `skip_locked`, cancels unpaid orders and records an `ExpiryRun`. |
+| [backend/apps/inventory/management/commands/expire_reservations.py](../backend/apps/inventory/management/commands/expire_reservations.py), [handlers.py](../backend/apps/inventory/handlers.py) | The expiry worker (an order page also expires its own holds when read), and the `order_moved` handler that returns stock when an order is cancelled. |
+| [backend/apps/orders/checkout.py](../backend/apps/orders/checkout.py), [approvals.py](../backend/apps/orders/approvals.py), [lifecycle.py](../backend/apps/orders/lifecycle.py) | Checkout and approval move an order to `awaiting_payment` and hold its packs; `record()` audits every transition, emits the published ones and sends `order_moved`. |
+| [backend/tests/test_advanced.py](../backend/tests/test_advanced.py) `test_two_buyers_cannot_both_take_the_last_bales` | Two threads checking out the last packs at once: exactly one wins and stock never goes below zero. |
+
+---
+
+## 22. `SM-F-14` Payment sandbox
+
+| File | What it is for |
+|---|---|
+| [backend/apps/payments/models.py](../backend/apps/payments/models.py) | `PaymentIntent` (provider, reference, amount, status, idempotency key, attempt, masked phone, refunded amount, a version) and `PaymentEvent` (every provider result received, with whether its signature held and what was done with it; at most one applied per provider event). |
+| [backend/apps/payments/providers.py](../backend/apps/payments/providers.py) | `Sandbox` (the default: results signed with `X-SokoMesh-Signature: t=…,v1=…`) and `SellaPay` (sends real STK pushes; its v1 API has no result callback, so its payments cannot confirm automatically). |
+| [backend/apps/payments/services.py](../backend/apps/payments/services.py) | **Read this first.** `start()` (one waiting prompt per order), `apply_result()` (verify, record the event, apply once: duplicates, conflicts and late results each have their answer), `confirm()` (allocates the holds, or holds again or refunds if they lapsed, then submits the order to its seller), `refund()` and `simulate()` for the sandbox phone. |
+| [backend/apps/payments/views.py](../backend/apps/payments/views.py), [handlers.py](../backend/apps/payments/handlers.py) | `POST payments/callbacks/<provider>` (no session, size-limited, throttled) and `POST payments/<id>/simulate`; refunds on cancellation. |
+| [web/components/commerce/payment.tsx](../web/components/commerce/payment.tsx), [web/lib/client/payments.ts](../web/lib/client/payments.ts) | `OrderPaymentBlock` (the M-Pesa panel beside the packs held and the time left, and the sandbox phone), `OrderPayment` connected to the order's `pay` command, and the bounded polling while a prompt waits; used on the order page and at the end of checkout. |
+
+---
+
+## 23. `SM-F-16` Fulfilment
+
+| File | What it is for |
+|---|---|
+| [backend/apps/fulfillment/models.py](../backend/apps/fulfillment/models.py) | `FulfillmentTask` (one pick list per order: status, picker, packages, weight, driver, vehicle, handover photo) and `FulfillmentLine` (ordered, picked, outcome, why it is short). |
+| [backend/apps/fulfillment/services.py](../backend/apps/fulfillment/services.py) | `decide()` (each line: all, part with a reason, or none), `pack()` (a short pick marks the order partly fulfilled), `hand_over()` (photo required: ships the picked packs out of the ledger, returns short ones to stock, refunds their value, opens the shipment), `task_view()`. |
+| [backend/apps/fulfillment/resources.py](../backend/apps/fulfillment/resources.py), [handlers.py](../backend/apps/fulfillment/handlers.py) | The `fulfillment_task` commands (`start`, `record_picks`, `pack`, `hand_over`); a confirmed order gets its pick list, a cancelled one closes it; the buyer may open the handover photo. |
+| [web/features/fulfillment/FulfillmentPickPackBlock.tsx](../web/features/fulfillment/FulfillmentPickPackBlock.tsx), [FulfilmentPages.tsx](../web/features/fulfillment/FulfilmentPages.tsx) | The divergent scanner flow, now driven by the pick list's status with the API's answer per line; `/sell/fulfilment` and `/sell/fulfilment/<id>`. Files go up first through `withUploads` ([web/lib/client/files.ts](../web/lib/client/files.ts)). |
+
+---
+
+## 24. `SM-F-18` Returns and disputes
+
+| File | What it is for |
+|---|---|
+| [backend/apps/returns/models.py](../backend/apps/returns/models.py) | `ReturnCase` (type, reason, packs, status, decision, accepted packs, what happens to the stock, refund) and `ReturnEvidence` (a private file, who added it and why). |
+| [backend/apps/returns/services.py](../backend/apps/returns/services.py) | `prepare()` (the buyer's own shipped order, inside the window, never more packs than are left unclaimed), `request_evidence()`, `add_evidence()`, `decide()` (refunds the accepted packs and restocks them when asked), `withdraw()`, `open_dispute()`. |
+| [backend/apps/returns/resources.py](../backend/apps/returns/resources.py) | The `return_case` resource; `_can` gives each side its own commands; both sides may open the evidence. |
+| [web/features/returns/ReturnPages.tsx](../web/features/returns/ReturnPages.tsx), [web/components/commerce/orders.tsx](../web/components/commerce/orders.tsx) `ReturnDisputeCaseBlock` | `/returns` and `/sell/returns` lists and case pages; the block shows the claim, evidence and decision with contract labels, and the case's commands come in as its `actions`. Buyers open a case from the order page ("Report a problem"). |
+
+---
+
+## 25. `SM-F-23` Integration API
+
+| File | What it is for |
+|---|---|
+| [backend/apps/integrations/models.py](../backend/apps/integrations/models.py) | `ApiClient`, `ApiToken` (prefix, hash and last four only; scopes; expiry), `WebhookEndpoint` (a salt from which the signing secret is derived) and `WebhookDelivery` (attempts, answer, next try). |
+| [backend/apps/integrations/services.py](../backend/apps/integrations/services.py) | `issue()` and `authenticate()` for tokens, scope and topic checks, the public-address check that refuses private networks, `fan_out()` and `deliver_due()` with backoff (1 minute up to 6 hours, six attempts). |
+| [backend/apps/integrations/api.py](../backend/apps/integrations/api.py), [management/commands/relay_outbox.py](../backend/apps/integrations/management/commands/relay_outbox.py) | The token API (`integration/products`, `inventory`, `inventory/receipts` with an `Idempotency-Key`, `orders`), rate-limited per token; the relay worker. |
+| [backend/apps/integrations/resources.py](../backend/apps/integrations/resources.py) | Clients, tokens (the token in the creating answer only), webhooks (the secret on create and `rotate_secret`; switch off and on) and deliveries (`retry`). |
+| [web/features/organizations/IntegrationsTab.tsx](../web/features/organizations/IntegrationsTab.tsx), [web/components/commerce/admin.tsx](../web/components/commerce/admin.tsx) `IntegrationPanel`, `SecretReveal` | The Integrations tab on `/organization`: clients, tokens and webhooks with their commands, deliveries, and the one time a token or secret is readable. |
+
+---
+
+## 26. `SM-F-24` Audit and reconciliation
+
+| File | What it is for |
+|---|---|
+| [backend/apps/reconciliation/checks.py](../backend/apps/reconciliation/checks.py) | Eight checks that should find nothing (paid orders, the ledger against its movements, lagging holds, allocations on cancelled orders, refunds due, the outbox and webhooks), `resolve()` (an order number, payment or hold reference, or correlation id, to one journey) and `trace()`. |
+| [backend/apps/reconciliation/views.py](../backend/apps/reconciliation/views.py), [resources.py](../backend/apps/reconciliation/resources.py) | `GET reconciliation/checks` and `GET reconciliation/trace?q=` for administrators; the `audit_event` resource. |
+| [web/features/reconciliation/ReconciliationPages.tsx](../web/features/reconciliation/ReconciliationPages.tsx), [web/components/commerce/admin.tsx](../web/components/commerce/admin.tsx) `ReconciliationChecksBlock`, `ReconciliationTraceBlock` | `/admin/reconciliation` (checks, and a trace whose query lives in the URL) and `/admin/audit` (the trail; a row opens its journey). |
+
+---
+
+## 27. Demo data and photography
 
 | File | What it is for |
 |---|---|
@@ -323,41 +412,55 @@ Read this before 15 to 18: approval, quotes and delivery all place or move order
 | [backend/apps/demo/products.py](../backend/apps/demo/products.py) | The twelve full product listings (rich text with tables, captioned photos and videos) and their galleries; photographer credits. |
 | [backend/apps/demo/catalogue.py](../backend/apps/demo/catalogue.py) | The six category contracts (flour with a retired v1, tea with an open draft) and their guidance, each product's category details and variants, 25 further products with shorter listings, Brian's cart, price rules and buyer groups, the approval policy, Wanjiru's orders (one at each step), the settings for generated Mwangaza history, quotes and photographs. |
 | [backend/apps/demo/management/commands/seed_demo.py](../backend/apps/demo/management/commands/seed_demo.py) | `seed_demo [--reset]`: builds everything (contracts, products and variants, price books, the cart, quotes, orders numbered in the order placed with their transitions, shipments and approvals, generated history from a fixed seed, photographs through the real pipeline), attaches portraits, writes notifications. |
+| [backend/apps/demo/operations.py](../backend/apps/demo/operations.py) | The history of the Advanced and Hard features: each tracked pack's ledger through the real inventory services (opening count, restocks, every shipped order, a write-off, a top-up), holds and allocations for orders still in the warehouse, a sandbox payment for every order a seller saw (refunds where due), pick lists, four return cases, Mwangaza's ERP integration, and the audit trail, each moved back to when it happened so the reconciliation checks agree. |
 | [backend/apps/demo/views.py](../backend/apps/demo/views.py) | The demo-accounts list for the sign-in page (development only). |
 | [design/photography/people.py](../design/photography/people.py), [people.json](../design/photography/people.json) | The portrait matting and grading script (light and dark versions) and its settings. |
 
 ---
 
-## 20. Brand
+### 27a. Home, navigation and errors (from the design-system audit)
+
+| File | What it is for |
+|---|---|
+| [web/features/dashboard/HomePage.tsx](../web/features/dashboard/HomePage.tsx), [web/app/(app)/dashboard/page.tsx](../web/app/(app)/dashboard/page.tsx) | Home: a `PageBlocks` page definition per role (figures from list totals, the first few of each to-do), the first entry of every signed-in navigation (`navigation()` in `apps/accounts/services.py`). |
+| [web/components/kernel/nav/AppNav.tsx](../web/components/kernel/nav/AppNav.tsx), [web/components/layout/shell.tsx](../web/components/layout/shell.tsx), [web/lib/client/use-stored-flag.ts](../web/lib/client/use-stored-flag.ts) | The collapsible, sticky, client-routed sidebar and the per-browser choice behind it. |
+| [web/components/kernel/feedback/ErrorState.tsx](../web/components/kernel/feedback/ErrorState.tsx) `errorFrom`, [web/app/not-found.tsx](../web/app/not-found.tsx), [web/app/error.tsx](../web/app/error.tsx) | Errors by the API's code, the 404 page and the rendering-error boundary; the skip link is in [web/app/layout.tsx](../web/app/layout.tsx). |
+| [web/lib/client/resources.ts](../web/lib/client/resources.ts) `useBulkCommand`, [web/components/commerce/catalog.tsx](../web/components/commerce/catalog.tsx) `FacetFilterPanel`, [web/components/kernel/fields/filters.tsx](../web/components/kernel/fields/filters.tsx) `RangeFilter` | One command over a selection, one request at a time; the catalogue's filters with the price slider over `facets.price`. |
+| [web/features/marketing/stories.tsx](../web/features/marketing/stories.tsx) | The landing's how-it-works, one-record and trust sections, with the live catalogue's product. |
+
+---
+
+## 28. Brand
 
 [web/lib/brand.ts](../web/lib/brand.ts) registers the logo files (mark, trimmed lockup, compact wordmark, reversed versions) and their minimum sizes; [web/components/ui/BrandLogo.tsx](../web/components/ui/BrandLogo.tsx) renders them with clear space; the files are in [web/public/brand/logo/](../web/public/brand/logo/); the rules in [docs/design/brand-assets.md](design/brand-assets.md).
 
 ---
 
-## 21. Settings, routing and tooling
+## 29. Settings, routing and tooling
 
 | File | What it is for |
 |---|---|
-| [backend/config/settings/base.py](../backend/config/settings/base.py), [dev.py](../backend/config/settings/dev.py), [ci.py](../backend/config/settings/ci.py) | Apps (including `carts`, `orders`, `quotes`, `delivery` and `analytics`), database, upload limits (`AC_UPLOADS`, with product photographs), the media pool (`AC_MEDIA`), stale deliveries (`AC_DELIVERY`), Brevo, demo flag, throttling; development Mailpit; tests on the local or CI database, processing photographs at once. |
-| [backend/core/policies.py](../backend/core/policies.py), [backend/apps/accounts/services.py](../backend/apps/accounts/services.py) `navigation` | Which roles hold the catalogue, cart, order, quote, approval, fulfilment and analytics permissions, and the navigation entries they open (Orders, Quotes, Products, Buyers and prices, Analytics for sellers; Cart, Orders, Quotes for buyers). |
+| [backend/config/settings/base.py](../backend/config/settings/base.py), [dev.py](../backend/config/settings/dev.py), [ci.py](../backend/config/settings/ci.py) | Apps (including `carts`, `orders`, `quotes`, `delivery`, `analytics`, `core.events`, `inventory`, `payments`, `fulfillment`, `returns`, `integrations` and `reconciliation`), the request-context middleware, database, upload limits (`AC_UPLOADS`), the media pool (`AC_MEDIA`), stale deliveries (`AC_DELIVERY`), holds (`AC_RESERVATIONS`: 15 minutes), payments (`AC_PAYMENTS`: provider, sandbox, staleness), returns (`AC_RETURNS`: 14 days), integrations and webhooks (`AC_INTEGRATIONS`, `AC_WEBHOOKS`), Brevo, demo flag, throttling; development Mailpit; tests on the local or CI database. |
+| [backend/core/policies.py](../backend/core/policies.py), [backend/apps/accounts/services.py](../backend/apps/accounts/services.py) `navigation` | Which roles hold the catalogue, cart, order, quote, approval, stock, fulfilment, returns, payment, integration, audit and analytics permissions, and the navigation entries they open (Orders, Fulfilment, Stock, Returns, Quotes, Products, Buyers and prices, Analytics for sellers; Cart, Orders, Returns, Quotes for buyers; Reconciliation and Audit trail for administrators). |
 | [web/next.config.ts](../web/next.config.ts) | The `/api` proxy, Unsplash images, Cache Components, typed routes. |
 | [.env.example](../.env.example), [justfile](../justfile), [.claude/launch.json](../.claude/launch.json) | Environment names, one command per task, preview servers. |
 
 ---
 
-## 22. Tests
+## 30. Tests
 
 | File | What it covers |
 |---|---|
 | [backend/tests/test_features.py](../backend/tests/test_features.py) | The four foundation features end to end through the API: registration and verification, sign-in, profile and phone rule, photo checks, organization scoping, invitations and role changes, addresses, seller application and review with blockers, private documents, public products and galleries, notifications in both languages, contract fields, demo gating, navigation. |
 | [backend/tests/test_core_crud.py](../backend/tests/test_core_crud.py) | The six Core CRUD features: contract definitions and the draft, publish and revise cycle; product and variant validation with field messages, incomplete drafts, who may publish; search, contract facets with counts, price, seller and stock filters, two-way pages, unpublished products kept out; comparison with normalised prices and gaps; the cart's minimum order, stock, merging, repricing and access rules; reorder differences and a fresh cart with history untouched. |
 | [backend/tests/test_integrated.py](../backend/tests/test_integrated.py) | The seven Integrated features: photographs checked, stripped, refused and served by visibility; price resolution, reasons, tiers, a buyer's own price and conflicts; checkout per seller, repeat submits, the lifecycle's guards, delivery events, delays and proof; approvals; quotes from cart lines to order, and expiry; analytics values, series, export and permissions; the demo seed telling each story, and reseeding. |
+| [backend/tests/test_advanced.py](../backend/tests/test_advanced.py) | The Advanced and Hard features: the ledger and its refusals; holds, expiry and all-or-nothing checkout; two threads racing for the last packs; payment idempotency, forged and repeated callbacks, declines and retries, amount conflicts, staleness and late payments refunded; short picks with a photo; returns refunded in part and restocked; disputes opening a case; tokens shown once, scoped and revoked; signed webhooks with backoff and failure; a trace of one order and the reconciliation drift check. |
 | [backend/tests/test_listing.py](../backend/tests/test_listing.py), [test_contract.py](../backend/tests/test_contract.py), [test_policies.py](../backend/tests/test_policies.py), [test_richtext.py](../backend/tests/test_richtext.py) | List grammar, contract drift and compatibility, policies, sanitising. |
-| [web/tests/unit/](../web/tests/unit/) | Query engine, server lists, field registry coverage, rich text, tokens and contrast, copy rules, brand sizes; `core-crud.test.ts`: comparison selection rules, URL to API parameters with contract facets, contract draft round trip; `integrated.test.ts`: order labels from the contract, metric cards and their comparisons. |
+| [web/tests/unit/](../web/tests/unit/) | Query engine, server lists, field registry coverage, rich text, tokens and contrast, copy rules, brand sizes; `core-crud.test.ts`: comparison selection rules, URL to API parameters with contract facets, contract draft round trip; `integrated.test.ts`: order labels from the contract, metric cards and their comparisons; `advanced.test.ts`: bounded payment polling, holds and ledger rows as the interface reads them, files uploaded before a command and their errors on the right field. |
 
 ---
 
-## 23. Traces to follow with the code open
+## 31. Traces to follow with the code open
 
 1. **Sign in with a demo account.** `AuthForms.tsx` `SignIn` → `useSessionWrite('auth/login')` in `session.ts` → `api()` in `api.ts` → Next rewrite → `sign_in` in `accounts/views.py` → `session_json()` in `accounts/services.py` → the session lands in the query cache → `homeFor()` picks the first page → `AppFrame.tsx` builds the navigation from `session.nav`.
 2. **Send a seller application for review.** `SellerApplication.tsx` `Submit` → `ActionBar` shows `submit` because the record's `_can` lists it → `useCommand(SellerProfileMeta).run` → `POST seller-profiles/<id>/submit` → `Resource.action_view` in `registry.py` → `_submit` in `sellers/resources.py` (checks, history, `notify()` to admins) → the record and notifications refresh.
@@ -370,3 +473,6 @@ Read this before 15 to 18: approval, quotes and delivery all place or move order
 9. **Check out, approve, ship.** `CheckoutPage.tsx` → `POST carts/<id>/checkout` → `_checkout` in `carts/resources.py` → `checkout()` in `orders/checkout.py` locks the cart and checks each line → `place()` copies the approval policy, so Brian's order waits as `pending_approval` and Grace is told → Grace's order page shows `ApprovalFlowBlock` because `approval.can_decide` → `POST orders/<id>/approve` → `decide()` submits it and notifies Mwangaza → Faith's `/sell/orders` now lists it (it has a `submitted` transition) → `confirm`, `start_picking`, then `ship` with a carrier opens a shipment (`delivery.start`) → Peter's `add_event` and `confirm_delivery` on the order page (`Shipment` in `OrderPages.tsx`) move it to delivered.
 10. **Explain a price.** `BuyBox` in `buy.tsx` → `GET prices?variant=…&quantity=…` → `prices` in `catalog/views.py` → `resolve()` in `catalog/pricing.py` picks one rule by the fixed order and `explain()` writes its reason → `PriceTierTable` marks "Your price" → the same `resolve()` quotes the cart line, checks it again at checkout and copies the reason onto the order line.
 11. **Upload a photograph.** `MediaManager` → `POST catalog/products/<id>/media` → `accept_upload()` stores the original privately and queues it → after commit `enqueue()` hands it to the pool → `process()` measures, refuses or strips it and stores the display copy → the editor's polling sees `ready` → `images_of()` makes it the product's picture, served by `GET media/<id>`.
+12. **Pay for an order on the sandbox.** Grace approves Brian's order → `approvals.py` records `awaiting_payment` and `hold()` reserves its packs (`reserve()` in `inventory/services.py`, a `reservation` movement each) → the order page shows `OrderPaymentBlock` with the countdown → "Send M-Pesa prompt" runs the order's `pay` command → `start()` in `payments/services.py` → the sandbox phone's "Enter PIN and approve" posts `payments/<id>/simulate` → `simulate()` signs a result and delivers it twice to `apply_result()` → the first is applied (`confirm()`: `consume_order()` allocates the packs, `record()` submits the order, Mwangaza is told), the second recorded as a duplicate → the page's bounded polling (`pollWhileWaiting`) shows "Paid" and "1 repeated result from the provider ignored".
+13. **Pick short and hand over.** Faith confirms the order → the `order_moved` handler in `fulfillment/handlers.py` makes its pick list → Peter opens `/sell/fulfilment/<id>` → `FulfillmentPickPackBlock` saves "Part of it" with a reason (`record_picks` → `decide()`) → `pack` (the order becomes partly fulfilled) → `hand_over` with the photo uploaded first (`withUploads`) → `hand_over()` ships the picked packs out of the ledger (`ship()`), returns the short ones, refunds their value (`refund_order()`) and opens the shipment.
+14. **Trace an order.** Amina opens `/admin/reconciliation?q=SO-2026-0151` → `trace_view` → `resolve()` finds the order's correlation id → `trace()` returns every `AuditEvent` recorded under it: placed, held, prompt sent, confirmed, submitted, confirmed by the seller, picking → `ReconciliationTraceBlock` filters by area and opens each event's request id and reason.

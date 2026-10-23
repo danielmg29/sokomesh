@@ -28,11 +28,17 @@ function choose(theme: ThemePreference) {
   listeners.forEach(l => l())
 }
 
-const options: { value: ThemePreference; label: string; icon: LucideIcon }[] = [
+export const themeOptions: readonly { value: ThemePreference; label: string; icon: LucideIcon }[] = [
   { value: 'system', label: 'System', icon: Monitor },
   { value: 'light', label: 'Light', icon: Sun },
   { value: 'dark', label: 'Dark', icon: Moon },
 ]
+const options = themeOptions
+
+/** The reader's colour theme and the way to change it, for controls other than ThemeSwitch (a menu). */
+export function useThemePreference(): [ThemePreference, (theme: ThemePreference) => void] {
+  return [useSyncExternalStore(subscribe, readTheme, () => 'system' as const), choose]
+}
 
 /** Light, dark or follow the system. `labels="icon"` keeps the words for screen readers only. */
 export function ThemeSwitch({ tone = 'default', labels = 'text', className }: { tone?: 'default' | 'chrome'; labels?: 'text' | 'icon'; className?: string }) {

@@ -22,8 +22,10 @@ def upload(request: HttpRequest):
     if length > settings.AC_UPLOADS[kind]["max_bytes"] + 65_536:  # refuse before reading the body
         invalid({"file": [f"Files can be up to {settings.AC_UPLOADS[kind]['max_bytes'] // 1_048_576} MB."]})
     org = active_membership(request).organization
-    # Seller documents (SM-F-02) and proof of delivery (SM-F-17) are both private documents.
-    if not (allowed(request.user, "seller_document.create", org) or allowed(request.user, "shipment.update", org)):
+    # Private documents: seller documents (SM-F-02), handover photos (SM-F-16), proof of delivery (SM-F-17) and
+    # return evidence (SM-F-18).
+    uses = ("seller_document.create", "shipment.update", "fulfillment_task.update", "return_case.evidence")
+    if not any(allowed(request.user, use, org) for use in uses):
         fail(ErrorCode.FORBIDDEN)
     upload_file = request.FILES.get("file")
     if upload_file is None:

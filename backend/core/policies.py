@@ -9,10 +9,11 @@ Who holds which role in which organization is answered by the organizations app 
 from collections.abc import Callable
 
 # SM-F-01 organizations, members, addresses; SM-F-02 seller onboarding; SM-F-04 a seller's catalogue with
-# SM-F-05 photographs and SM-F-06 price books; SM-F-10 carts, SM-F-11 quotes, SM-F-12 approvals, SM-F-15
-# orders, SM-F-17 delivery and SM-F-20 reorder on both sides; SM-F-19 analytics for sellers. Administration
-# (organization.list/review, seller_profile.list/review, seller_document.verify, category_contract.* for SM-F-03)
-# is admin-only.
+# SM-F-05 photographs and SM-F-06 price books; SM-F-07 stock; SM-F-10 carts, SM-F-11 quotes, SM-F-12 approvals,
+# SM-F-14 payment, SM-F-15 orders, SM-F-16 fulfilment, SM-F-17 delivery, SM-F-18 returns and SM-F-20 reorder on
+# both sides; SM-F-19 analytics for sellers; SM-F-23 integrations for owners and managers. Administration
+# (organization.list/review, seller_profile.list/review, seller_document.verify, category_contract.* for SM-F-03,
+# audit_event.list for SM-F-24) is admin-only.
 _OWN_ORG = {"organization.get", "membership.list", "address.list"}
 _MANAGE_ORG = _OWN_ORG | {
     "organization.update",
@@ -57,7 +58,23 @@ _CATALOG = _CATALOG_READ | {
     "buyer_group.remove",
 }
 # The seller's side of orders, quotes and shipments; warehouse staff fulfil and update deliveries.
-_FULFIL = {"order.list", "order.get", "order.fulfil", "shipment.list", "shipment.get", "shipment.update"}
+_FULFIL = {
+    "order.list",
+    "order.get",
+    "order.fulfil",
+    "shipment.list",
+    "shipment.get",
+    "shipment.update",
+    "fulfillment_task.list",
+    "fulfillment_task.get",
+    "fulfillment_task.update",
+    "inventory.list",
+    "inventory.receive",
+    "return_case.list",
+    "return_case.get",
+    "return_case.evidence",
+}
+_INTEGRATE = {"integration.list", "integration.manage"}
 _SELL = _FULFIL | {
     "order.cancel",
     "quote.list",
@@ -65,6 +82,8 @@ _SELL = _FULFIL | {
     "quote.respond",
     "analytics.view",
     "metric_definition.list",
+    "inventory.adjust",
+    "return_case.decide",
 }
 _BUY = {
     "cart.list",
@@ -90,13 +109,18 @@ _BUY = {
     "shipment.get",
     "approval_policy.list",
     "approval_policy.get",
+    "order.pay",
+    "return_case.list",
+    "return_case.get",
+    "return_case.create",
+    "return_case.evidence",
 }
 
 ROLE_PERMISSIONS: dict[str, set[str]] = {
     "marketplace_admin": {"*"},
-    "seller_manager": _MANAGE_ORG | _SELLER | _CATALOG | _SELL,
+    "seller_manager": _MANAGE_ORG | _SELLER | _CATALOG | _SELL | _INTEGRATE,
     "warehouse_operator": _OWN_ORG | _CATALOG_READ | _FULFIL | {"seller_profile.get", "seller_document.list"},
-    "buyer_owner": _MANAGE_ORG | _BUY | {"approval_policy.create", "approval_policy.update"},
+    "buyer_owner": _MANAGE_ORG | _BUY | _INTEGRATE | {"approval_policy.create", "approval_policy.update"},
     "buyer_purchaser": _OWN_ORG | _BUY,
 }
 

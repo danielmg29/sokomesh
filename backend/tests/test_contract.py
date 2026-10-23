@@ -34,6 +34,15 @@ def test_export_is_deterministic():
     assert committed["meta"]["contractVersion"] == settings.AC_CONTRACT["version"]
 
 
+def test_every_display_field_is_a_declared_field():
+    """Rows and dialogs are titled by `displayField`; one the record does not declare would read "Not set"."""
+    models = build_contract()["models"]
+    missing = {
+        k: m["displayField"] for k, m in models.items() if m["displayField"] not in {f["name"] for f in m["fields"]}
+    }
+    assert missing == {}
+
+
 def test_every_error_code_has_a_status_and_message():
     assert set(ERRORS) == set(ErrorCode)
     assert all(spec.message for spec in ERRORS.values())

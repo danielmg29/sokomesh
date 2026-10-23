@@ -2,14 +2,14 @@
 
 import { ArrowRight, Bell, Building2, LayoutDashboard, Package, ReceiptText, ScrollText, Settings, ShieldCheck, ShoppingCart, Store, Users, Webhook } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
-import { IntegrationPanel, ReconciliationTraceBlock, SellerAnalyticsGrid } from '@/components/commerce/admin'
+import { IntegrationPanel, ReconciliationChecksBlock, ReconciliationTraceBlock, SellerAnalyticsGrid } from '@/components/commerce/admin'
 import { ApprovalFlowBlock, CartBlock, QuoteDecisionPanel } from '@/components/commerce/cart'
 import { CategoryHero, FacetFilterPanel, MediaManager, ProductEditorBlock, SellerOnboardingReviewBlock, VariantMatrixEditor } from '@/components/commerce/catalog'
 import { CheckoutSummaryBlock, PaymentStatusPanel } from '@/components/commerce/checkout'
 import { NotificationBell, NotificationPreferencesBlock, NotificationsBlock } from '@/components/commerce/notifications'
 import { DeliveryTrackingBlock, OrderTimelineBlock, ReturnDisputeCaseBlock } from '@/components/commerce/orders'
 import { PriceBookEditor, PriceTierTable, ReorderDiffBlock } from '@/components/commerce/pricing'
-import { InventoryLedgerBlock, ReservationCountdown, ReservationIndicator, StockAvailabilityIndicator } from '@/components/commerce/stock'
+import { InventoryLedgerBlock, StockAvailabilityIndicator } from '@/components/commerce/stock'
 import { ActionBar } from '@/components/kernel/actions/ActionBar'
 import { ChatBlock } from '@/components/kernel/blocks/ChatBlock'
 import { ActivityBlock, DetailBlock, RelatedBlock, StatsBlock, type ActivityEvent, type Metric } from '@/components/kernel/blocks/DataBlocks'
@@ -42,18 +42,18 @@ import { CategoryShowcase, MarketingCTA, MarketingFooter, MercantileHero, TradeS
 import { BuyerSellerValueSplit, InventoryTrustProof, MarketingHeader, MarketMeshVisualization, TradeFlowStory } from '@/features/marketing/MarketingInteractive'
 import { CategoryContractBuilder } from '@/features/categories/CategoryContractBuilder'
 import { ProductComparisonBlock } from '@/features/comparison/ProductComparisonBlock'
-import { FulfillmentPickPackBlock } from '@/features/fulfillment/FulfillmentPickPackBlock'
 import { catalogue, chainOf, rowFor } from '../catalogue'
 import { DEMO_NOW, buyers, images, orderHistory, orderMeta, scenes, orders, organizationMeta, organizationValues, people, productMeta, products, sellers, stockFor } from '../fixtures'
 import { Plate, Plates, useJump } from '../kit'
 import { messages, orderEvents, sellerMetrics } from './blocks'
 import {
   apiTokens, approvalSteps, checkoutGroups, deliveryEvents, editorMeta, ledgerMonth, mediaItems, mwangazaGroup, naivasha, notifications,
-  onboardingHistory, orderTransitions, period, preferences, priceRules, pwaniGroup, quoteLines, reorderLines, returnClaim, returnEvidence, riftGroup,
-  sellerDocuments, tiers, traceEvents, variantAttributes, variantRows, webhookEndpoints,
+  onboardingHistory, orderTransitions, period, preferences, priceRules, pwaniGroup, quoteLines, reorderLines, returnClaim, caseEvidence, sellerCase, riftGroup,
+  sellerDocuments, tiers, traceEvents, variantAttributes, variantRows, webhookEndpoints, PaymentFlow, reconciliationChecks,
 } from './commerce'
-import { ProductRail, heroPanels, statement, buyerValue, categories, compareProducts, comparisonFields, contractUnits, flowSteps, maizeDraft, meshRecord, pickLines, sellerValue, trustProofs, tradeTerms } from './divergent'
+import { ProductRail, heroPanels, statement, buyerValue, categories, compareProducts, comparisonFields, contractUnits, flowSteps, maizeDraft, meshRecord, PickPackDemo, sellerValue, trustProofs, tradeTerms } from './divergent'
 import { navItems } from './kernel'
+import { ReturnCaseMeta } from '@/lib/contract/generated'
 
 /** Block chain as ordered data, each step linked to its inventory row. */
 function Chain({ code }: { code: string }) {
@@ -239,24 +239,13 @@ function CartTemplate() {
   )
 }
 
-const checkoutMeta: ModelMeta = {
-  key: 'checkout', label: 'Checkout', list: { fields: [], defaultPageSize: 1, maxPageSize: 1 },
-  fields: [
-    { name: 'delivery_address', type: 'address', widget: 'address', label: 'Deliver to', required: true },
-    { name: 'mpesa_phone', type: 'string', widget: 'phone', label: 'M-Pesa number', required: true, help: 'SellaPay sends the payment prompt to this phone.' },
-  ],
-}
-
 function Checkout() {
-  const [holdUntil] = useState(() => new Date(Date.now() + 660_000).toISOString())
   return (
     <Page density="compact">
-      <HeaderBlock source="explicit" title="Checkout" variant="compact" description="SM-ORD-004215, 2 sellers" />
-      <CheckoutSummaryBlock step="payment" state="valid" groups={checkoutGroups} address={naivasha}>
-        <ReservationIndicator reservation={{ id: 'RSV-88213', quantity: 24, unit: 'bale', status: 'active', expiresAt: holdUntil, product: 'Mavuno Maize Flour 2 kg', orderReference: 'SM-ORD-004215' }} variant="full" />
-        <ReservationCountdown expiresAt={holdUntil} totalSeconds={900} />
-        <ProjectedForm meta={checkoutMeta} mode="edit" initial={{ delivery_address: naivasha, mpesa_phone: '+254712345678' }} onSubmit={ok} submitLabel="Send M-Pesa prompt" />
-        <PaymentStatusPanel state="pending" amount="95910.00" orderReference="SM-ORD-004215" phone="+254712345678" transactionId="TXN-1770727500-12345" sentAt="2026-10-12T11:30:00+03:00" />
+      <HeaderBlock source="explicit" title="Checkout" variant="compact" description="Two sellers, so two orders, each paid on its own" />
+      <CheckoutSummaryBlock step="result" state="valid" groups={checkoutGroups} address={naivasha}>
+        <h3 className="font-display text-xl font-bold">{checkoutGroups[0]!.seller} · SM-ORD-004215</h3>
+        <PaymentFlow />
       </CheckoutSummaryBlock>
     </Page>
   )
@@ -380,10 +369,7 @@ function Warehouse() {
     <Page density="compact">
       <HeaderBlock source="explicit" title="Picking queue" variant="compact" description="Nakuru depot, shift 07:00 to 15:00" />
       <ListBlock meta={orderMeta} records={pickQueue.length ? pickQueue : orders.slice(0, 2)} density="compact" narrow="collapse" now={DEMO_NOW} caption="Ready to pick" />
-      <Split ratio="wide-aside">
-        <FulfillmentPickPackBlock order="SM-ORD-004215, Wanjiru General Stores" lines={pickLines} />
-        <FieldInput field={{ name: 'handover_photo', type: 'file', widget: 'image', label: 'Handover photo', help: 'Photo of the loaded bales with the delivery note visible.', accept: ['image/jpeg', 'image/png'] }} value={{ state: 'empty' }} onChange={() => undefined} />
-      </Split>
+      <div className="max-w-3xl"><PickPackDemo /></div>
     </Page>
   )
 }
@@ -418,7 +404,8 @@ function Returns() {
     <Shell nav={navItems} current="orders" density="compact">
       <HeaderBlock source="explicit" title="Returns and disputes" count={2} variant="compact" />
       <Split ratio="half">
-        <ReturnDisputeCaseBlock reference="RET-0042" type="damage" status="reviewing" line="Mavuno Maize Flour 2 kg × 3 of 20" reason={returnClaim} evidence={returnEvidence} canDecide openedAt="2026-10-12T09:15:00+03:00" now={DEMO_NOW} />
+        <ReturnDisputeCaseBlock reference="RET-0042" type="damage" status="reviewing" line="Mavuno Maize Flour 2 kg × 3 of 20" reason={returnClaim} evidence={caseEvidence} openedAt="2026-10-12T09:15:00+03:00" now={DEMO_NOW}
+          actions={<ActionBar meta={ReturnCaseMeta} record={sellerCase} onRun={() => undefined} />} />
         <ChatBlock title="RET-0042" messages={messages.slice(0, 1)} canInternal now={DEMO_NOW} density="compact" onSend={() => undefined} />
       </Split>
     </Shell>
@@ -453,9 +440,11 @@ function Integrations() {
   return (
     <Shell nav={adminNav} current="integrations" density="compact">
       <HeaderBlock source="explicit" title="Integrations" variant="compact" description="Scoped API tokens and signed webhooks" />
-      <IntegrationPanel tokens={apiTokens} webhooks={webhookEndpoints} now={DEMO_NOW} />
+      <IntegrationPanel tokens={apiTokens} webhooks={webhookEndpoints} now={DEMO_NOW}
+        revealed={{ title: 'Signing secret', value: 'whsec_specimen_value_not_a_real_secret_0000', detail: 'Shown once. Store it where the receiving system can read it.', onDone: () => undefined }} />
       <ActivityBlock events={deliveries} density="compact" now={DEMO_NOW} title="Webhook deliveries" />
-      <ReconciliationTraceBlock correlationId="cor_SM-ORD-004215" events={traceEvents.slice(0, 3)} now={DEMO_NOW} />
+      <ReconciliationChecksBlock checks={reconciliationChecks} />
+      <ReconciliationTraceBlock correlationId="ord_7c1e0b9a4f" query="SM-ORD-004215" events={traceEvents.slice(0, 5)} now={DEMO_NOW} />
     </Shell>
   )
 }

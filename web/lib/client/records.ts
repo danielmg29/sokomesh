@@ -284,11 +284,13 @@ export type OrderLineRecord = {
   id: string; product: string; sku: string; pack_label: string; quantity: number; unit: string; unit_price: string; line_total: string
   price_explanation: string | null
 }
-export type OrderStatusValue = 'pending_approval' | 'submitted' | 'confirmed' | 'picking' | 'partially_fulfilled' | 'shipped' | 'delivered' | 'cancelled' | 'disputed'
+export type OrderStatusValue = 'pending_approval' | 'awaiting_payment' | 'submitted' | 'confirmed' | 'picking' | 'partially_fulfilled' | 'shipped' | 'delivered' | 'cancelled' | 'disputed'
 export type OrderTransitionRecord = { id: string; from: OrderStatusValue | null; to: OrderStatusValue; at: string; actor: string; reason: string | null }
 /** The approval an order waits for or passed (SM-F-12), from the policy snapshot taken when it was placed. */
 export type ApprovalRecord = {
-  state: 'pending' | 'approved' | 'rejected'
+  /** `not_required`: placed by an approver whose own orders the policy lets through (`placed_as`). */
+  state: 'pending' | 'approved' | 'rejected' | 'not_required'
+  placed_as: string | null
   policy: string
   threshold: string
   roles: string[]
@@ -336,6 +338,12 @@ export type OrderRecord = Rec & {
   shipments?: { id: string }[]
   quote?: { id: string; reference: string } | null
   reorder?: { lines: ReorderDifference[]; addable: number; current_cart_lines: number }
+  // SM-F-13, 14, 16, 18: what the order's journey holds now.
+  reservations?: ReservationRecord[]
+  hold_seconds?: number
+  payments?: PaymentRecord[]
+  fulfilment?: { id: string; status: string } | null
+  cases?: CaseSummary[]
 }
 /** `carts/<id>/checkout`: one order per seller. */
 export type CheckoutResult = { orders: OrderRecord[] }
@@ -393,4 +401,140 @@ export type AnalyticsAnswer = {
   query: { date_from: string; date_to: string; previous_from: string; previous_to: string; dimension: string | null }
   definitions_version: string
   metrics: MetricResult[]
+}
+
+// --- stock, holds and payments (apps/inventory, apps/payments: SM-F-07, 13, 14) ------------------------------
+
+export type ReservationStatusValue = 'active' | 'consumed' | 'released' | 'expired' | 'cancelled'
+export type ReservationRecord = { id: string; reference: string; product: string; sku: string; quantity: number; unit: string; status: ReservationStatusValue; expires_at: string }
+export type PaymentStatusValue = 'created' | 'pending' | 'confirmed' | 'failed' | 'cancelled' | 'refunded' | 'stale'
+/** One attempt to pay an order; `sandbox` when the sandbox phone may answer it now. */
+export type PaymentRecord = {
+  id: string
+  status: PaymentStatusValue
+  amount: string
+  currency: string
+  provider: string
+  reference: string | null
+  phone: string
+  attempt: number
+  sent_at: string | null
+  confirmed_at: string | null
+  failure: string | null
+  refunded_amount: string
+  results_received: number
+  duplicates: number
+  sandbox: boolean
+  confirms: boolean
+}
+export type SandboxOutcome = 'approve' | 'cancel' | 'wrong_pin' | 'insufficient_funds' | 'timeout'
+
+export type BalanceRecord = Rec & {
+  variant: { id: string; label: string }
+  location: { id: string; label: string }
+  bin_label: string
+  on_hand: number
+  reserved: number
+  allocated: number
+  updated_at: string
+  product: { id: string; label: string }
+  pack_label: string
+  unit: string
+  available: number
+  stock_state: 'ok' | 'low' | 'out'
+  minimum_order: number
+}
+export type MovementRecord = Rec & {
+  occurred_at: string
+  variant: { id: string; label: string }
+  movement_type: 'receipt' | 'reservation' | 'release' | 'allocation' | 'adjustment' | 'shipment' | 'return'
+  quantity: number
+  available_after: number
+  on_hand_after: number
+  unit: string
+  reference_label: string
+  reason_code: string
+  note: string
+  actor: { id: string; label: string } | null
+}
+
+// --- fulfilment (apps/fulfillment, SM-F-16) ----------------------------------------------------------------
+
+export type PickLineRecord = {
+  id: string; product: string; pack_label: string; sku: string; unit: string; ordered: number; picked: number
+  outcome: 'pending' | 'full' | 'short' | 'rejected'; reason: string | null; bin: string | null; on_shelf: number | null
+}
+export type FulfillmentTaskRecord = Rec & {
+  order: { id: string; label: string }
+  status: 'queued' | 'picking' | 'packed' | 'handed_over' | 'cancelled'
+  assigned_to: { id: string; label: string } | null
+  packages: number | null
+  weight_kg: string | null
+  driver_name: string
+  vehicle_registration: string
+  created_at: string
+  handed_over_at: string | null
+  order_number: string
+  order_id: string
+  order_status: OrderStatusValue
+  buyer: string
+  deliver_to: string
+  instructions: string
+  lines: PickLineRecord[]
+  handover_evidence: FileRecord | null
+}
+
+// --- returns (apps/returns, SM-F-18) ------------------------------------------------------------------------
+
+export type CaseStatusValue = 'open' | 'evidence_requested' | 'reviewing' | 'approved' | 'rejected' | 'resolved'
+export type CaseSummary = { id: string; reference: string; type: string; status: CaseStatusValue; line: string | null }
+export type CaseRecord = Rec & {
+  reference: string
+  order: { id: string; label: string }
+  order_line: { id: string; label: string } | null
+  case_type: 'return' | 'dispute' | 'damage' | 'shortage' | 'wrong_item' | 'quality_issue'
+  reason_code: string
+  quantity: number | null
+  reason_details: string
+  status: CaseStatusValue
+  decision: string
+  approved_quantity: number | null
+  stock_disposition: string
+  decision_notes: string
+  evidence_note: string
+  refund_amount: string
+  refunded_amount: string
+  opened_at: string
+  decided_at: string | null
+  side: 'buyer' | 'seller' | null
+  order_ref: { id: string; order_number: string }
+  line: { product: string; sku: string; quantity: number; unit: string; unit_price: string } | null
+  evidence: (FileRecord & { note: string; side: string; added_at: string })[]
+  window_closes: string
+  /** Whether new claims on this order are still accepted (the API's clock). */
+  window_open: boolean
+  buyer: string
+  seller: string
+}
+
+// --- integrations and reconciliation (apps/integrations, apps/reconciliation: SM-F-23, 24) --------------------
+
+export type ApiTokenRecord = Rec & {
+  client: { id: string; label: string }; name: string; scopes: string[]; expires_at: string | null; last4: string
+  status: 'active' | 'revoked'; last_used_at: string | null; created_at: string
+  /** In the answer that creates it, and never again. */
+  token?: string
+}
+export type WebhookRecord = Rec & {
+  url: string; events: string[]; is_active: boolean; created_at: string; rotated_at: string | null
+  last_delivery: { status: 'queued' | 'delivered' | 'retrying' | 'failed'; at: string; attempts: number; code: number | null } | null
+  /** On create and after "Replace secret" only. */
+  secret?: string
+}
+export type ReconciliationCheck = { key: string; label: string; help: string; count: number; ok: boolean; examples: string[]; traceable: boolean }
+export type TraceDomain = 'account' | 'catalog' | 'price' | 'inventory' | 'order' | 'payment' | 'fulfilment' | 'return' | 'integration'
+export type TraceRecord = {
+  query: string
+  correlation_id: string | null
+  events: { id: string; at: string; domain: TraceDomain; event: string; summary: string; reason: string | null; requestId: string; eventId: string; actor: string }[]
 }

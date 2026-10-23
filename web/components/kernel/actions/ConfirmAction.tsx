@@ -5,6 +5,7 @@ import { AlertDialog, Dialog } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import type { ActionMeta, AppError, ModelMeta, Rec } from '@/lib/contract/types'
 import { FieldInput } from '../fields/FieldInput'
+import { displayOf } from '@/lib/contract/display'
 
 type Props = {
   action: ActionMeta
@@ -13,7 +14,7 @@ type Props = {
   /** The control that opens it; omit when the caller opens it with `open` (e.g. from a menu). */
   trigger?: ReactNode
   /** Resolves on success; rejects with an AppError to keep the dialog open with its message. */
-  onConfirm: (input: Record<string, unknown>) => Promise<void> | void
+  onConfirm: (input: Record<string, unknown>) => Promise<unknown> | void
   description?: ReactNode
   open?: boolean
   onOpenChange?: (open: boolean) => void
@@ -29,7 +30,7 @@ export function ConfirmAction({ action, meta, record, trigger, onConfirm, descri
   const inputFields = (action.input ?? []).map(n => meta.fields.find(f => f.name === n)).filter((f): f is NonNullable<typeof f> => Boolean(f))
   const [values, setValues] = useState<Record<string, unknown>>(() => Object.fromEntries(inputFields.map(f => [f.name, record[f.name] ?? f.default ?? null])))
   const destructive = action.tone === 'danger'
-  const subject = String(record[meta.displayField ?? 'id'] || meta.label)
+  const subject = displayOf(meta, record)
 
   const run = async () => {
     setPending(true)

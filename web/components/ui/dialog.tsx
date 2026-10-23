@@ -131,4 +131,3 @@ export function AlertDialog({ open, onOpenChange, trigger, title, description, c
   )
 }
 
-export const DialogClose = DialogPrimitive.Close

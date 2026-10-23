@@ -9,7 +9,7 @@ import { useState } from 'react'
 import { ActionBar } from '@/components/kernel/actions/ActionBar'
 import { HeaderBlock } from '@/components/kernel/blocks/HeaderBlock'
 import { ListBlock } from '@/components/kernel/blocks/ListBlock'
-import { ErrorState } from '@/components/kernel/feedback/ErrorState'
+import { ErrorState, errorFrom } from '@/components/kernel/feedback/ErrorState'
 import { LoadingState } from '@/components/kernel/feedback/LoadingState'
 import { StatusBadge } from '@/components/kernel/feedback/StatusBadge'
 import { asFile, choiceLabel } from '@/components/kernel/fields/types'
@@ -138,7 +138,7 @@ export function SellerApplication() {
 
   if (!isSeller) return <HeaderBlock level={1} source="explicit" title="Selling" description="Selling is for seller organizations. Switch to one from your profile, or register a business to sell." />
   if (record.isPending) return <LoadingState variant="skeleton" shape="detail" label="Loading your seller application" />
-  if (record.isError || !record.data) return <ErrorState kind="retryable" title="Your seller application did not load" onRetry={() => void record.refetch()} />
+  if (record.isError || !record.data) return <ErrorState {...errorFrom(record.error)} title="Your seller application did not load" onRetry={() => void record.refetch()} />
 
   const p = record.data
   const locked = !EDITABLE.includes(p.activation_status)

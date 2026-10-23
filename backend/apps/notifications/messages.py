@@ -12,6 +12,41 @@ from django.conf import settings
 Template = tuple[str, str]  # title, body
 
 MESSAGES: dict[str, dict[str, Template]] = {
+    # SM-F-13, SM-F-14: holds and payment.
+    "order.hold_expired": {
+        "en-KE": (
+            "{order} was cancelled",
+            "The stock held for {order} from {seller} ran out before payment. Check out again to order it.",
+        ),
+        "sw-KE": (
+            "{order} imeghairiwa",
+            "Bidhaa zilizohifadhiwa kwa {order} kutoka {seller} ziliisha muda kabla ya malipo. Agiza tena.",
+        ),
+    },
+    "payment.confirmed": {
+        "en-KE": ("Payment for {order} confirmed", "M-Pesa confirmed {total} for {order}. It has gone to {seller}."),
+        "sw-KE": (
+            "Malipo ya {order} yamethibitishwa",
+            "M-Pesa imethibitisha {total} kwa {order}. Imetumwa kwa {seller}.",
+        ),
+    },
+    # SM-F-18: returns and disputes.
+    "return.opened": {
+        "en-KE": ("New case {case} on {order}", "{buyer} opened a case on {order}. Review it and decide."),
+        "sw-KE": ("Kesi mpya {case} kwa {order}", "{buyer} amefungua kesi kwa {order}. Ikague na uamue."),
+    },
+    "return.evidence": {
+        "en-KE": ("The seller asks for evidence on {case}", "{note}"),
+        "sw-KE": ("Muuzaji anaomba ushahidi kwa {case}", "{note}"),
+    },
+    "return.evidence_added": {
+        "en-KE": ("Evidence added to {case}", "The buyer added evidence; the case is ready for your decision."),
+        "sw-KE": ("Ushahidi umeongezwa kwa {case}", "Mnunuzi ameongeza ushahidi; kesi iko tayari kwa uamuzi wako."),
+    },
+    "return.decided": {
+        "en-KE": ("{case}: {decision}", "{notes}"),
+        "sw-KE": ("{case}: {decision}", "{notes}"),
+    },
     "seller.submitted": {
         "en-KE": (
             "{seller} applied to sell",
@@ -54,11 +89,11 @@ MESSAGES: dict[str, dict[str, Template]] = {
     "order.placed": {
         "en-KE": (
             "New order {order} from {buyer}",
-            "{buyer} placed {order} for {total}. Confirm it when you can supply it.",
+            "{buyer} placed and paid {order} for {total}. Confirm it when you can supply it.",
         ),
         "sw-KE": (
             "Oda mpya {order} kutoka {buyer}",
-            "{buyer} imeweka oda {order} ya {total}. Ithibitishe ukiweza kuisambaza.",
+            "{buyer} imeweka na kulipia oda {order} ya {total}. Ithibitishe ukiweza kuisambaza.",
         ),
     },
     "order.needs_approval": {
@@ -72,8 +107,8 @@ MESSAGES: dict[str, dict[str, Template]] = {
         ),
     },
     "order.approved": {
-        "en-KE": ("{order} is approved", "{person} approved it; it has gone to the seller."),
-        "sw-KE": ("{order} imeidhinishwa", "{person} ameiidhinisha; imetumwa kwa muuzaji."),
+        "en-KE": ("{order} is approved", "{person} approved it. Pay for it by M-Pesa to send it to the seller."),
+        "sw-KE": ("{order} imeidhinishwa", "{person} ameiidhinisha. Ilipie kwa M-Pesa ili itumwe kwa muuzaji."),
     },
     "order.rejected": {
         "en-KE": ("{order} was rejected", "{person} rejected it. Reason: {reason}"),

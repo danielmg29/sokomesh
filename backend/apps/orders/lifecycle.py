@@ -1,20 +1,22 @@
 """SM-F-15 order lifecycle: which side may move an order from which state to which, and the record of it.
 
 Moves are guarded here and nowhere else; the order resource's commands call `move`, and so do approvals
-(SM-F-12) and delivery (SM-F-17). Every move appends an OrderTransition (actor, time, reason), raises the
-order's version and tells the other side.
+(SM-F-12), payments (SM-F-14), fulfilment (SM-F-16) and delivery (SM-F-17). Every move appends an
+OrderTransition (actor, time, reason), raises the order's version, writes an audit row and, for the moves
+integrations follow, an outbox event, then sends `order_moved` so inventory, payments and fulfilment react
+without this module importing them.
 
-    pending_approval ──approve──► submitted ──confirm──► confirmed ──start_picking──► picking
-            │ reject/cancel            │ cancel              │ cancel (seller)          │ mark_partial / ship
-            ▼                          ▼                      ▼                          ▼
-        cancelled                  cancelled              cancelled        partially_fulfilled ──ship──► shipped
-                                                                                                       │ mark_delivered
-                                                                                                       ▼
-                                                    disputed ◄──dispute (buyer)── delivered / shipped
+    pending_approval ─approve─► awaiting_payment ─paid─► submitted ─confirm─► confirmed ─pick─► picking
+          │ reject, cancel          │ cancel, hold expired     │ cancel            │ cancel           │ pack short
+          ▼                         ▼                          ▼                   ▼                  ▼
+      cancelled                 cancelled                  cancelled           cancelled   partially_fulfilled
+                                                                                                      │ hand over / ship
+    disputed ◄─dispute (buyer)─ delivered ◄─deliver─ shipped ◄────────────────────────────────────────┘
 """
 
 from typing import Any
 
+from django.dispatch import Signal
 from django.http import HttpRequest
 from django.utils import timezone
 
@@ -22,7 +24,14 @@ from apps.orders.models import Order, OrderTransition
 from apps.organizations.models import Membership, Organization
 from apps.organizations.tenancy import active_membership, is_admin
 from core.api import fail, invalid
+from core.events import context
+from core.events.record import audit, emit
 from core.result import ErrorCode
+
+# Sent after every transition, inside its transaction: order, from_status, to_status, actor, reason.
+order_moved = Signal()
+# Moves integrations hear about through webhooks (SM-F-23), once for each side's organization.
+PUBLISHED = {"submitted", "shipped", "delivered", "cancelled"}
 
 S = Order.Status
 # Seller commands: (from states, to state, reason required)
@@ -33,7 +42,7 @@ SELLER_MOVES: dict[str, tuple[tuple[str, ...], str, bool]] = {
     "ship": ((S.CONFIRMED, S.PICKING, S.PARTIALLY_FULFILLED), S.SHIPPED, False),
     "mark_delivered": ((S.SHIPPED,), S.DELIVERED, False),
 }
-BUYER_CANCEL_FROM = (S.PENDING_APPROVAL, S.SUBMITTED)
+BUYER_CANCEL_FROM = (S.PENDING_APPROVAL, S.AWAITING_PAYMENT, S.SUBMITTED)
 SELLER_CANCEL_FROM = (S.SUBMITTED, S.CONFIRMED, S.PICKING)
 DISPUTE_FROM = (S.SHIPPED, S.DELIVERED)
 BUYER_ACTIONS = {"approve", "reject", "dispute", "reorder"}
@@ -108,13 +117,53 @@ def seller_name(order: Order) -> str:
 
 def record(order: Order, to: str, actor: Any, reason: str = "") -> OrderTransition:
     """Append the transition and move the order (no guard: callers check who may make the move)."""
+    before = order.status
+    who = actor if getattr(actor, "is_authenticated", False) else None
     transition = OrderTransition.objects.create(
-        order=order, from_status=order.status, to_status=to, actor=actor, reason=reason, occurred_at=timezone.now()
+        order=order, from_status=before, to_status=to, actor=who, reason=reason, occurred_at=timezone.now()
     )
     order.status = to
     order.version += 1
     order.save(update_fields=["status", "version"])
+    with context.bound(order.correlation_id):
+        label = Order.Status(to).label.lower() if to in Order.Status.values else to
+        audit(
+            f"order.{to}",
+            domain="order",
+            resource=order,
+            organization=order.seller_organization_id,  # pyright: ignore[reportAttributeAccessIssue]
+            actor=who,
+            summary=f"{order.order_number} {label}"
+            + (f", from {Order.Status(before).label.lower()}" if before else ""),
+            reason=reason,
+            data={"order": order.order_number, "from": before, "to": to, "total": format(order.total, "f")},
+        )
+        if to in PUBLISHED:
+            payload = {
+                "order_id": str(order.pk),
+                "order_number": order.order_number,
+                "status": to,
+                "total": format(order.total, "f"),
+                "currency": order.currency,
+            }
+            for org in {order.seller_organization_id, order.buyer_organization_id}:  # pyright: ignore[reportAttributeAccessIssue]
+                emit(f"order.{to}", organization=org, payload=payload)
+        order_moved.send(sender=Order, order=order, from_status=before, to_status=to, actor=who, reason=reason)
     return transition
+
+
+def expire_unpaid(order: Order) -> None:
+    """The stock hold ran out before the buyer paid: the order is cancelled and the buyer told why."""
+    record(order, S.CANCELLED, None, "The stock hold expired before payment.")
+    tell(
+        order.buyer_organization,
+        ("buyer_owner", "buyer_purchaser"),
+        event_key="order",
+        event_id=f"order:{order.pk}:hold_expired",
+        message="order.hold_expired",
+        params={"order": order.order_number, "seller": seller_name(order)},
+        link=buyer_link(order),
+    )
 
 
 def move(request: HttpRequest, order: Order, action: str, reason: str = "") -> OrderTransition:
@@ -196,10 +245,12 @@ def next_actions(order: Order, side: str | None) -> list[str]:
     elif side == "buyer":
         if order.status == S.PENDING_APPROVAL:
             out += ["approve", "reject"]
+        if order.status == S.AWAITING_PAYMENT:
+            out.append("pay")
         if order.status in BUYER_CANCEL_FROM:
             out.append("cancel")
         if order.status in DISPUTE_FROM:
             out.append("dispute")
-        if order.status not in (S.PENDING_APPROVAL,):
+        if order.status not in (S.PENDING_APPROVAL, S.AWAITING_PAYMENT):
             out.append("reorder")
     return out

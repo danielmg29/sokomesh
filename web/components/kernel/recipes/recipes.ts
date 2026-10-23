@@ -36,7 +36,8 @@ export const surfaceStyles = cva('', {
 export const card = cva('min-w-0 rounded-md motion-reflow transition-[background-color,border-color]', {
   variants: {
     intent: {
-      row: 'grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1',
+      // The figure and time sit at the end, and wrap beneath the title when the row is too narrow for both.
+      row: 'flex flex-wrap items-center gap-x-4 gap-y-2',
       card: 'flex flex-col gap-2',
       detail: 'flex flex-col gap-5',
       stat: 'flex flex-col gap-1',

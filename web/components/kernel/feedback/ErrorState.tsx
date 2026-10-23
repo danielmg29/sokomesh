@@ -5,6 +5,7 @@ import { useEffect, useState, type ReactNode } from 'react'
 import { Button } from '@/components/ui/button'
 import { Icon } from '@/components/ui/icon'
 import { cn } from '@/lib/cn'
+import { ApiError } from '@/lib/client/api'
 import { errors, type ErrorCode } from '@/lib/contract/generated'
 
 export type ErrorKind = 'retryable' | 'non-retryable' | 'conflict' | 'permission' | 'rate-limit' | 'offline' | 'unavailable'
@@ -18,6 +19,16 @@ export function kindForCode(code: string): ErrorKind {
     case 'UNAVAILABLE': return 'unavailable'
     default: return (errors as Record<string, { retryable: boolean }>)[code]?.retryable ? 'retryable' : 'non-retryable'
   }
+}
+
+/**
+ * ErrorState's `code` and `detail` for a failed query or command, so a missing record reads as not found and a
+ * refused one as not permitted, never as "try again"; `offline` when the browser has no connection.
+ */
+export function errorFrom(err: unknown): { code?: string; detail?: string; kind?: ErrorKind } {
+  if (typeof navigator !== 'undefined' && navigator.onLine === false) return { kind: 'offline' }
+  if (err instanceof ApiError) return { code: err.error.code, detail: err.error.detail }
+  return {}
 }
 
 const look: Record<ErrorKind, { icon: LucideIcon; tone: string }> = {

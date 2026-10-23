@@ -6,8 +6,11 @@ from apps.accounts import views as accounts
 from apps.analytics import views as analytics
 from apps.catalog import views as catalog
 from apps.demo import views as demo
+from apps.integrations import api as integration
 from apps.media import views as media
 from apps.notifications import views as notifications
+from apps.payments import views as payments
+from apps.reconciliation import views as reconciliation
 from core.health import healthz
 from core.operations import registry
 
@@ -40,6 +43,14 @@ api = [
     path("catalog/buyers", catalog.buyers, name="catalog-buyers"),
     path("analytics", analytics.analytics, name="analytics"),
     path("analytics/export", analytics.export, name="analytics-export"),
+    path("payments/callbacks/<str:provider>", payments.callback, name="payment-callback"),
+    path("payments/<str:intent_id>/simulate", payments.simulate_view, name="payment-simulate"),
+    path("reconciliation/checks", reconciliation.checks, name="reconciliation-checks"),
+    path("reconciliation/trace", reconciliation.trace_view, name="reconciliation-trace"),
+    path("integration/products", integration.products, name="integration-products"),
+    path("integration/inventory", integration.inventory, name="integration-inventory"),
+    path("integration/inventory/receipts", integration.receipts, name="integration-receipts"),
+    path("integration/orders", integration.orders, name="integration-orders"),
     *registry.urls(),
 ]
 

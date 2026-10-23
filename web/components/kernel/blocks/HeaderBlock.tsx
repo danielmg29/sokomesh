@@ -3,6 +3,7 @@ import { cn } from '@/lib/cn'
 import type { ModelMeta, Rec } from '@/lib/contract/types'
 import { StatusBadge } from '../feedback/StatusBadge'
 import { Breadcrumbs, type Crumb } from '../nav/Breadcrumbs'
+import { displayOf } from '@/lib/contract/display'
 
 type Props = {
   /** meta: the collection's plural label; record: the record's display field and status; explicit: given title. */
@@ -26,7 +27,7 @@ export function HeaderBlock({ source, meta, record, title, description, count, s
   const statusField = meta?.fields.find(f => f.widget === 'status')
   const heading =
     source === 'meta' ? meta?.labelPlural ?? meta?.label
-    : source === 'record' && meta && record ? String(record[meta.displayField ?? 'id'] || meta.label)
+    : source === 'record' && meta && record ? displayOf(meta, record)
     : title
   const badge = status ?? (source === 'record' && statusField && record ? <StatusBadge field={statusField} value={record[statusField.name]} /> : null)
   return (

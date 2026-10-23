@@ -33,6 +33,7 @@ INSTALLED_APPS = [
     "channels",
     "core",
     "core.contract",
+    "core.events",
     "apps.accounts",
     "apps.media",
     "apps.organizations",
@@ -44,11 +45,18 @@ INSTALLED_APPS = [
     "apps.quotes",
     "apps.delivery",
     "apps.analytics",
+    "apps.inventory",
+    "apps.payments",
+    "apps.fulfillment",
+    "apps.returns",
+    "apps.integrations",
+    "apps.reconciliation",
     "apps.demo",
 ]
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "core.events.middleware.RequestContextMiddleware",
     "django.middleware.csp.ContentSecurityPolicyMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -188,7 +196,7 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 
 AC_CONTRACT = {
     # Bump with every contract change: major = breaking, minor = additive, patch = presentational.
-    "version": "0.6.0",
+    "version": "1.0.0",
     "api_base": "/api/v1/",
     "path": Path(env("AC_CONTRACT_PATH", default=str(REPO_DIR / "contract" / "ac-contract.json"))),
 }
@@ -244,6 +252,25 @@ AC_UPLOADS = {
 AC_MEDIA = {"workers": 2, "queue": 8, "eager": False, "max_pixels": 40_000_000, "min_long_side": 600}
 # SM-F-17: a shipment with no news for this long is shown as stale (last known state, with its time).
 AC_DELIVERY = {"stale_hours": 24}
+# SM-F-13: checkout holds stock this long for payment; the expiry worker releases holds in batches.
+AC_RESERVATIONS = {"ttl_minutes": 15, "batch_size": 100}
+# SM-F-14: "sandbox" simulates the buyer's phone and signs its results; "sellapay" sends real STK pushes
+# (SellaPay v1 has no result callback, so those payments cannot be confirmed automatically yet).
+AC_PAYMENTS = {
+    "provider": env("AC_PAYMENT_PROVIDER", default="sandbox"),
+    "sandbox": env.bool("AC_PAYMENT_SANDBOX", default=True),
+    "sandbox_secret": env("AC_PAYMENT_SANDBOX_SECRET", default=""),
+    "stale_minutes": 3,
+    "signature_tolerance_seconds": 300,
+    "sellapay_base": env("SELLAPAY_BASE_URL", default="https://pay.sellapay.co.ke/api/v1"),
+    "sellapay_key": env("SELLAPAY_API_KEY", default=""),
+    "sellapay_secret": env("SELLAPAY_API_SECRET", default=""),
+}
+# SM-F-18: cases may be opened this many days after delivery, with at most this many evidence files.
+AC_RETURNS = {"window_days": 14, "max_evidence": 10}
+# SM-F-23: token requests per minute; webhook timeouts. Private addresses only in tests.
+AC_INTEGRATIONS = {"requests_per_minute": 100}
+AC_WEBHOOKS = {"timeout_seconds": 5, "allow_private": False}
 FILE_UPLOAD_MAX_MEMORY_SIZE = 2_621_440
 
 # The public site, for links in emails (verification, invitations, notifications).

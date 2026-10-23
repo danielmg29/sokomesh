@@ -1,6 +1,8 @@
 'use client'
 
 import { ArrowDownRight, ArrowUpRight, Minus } from 'lucide-react'
+import type { Route } from 'next'
+import Link from 'next/link'
 import { useState, type ReactNode } from 'react'
 import { Stamp } from '@/components/ui/stamp'
 import { chipStyles } from '@/components/ui/chip'
@@ -38,6 +40,10 @@ export type Metric = {
   note?: string
 }
 
+const noteMark: Record<Exclude<Tone, 'neutral'>, string> = {
+  info: 'bg-tone-info', success: 'bg-tone-success', warning: 'bg-tone-warning', danger: 'bg-tone-danger', signal: 'bg-signal',
+}
+
 /** Metric strip: one bordered row divided into cells, not a grid of floating cards. */
 /** Columns follow the metric count, so a row never ends in an empty cell. */
 const statColumns = {
@@ -45,7 +51,10 @@ const statColumns = {
   2: '@md:grid-cols-2',
   3: '@md:grid-cols-2 @md:[&>*:last-child]:col-span-2 @xl:grid-cols-3 @xl:[&>*:last-child]:col-span-1',
   4: '@md:grid-cols-2 @3xl:grid-cols-4',
+  /** Six (seller analytics): three across, two rows. */
+  6: '@md:grid-cols-2 @3xl:grid-cols-3',
 } as const
+const columnsFor = (count: number) => count === 6 ? statColumns[6] : statColumns[Math.min(count, 4) as 1 | 2 | 3 | 4]
 
 export function StatsBlock({ metrics, density = 'comfortable', state = 'ready', caption }: { metrics: readonly Metric[]; density?: 'comfortable' | 'spacious'; state?: BlockState; caption?: string }) {
   if (state === 'loading') return <LoadingState variant="skeleton" shape="stat" label="Loading metrics" />
@@ -53,13 +62,14 @@ export function StatsBlock({ metrics, density = 'comfortable', state = 'ready', 
   if (state === 'empty' || !metrics.length) return <div className="rounded-md border border-border bg-surface"><EmptyState kind="no-data" title="No figures for this period yet" description="Metrics appear after the first confirmed order." size="inline" /></div>
   return (
     <section aria-label={caption ?? 'Key figures'} className="@container rounded-md border border-border">
-      <dl className={cn('grid grid-cols-1 gap-px overflow-hidden rounded-md bg-border', statColumns[Math.min(metrics.length, 4) as 1 | 2 | 3 | 4])}>
+      <dl className={cn('grid grid-cols-1 gap-px overflow-hidden rounded-md bg-border', columnsFor(metrics.length))}>
         {metrics.map(m => (
-          <div key={m.key} className={cn('flex flex-col gap-1.5 bg-surface', density === 'spacious' ? 'p-6' : 'p-4')}>
+          <div key={m.key} className={cn('@container/stat flex flex-col gap-1.5 bg-surface', density === 'spacious' ? 'p-6' : 'p-4')}>
             <dt className="text-sm font-semibold text-muted">{m.label}</dt>
             <dd className="flex items-baseline gap-1.5">
-              {/* A figure never breaks between currency and amount; it steps down a size in narrow blocks. */}
-              <span className={cn('font-display font-extrabold whitespace-nowrap tabular', density === 'spacious' ? 'text-3xl @3xl:text-4xl' : 'text-2xl @3xl:text-3xl')}>{m.value}</span>
+              {/* A figure never breaks between currency and amount; it steps down a size in a narrow cell (four across
+                  beside the navigation, a revenue figure such as KES 1,804,330.00 needs the smaller size). */}
+              <span className={cn('font-display font-extrabold whitespace-nowrap tabular', density === 'spacious' ? 'text-2xl @xs/stat:text-3xl @md/stat:text-4xl' : 'text-2xl @xs/stat:text-3xl')}>{m.value}</span>
               {m.unit ? <span className="text-md text-muted">{m.unit}</span> : null}
             </dd>
             {m.comparison ? (
@@ -68,7 +78,8 @@ export function StatsBlock({ metrics, density = 'comfortable', state = 'ready', 
                 {m.comparison.delta}{m.comparison.direction === 'flat' ? null : <span>{m.comparison.good ? 'better' : 'worse'}</span>} <span className="font-normal text-muted">{m.comparison.label}</span>
               </dd>
             ) : null}
-            {m.note ? <dd className="text-sm text-muted">{m.tone && m.tone !== 'neutral' ? <Stamp tone={m.tone} presentation="dot">{m.note}</Stamp> : m.note}</dd> : null}
+            {/* A note may run to two lines in a narrow cell: the tone is a mark beside it, the words carry the meaning. */}
+            {m.note ? <dd className="flex items-start gap-1.5 text-sm text-muted">{m.tone && m.tone !== 'neutral' ? <span aria-hidden className={cn('mt-1.5 size-2 shrink-0', noteMark[m.tone])} /> : null}<span className="min-w-0 text-pretty">{m.note}</span></dd> : null}
           </div>
         ))}
       </dl>
@@ -153,20 +164,27 @@ export function ActivityBlock({ events, kinds, density = 'comfortable', state = 
 }
 
 /** Records related to the current one (variants, lines, members), declared in metadata. */
-export function RelatedBlock({ title, meta, records, intent = 'row', density = 'compact', viewAllHref, onRun, now, empty }: {
-  title: string; meta: ModelMeta; records: readonly Rec[]; intent?: 'row' | 'card'; density?: Density; viewAllHref?: string; onRun?: RunAction; now?: string; empty?: string
+export function RelatedBlock({ title, meta, records, intent = 'row', density = 'compact', viewAllHref, href, onRun, now, empty, total, loading = false }: {
+  title: string; meta: ModelMeta; records: readonly Rec[]; intent?: 'row' | 'card'; density?: Density; viewAllHref?: string
+  /** Each record's own page. */
+  href?: (r: Rec) => string
+  onRun?: RunAction; now?: string; empty?: string
+  /** How many there are in all, when only the first few are shown. */
+  total?: number
+  /** Still being read: rows are reserved rather than reported as none. */
+  loading?: boolean
 }) {
   return (
     <section className="flex min-w-0 flex-col gap-3" aria-label={title}>
       <div className="flex items-baseline justify-between gap-3">
-        <h3 className="font-display text-lg font-bold">{title} <span className="font-sans text-md font-normal text-muted tabular">{records.length}</span></h3>
-        {viewAllHref ? <a href={viewAllHref} className="text-md font-semibold text-primary hover:underline">View all</a> : null}
+        <h3 className="font-display text-lg font-bold">{title} {loading ? null : <span className="font-sans text-md font-normal text-muted tabular">{total ?? records.length}</span>}</h3>
+        {viewAllHref ? <Link href={viewAllHref as Route} className="text-md font-semibold text-primary hover:underline">View all</Link> : null}
       </div>
-      {records.length ? (
+      {loading ? <LoadingState variant="skeleton" shape="list" rows={2} label={`Loading ${title.toLowerCase()}`} /> : records.length ? (
         <ul className={cn(intent === 'card' ? 'grid grid-cols-1 border-t border-l border-border sm:grid-cols-2' : 'flex flex-col divide-y divide-border rounded-md border border-border bg-surface')}>
           {records.map(r => (
             <li key={r.id} className={cn(intent === 'card' && 'flex border-r border-b border-border bg-surface')}>
-              <Projection meta={meta} record={r} context="list" override={{ intent: intent === 'card' && meta.fields.some(f => f.widget === 'image') ? 'media' : intent, density, surface: 'flat' }} onRun={onRun} now={now} className={intent === 'row' ? 'rounded-none' : 'w-full'} />
+              <Projection meta={meta} record={r} context="list" override={{ intent: intent === 'card' && meta.fields.some(f => f.widget === 'image') ? 'media' : intent, density, surface: 'flat' }} onRun={onRun} now={now} href={href?.(r)} className={intent === 'row' ? 'rounded-none' : 'w-full'} />
             </li>
           ))}
         </ul>

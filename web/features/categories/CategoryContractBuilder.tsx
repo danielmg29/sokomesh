@@ -23,6 +23,7 @@ import { useTableQuery } from '@/lib/client/use-table-query'
 import { cn } from '@/lib/cn'
 import type { FieldMeta } from '@/lib/contract/types'
 import type { Accessors } from '@/lib/query'
+import { DensityRegion } from '@/components/layout/primitives'
 
 export type Attribute = {
   key: string
@@ -210,7 +211,7 @@ export function CategoryContractBuilder({ category, version, status, initial, un
               <FacetChips label="Type" options={typeOptions.map(o => ({ ...o, count: typeCounts[o.value] ?? 0 }))} value={facet('type')} onChange={setFacet('type')} />
               <FacetChips label="Marked" options={flagOptions.map(o => ({ ...o, count: flagCounts[o.value] ?? 0 }))} value={facet('flags')} onChange={setFacet('flags')} />
             </>} />
-          <div className="rounded-sm border border-border" data-density="compact">
+          <DensityRegion density="compact" className="rounded-sm border border-border">
             {t.result.total === 0 ? (
               <EmptyState kind="no-results" title="No attributes match" description="Try another key or remove a filter." action={<Button variant="secondary" onClick={t.clear}>Clear search and filters</Button>} />
             ) : (
@@ -242,7 +243,7 @@ export function CategoryContractBuilder({ category, version, status, initial, un
             </div>
             )}
             <TablePager result={t.result} onPage={t.setPage} onPageSize={t.setPageSize} noun={{ one: 'attribute', other: 'attributes' }} unfiltered={attrs.length} className="border-t border-border" />
-          </div>
+          </DensityRegion>
           {/* A new attribute goes last: clear the view and turn to the last page so it is in sight. */}
           {editable ? <Button size="sm" variant="secondary" leadingIcon={Plus} className="self-start" onClick={() => { change({ attributes: [...attrs, { key: `attribute_${attrs.length + 1}`, label: 'New attribute', type: 'enum', required: false, facet: false, comparable: false, choices: [{ value: 'option_a', label: 'Option A' }] }] }); t.clear(); t.setPage(Number.MAX_SAFE_INTEGER) }}>Add attribute</Button> : null}
         </TabsContent>

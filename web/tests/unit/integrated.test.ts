@@ -2,6 +2,7 @@ import { describe, expect, test } from 'vitest'
 import artefact from '../../../contract/ac-contract.json'
 import { orderLook } from '@/components/commerce/orders'
 import { card } from '@/features/analytics/SellerAnalytics'
+import { policyFor, type PolicyLike } from '@/lib/client/approval'
 import type { MetricResult } from '@/lib/client/records'
 import type { Contract } from '@/lib/contract/types'
 
@@ -35,5 +36,30 @@ describe('metric cards (SM-F-19)', () => {
   test('a metric that starts from nothing has no percentage change', () => {
     expect(card(metric({ value: '500.00', previous: '0.00' })).comparison).toBeUndefined()
     expect(card(metric({ value: '0.00', previous: '0.00' })).comparison).toMatchObject({ direction: 'flat', delta: '0.0%' })
+  })
+})
+
+const policy = (over: Partial<PolicyLike>): PolicyLike => ({
+  name: 'Large orders', threshold_amount: '50000.00', approver_role_keys: ['buyer_owner'], exempt_approvers: true, is_active: true, ...over,
+})
+
+describe('purchase approval mirror (SM-F-12)', () => {
+  const policies = [policy({}), policy({ name: 'Very large orders', threshold_amount: '200000.00', approver_role_keys: ['buyer_owner'], exempt_approvers: false })]
+
+  test('the strictest active policy the total reaches applies', () => {
+    expect(policyFor(policies, 'buyer_purchaser', '49999.99')).toBeUndefined()
+    expect(policyFor(policies, 'buyer_purchaser', '50000.00')?.name).toBe('Large orders')
+    expect(policyFor(policies, 'buyer_purchaser', '250000.00')?.name).toBe('Very large orders')
+    expect(policyFor([policy({ is_active: false })], 'buyer_purchaser', '60000.00')).toBeUndefined()
+  })
+
+  test("an approver's own order skips a policy only when the policy says so", () => {
+    expect(policyFor(policies, 'buyer_owner', '60000.00')).toBeUndefined()
+    expect(policyFor(policies, 'buyer_owner', '250000.00')?.name).toBe('Very large orders')
+  })
+
+  test('the contract publishes the exemption on by default', () => {
+    const field = contract.models.approval_policy!.fields.find(f => f.name === 'exempt_approvers')!
+    expect(field).toMatchObject({ type: 'boolean', default: true })
   })
 })

@@ -212,9 +212,13 @@ class Variant(models.Model):
     minimum_order_quantity = models.PositiveIntegerField("Minimum order", default=1, help_text="In packs.")
     # The list price per pack; price rules (SM-F-06) refine it for quantity tiers, buyer groups and periods.
     unit_price = models.DecimalField("Price per pack", max_digits=12, decimal_places=2)
-    # Until the inventory ledger (SM-F-07): packs on hand as the seller last reported; empty = not tracked.
+    # Derived from the inventory ledger (SM-F-07): packs buyers can order now, kept in step by
+    # apps.inventory.services; empty = not tracked in the ledger.
     stock_on_hand = models.PositiveIntegerField(
-        "Packs in stock", null=True, blank=True, help_text="Leave empty if you do not track stock here yet."
+        "Packs available",
+        null=True,
+        blank=True,
+        help_text="From the stock ledger: on hand less held and allocated packs.",
     )
     is_active = models.BooleanField("On sale", default=True)
     created_at = models.DateTimeField(auto_now_add=True)

@@ -28,6 +28,8 @@ type Props = {
   options?: Record<string, readonly ComboOption[]>
   /** Facet counts keyed by field then choice value. */
   counts?: Record<string, Record<string, number>>
+  /** Lowest and highest value per range field in the current results, from the list's facets. */
+  bounds?: Record<string, { min: string | null; max: string | null } | undefined>
   /** Limit to these filterable fields, in this order (from an override). */
   fields?: readonly string[]
   className?: string
@@ -48,7 +50,7 @@ function describe(field: FieldMeta, v: FilterValue): string {
 }
 
 /** Search plus typed filters for every field whose contract metadata declares filter operators. */
-export function FiltersBlock({ meta, values, onChange, search, onSearchChange, layout = 'expanded', options = {}, counts, fields, className }: Props) {
+export function FiltersBlock({ meta, values, onChange, search, onSearchChange, layout = 'expanded', options = {}, counts, bounds, fields, className }: Props) {
   const [open, setOpen] = useState(false)
   const filterable = (fields ? fields.map(n => meta.fields.find(f => f.name === n)) : meta.fields.filter(f => f.filter?.length))
     .filter((f): f is FieldMeta => Boolean(f))
@@ -68,7 +70,7 @@ export function FiltersBlock({ meta, values, onChange, search, onSearchChange, l
             <h3 id={`flt-${f.name}`} className="font-sans text-md font-semibold">{f.label}</h3>
             {values[f.name] ? <button type="button" className="text-sm text-primary hover:underline" onClick={() => set(f.name, undefined)}>Clear</button> : null}
           </div>
-          <FieldFilter field={f} value={values[f.name]} onChange={v => set(f.name, v)} options={options[f.name]} counts={counts?.[f.name]} />
+          <FieldFilter field={f} value={values[f.name]} onChange={v => set(f.name, v)} options={options[f.name]} counts={counts?.[f.name]} bounds={bounds?.[f.name]} />
         </section>
       ))}
     </div>

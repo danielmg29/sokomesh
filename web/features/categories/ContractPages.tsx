@@ -11,7 +11,7 @@ import { useRouter } from 'next/navigation'
 import { ActionBar } from '@/components/kernel/actions/ActionBar'
 import { HeaderBlock } from '@/components/kernel/blocks/HeaderBlock'
 import { ListBlock } from '@/components/kernel/blocks/ListBlock'
-import { ErrorState } from '@/components/kernel/feedback/ErrorState'
+import { ErrorState, errorFrom } from '@/components/kernel/feedback/ErrorState'
 import { LoadingState } from '@/components/kernel/feedback/LoadingState'
 import { PageSection } from '@/components/layout/section'
 import { CategoryContractBuilder, definitionFromDraft, draftFromRecord, type SaveOutcome } from '@/features/categories/CategoryContractBuilder'
@@ -44,7 +44,7 @@ export function AdminContract({ id }: { id: string }) {
   const save = useSave(CategoryContractMeta)
   const router = useRouter()
   if (record.isPending) return <LoadingState variant="skeleton" shape="detail" label="Loading the contract" />
-  if (record.isError || !record.data) return <ErrorState kind="retryable" title="The contract did not load" onRetry={() => void record.refetch()} />
+  if (record.isError || !record.data) return <ErrorState {...errorFrom(record.error)} title="The contract did not load" onRetry={() => void record.refetch()} />
   const c = record.data
   // A new draft is a new record: open it once the API has made it.
   const run = async (action: ActionMeta, rec: Rec, input?: Record<string, unknown>) => {

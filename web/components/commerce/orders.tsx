@@ -1,21 +1,20 @@
 'use client'
 
 import { ExternalLink, FileText, TriangleAlert } from 'lucide-react'
-import { useState, type ReactNode } from 'react'
+import type { ReactNode } from 'react'
 import { ActivityBlock, type ActivityEvent } from '@/components/kernel/blocks/DataBlocks'
-import { FieldInput } from '@/components/kernel/fields/FieldInput'
 import { FileView } from '@/components/kernel/fields/views'
 import type { FileValue } from '@/components/kernel/fields/types'
 import { RelativeTime } from '@/components/kernel/fields/islands'
-import { Button } from '@/components/ui/button'
 import { Icon } from '@/components/ui/icon'
 import { Stamp } from '@/components/ui/stamp'
 import { Thread, type ThreadStep } from '@/components/ui/thread'
-import { OrderMeta } from '@/lib/contract/generated'
+import { OrderMeta, ReturnCaseMeta } from '@/lib/contract/generated'
 import type { Choice, FieldMeta, Tone } from '@/lib/contract/types'
 import { formatDay, formatTime } from '@/lib/format'
+import { formatMoney } from '@/lib/money'
 
-export type OrderStatus = 'pending_approval' | 'submitted' | 'confirmed' | 'picking' | 'partially_fulfilled' | 'shipped' | 'delivered' | 'cancelled' | 'disputed'
+export type OrderStatus = 'pending_approval' | 'awaiting_payment' | 'submitted' | 'confirmed' | 'picking' | 'partially_fulfilled' | 'shipped' | 'delivered' | 'cancelled' | 'disputed'
 // Labels and tones are the backend's (Order.status choices in the contract); only the stamp condition is ours.
 const statusChoices: readonly Choice[] = OrderMeta.fields.find(f => f.name === 'status')?.choices ?? []
 export const orderLook = Object.fromEntries(
@@ -102,56 +101,73 @@ export function DeliveryTrackingBlock({ status, carrier, reference, windowStart,
 
 export type CaseStatus = 'open' | 'evidence_requested' | 'reviewing' | 'approved' | 'rejected' | 'resolved'
 export type CaseType = 'return' | 'dispute' | 'damage' | 'shortage' | 'wrong_item' | 'quality_issue'
+/** A photo or document on a case, with who added it and why. */
+export type CaseEvidence = FileValue & { note?: string; side?: 'buyer' | 'seller'; addedAt?: string }
+/** The seller's decision as recorded: what was accepted, refunded and done with the stock. */
+export type CaseDecision = { label: string; notes?: string; approvedQuantity?: number | null; unit?: string; disposition?: string; refund?: string; refunded?: string; decidedAt?: string }
 
-const caseLook: Record<CaseStatus, { tone: Tone; label: string }> = {
-  open: { tone: 'info', label: 'Open' }, evidence_requested: { tone: 'warning', label: 'Evidence requested' }, reviewing: { tone: 'signal', label: 'Under review' },
-  approved: { tone: 'success', label: 'Approved' }, rejected: { tone: 'danger', label: 'Rejected' }, resolved: { tone: 'neutral', label: 'Resolved' },
-}
-const caseTypeLabel: Record<CaseType, string> = { return: 'Return', dispute: 'Dispute', damage: 'Damaged goods', shortage: 'Short delivery', wrong_item: 'Wrong item', quality_issue: 'Quality issue' }
+// Labels and tones are the backend's (ReturnCase choices in the contract).
+const caseChoice = (name: string, value: string) => (ReturnCaseMeta.fields as readonly FieldMeta[]).find(f => f.name === name)?.choices?.find(c => c.value === value)
+const caseStatusLook = (s: CaseStatus) => ({ tone: (caseChoice('status', s)?.tone ?? 'neutral') as Tone, label: caseChoice('status', s)?.label ?? s })
 
-// Mirrors ReturnCase.decision / decision_notes / stock_disposition in the field specification (SM-F-18).
-const decisionFields: FieldMeta[] = [
-  { name: 'decision', type: 'enum', widget: 'select', label: 'Decision', required: true, choices: [
-    { value: 'approved', label: 'Approve in full' }, { value: 'partial', label: 'Approve part of the claim' }, { value: 'replacement', label: 'Send a replacement' }, { value: 'rejected', label: 'Reject' },
-  ] },
-  { name: 'stock_disposition', type: 'enum', widget: 'select', label: 'Returned stock', choices: [
-    { value: 'restock', label: 'Restock' }, { value: 'quarantine', label: 'Quarantine for inspection' }, { value: 'scrap', label: 'Scrap' }, { value: 'supplier_return', label: 'Return to supplier' }, { value: 'none', label: 'No stock returned' },
-  ] },
-  { name: 'decision_notes', type: 'text', widget: 'textarea', label: 'Decision explanation', required: true, maxLength: 1000, help: 'Shared with the buyer and kept in the audit trail.' },
-]
-
-/** Line-level return or dispute (SM-F-18): reason, evidence, decision; refund and stock stay separately auditable. */
-export function ReturnDisputeCaseBlock({ reference, type, status, line, reason, evidence, canDecide, now, openedAt }: {
-  reference: string; type: CaseType; status: CaseStatus; line: string; reason: string; evidence: readonly FileValue[]; canDecide?: boolean; now?: string; openedAt: string
+/**
+ * Line-level return or dispute (SM-F-18): the claim, its evidence, and the decision with its refund and
+ * stock outcome. The commands (ask for evidence, add evidence, decide, withdraw) are the caller's `actions`,
+ * from the case's own `_can`; this block never decides who may do what.
+ */
+export function ReturnDisputeCaseBlock({ reference, type, status, line, reason, evidence, now, openedAt, evidenceNote, decision, windowCloses, windowOpen = true, parties, actions }: {
+  reference: string; type: CaseType; status: CaseStatus; line: string; reason: string; evidence: readonly CaseEvidence[]; now?: string; openedAt: string
+  evidenceNote?: string; decision?: CaseDecision; windowCloses?: string
+  /** Whether claims are still accepted; the line about the window shows only while they are. */
+  windowOpen?: boolean; parties?: { buyer: string; seller: string }; actions?: ReactNode
 }) {
-  const [values, setValues] = useState<Record<string, unknown>>({ decision: null, stock_disposition: null, decision_notes: '' })
   const order: CaseStatus[] = ['open', 'reviewing', 'resolved']
-  const idx = status === 'evidence_requested' ? 0 : status === 'approved' || status === 'rejected' ? 1 : order.indexOf(status)
-  const steps: ThreadStep[] = order.map((s, i) => ({ key: s, label: caseLook[s].label, state: i < idx ? 'done' : i === idx ? (status === 'evidence_requested' ? 'stale' : status === 'resolved' ? 'done' : 'current') : 'upcoming' }))
+  const idx = status === 'evidence_requested' ? 0 : status === 'approved' || status === 'rejected' ? 2 : order.indexOf(status)
+  const closed = status === 'resolved' || status === 'rejected' || status === 'approved'
+  const steps: ThreadStep[] = order.map((s, i) => ({
+    key: s,
+    label: i === 2 && status === 'rejected' ? caseStatusLook('rejected').label : caseStatusLook(s).label,
+    state: i < idx ? 'done' : i === idx ? (status === 'evidence_requested' ? 'stale' : closed ? (status === 'rejected' ? 'failed' : 'done') : 'current') : 'upcoming',
+  }))
+  const look = caseStatusLook(status)
   return (
-    <section className="flex flex-col gap-4 rounded-md border border-border bg-surface p-4" aria-label={`Case ${reference}`}>
+    <section className="flex flex-col gap-5 border border-border bg-surface p-4" aria-label={`Case ${reference}`}>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex flex-col gap-0.5">
-          <h3 className="font-display text-lg font-bold">{caseTypeLabel[type]} · <code className="font-mono text-md">{reference}</code></h3>
-          <span className="text-sm text-muted">{line} · opened <RelativeTime iso={openedAt} now={now} /></span>
+          <h3 className="font-display text-lg font-bold">{caseChoice('case_type', type)?.label ?? type} · <code className="font-mono text-md">{reference}</code></h3>
+          <span className="text-sm text-muted">{line} · opened <RelativeTime iso={openedAt} now={now} />{parties ? ` · ${parties.buyer} and ${parties.seller}` : ''}</span>
         </div>
-        <Stamp tone={caseLook[status].tone}>{caseLook[status].label}</Stamp>
+        <Stamp tone={look.tone}>{look.label}</Stamp>
       </div>
       <Thread label="Case progress" steps={steps} />
       <div className="flex flex-col gap-1"><span className="caps text-muted">Buyer&apos;s claim</span><p className="text-md whitespace-pre-line">{reason}</p></div>
       <div className="flex flex-col gap-2">
         <span className="caps text-muted">Evidence ({evidence.length})</span>
-        {evidence.length ? <ul className="flex flex-col gap-1.5">{evidence.map(f => <li key={f.name}><FileView field={{ name: 'evidence', type: 'file', widget: 'file' }} value={f} /></li>)}</ul>
-          : <p className="flex items-center gap-1.5 text-md text-muted"><Icon icon={FileText} />No evidence attached yet.</p>}
-        {status === 'evidence_requested' ? <p className="text-sm font-medium text-tone-warning">The seller asked for photos of the damaged bales. The case pauses until they arrive.</p> : null}
+        {evidence.length ? (
+          <ul className="flex flex-col divide-y divide-border border-y border-border">
+            {evidence.map((f, i) => (
+              <li key={`${f.name}-${i}`} className="flex flex-col gap-1 py-2">
+                <FileView field={{ name: 'evidence', type: 'file', widget: 'file' }} value={f} />
+                {f.note || f.side ? <span className="text-sm text-muted">{f.side ? (f.side === 'buyer' ? 'From the buyer' : 'From the seller') : ''}{f.addedAt ? <>, <RelativeTime iso={f.addedAt} now={now} /></> : null}{f.note ? `: ${f.note}` : ''}</span> : null}
+              </li>
+            ))}
+          </ul>
+        ) : <p className="flex items-center gap-1.5 text-md text-muted"><Icon icon={FileText} />No evidence attached yet.</p>}
+        {status === 'evidence_requested' ? <p className="text-sm font-medium text-tone-warning">The seller asked: {evidenceNote || 'more evidence'}. The case waits until it is added.</p> : null}
       </div>
-      {canDecide && (status === 'reviewing' || status === 'open') ? (
-        <form className="flex flex-col gap-3 border-t border-border pt-4" onSubmit={e => e.preventDefault()}>
-          {decisionFields.map(f => <FieldInput key={f.name} field={f} value={values[f.name]} onChange={v => setValues(s => ({ ...s, [f.name]: v }))} />)}
-          <div className="flex flex-wrap gap-2"><Button type="submit" variant="primary">Record decision</Button><Button variant="secondary">Request more evidence</Button></div>
-          <p className="text-sm text-muted">Refunds are issued separately by finance through SellaPay and appear in this case&apos;s history.</p>
-        </form>
-      ) : null}
+      {decision ? (
+        <div className="flex flex-col gap-2 border-t border-border pt-4">
+          <span className="caps text-muted">Decision</span>
+          <p className="font-display text-xl font-bold">{decision.label}{decision.approvedQuantity ? `: ${decision.approvedQuantity} ${decision.unit ?? ''}`.trimEnd() : ''}</p>
+          {decision.notes ? <p className="text-md whitespace-pre-line">{decision.notes}</p> : null}
+          <dl className="grid grid-cols-[8rem_minmax(0,1fr)] gap-x-3 gap-y-1 text-md">
+            {decision.refund && Number(decision.refund) > 0 ? <><dt className="text-muted">Refund</dt><dd className="tabular">{formatMoney(decision.refund)}{decision.refunded && Number(decision.refunded) >= Number(decision.refund) ? ', returned to the M-Pesa number that paid' : ', due'}</dd></> : null}
+            {decision.disposition ? <><dt className="text-muted">Returned stock</dt><dd>{decision.disposition}</dd></> : null}
+            {decision.decidedAt ? <><dt className="text-muted">Decided</dt><dd><RelativeTime iso={decision.decidedAt} now={now} /></dd></> : null}
+          </dl>
+        </div>
+      ) : windowCloses && windowOpen && !closed ? <p className="text-sm text-muted">Claims on this order are accepted until {formatDay(windowCloses)}.</p> : null}
+      {actions ? <div className="border-t border-border pt-4">{actions}</div> : null}
     </section>
   )
 }

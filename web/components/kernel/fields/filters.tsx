@@ -1,11 +1,13 @@
 'use client'
 
 import { Search } from 'lucide-react'
+import { useState } from 'react'
 import { Checkbox, Segmented } from '@/components/ui/choice'
 import { Combobox } from '@/components/ui/combobox'
 import { DatePicker } from '@/components/ui/calendar'
 import { Icon } from '@/components/ui/icon'
 import { Input } from '@/components/ui/input'
+import { RangeSlider } from '@/components/ui/progress'
 import { KENYA_COUNTIES } from '@/lib/kenya'
 import { asString, asStringList, type FilterProps, type FilterValue } from './types'
 
@@ -62,8 +64,12 @@ export function BooleanFilter({ field, value, onChange }: FilterProps) {
   )
 }
 
-/** Min/max for money, quantities and numbers (`range`). Flags a minimum above the maximum. */
-export function RangeFilter({ field, value, onChange }: FilterProps) {
+/**
+ * Min/max for money, quantities and numbers (`range`). Flags a minimum above the maximum. With `bounds` (the
+ * lowest and highest value in the current results) a two-thumb slider sits above the inputs; it applies the
+ * range when released, so dragging does not reload the list at every step.
+ */
+export function RangeFilter({ field, value, onChange, bounds }: FilterProps) {
   const r = asRange(value)
   const set = (patch: Range) => {
     const next = { ...r, ...patch }
@@ -71,8 +77,22 @@ export function RangeFilter({ field, value, onChange }: FilterProps) {
   }
   const prefix = field.widget === 'currency' ? (field.currency ?? 'KES') : undefined
   const suffix = field.widget === 'quantity' ? field.unit : undefined
+  const low = bounds?.min != null ? Math.floor(Number(bounds.min)) : NaN
+  const high = bounds?.max != null ? Math.ceil(Number(bounds.max)) : NaN
+  const sliding = Number.isFinite(low) && Number.isFinite(high) && high > low
+  const committed: [number, number] = [r.min ? Math.max(low, Number(r.min)) : low, r.max ? Math.min(high, Number(r.max)) : high]
+  const [drag, setDrag] = useState<[number, number] | null>(null)
+  const format = (n: number) => (prefix ? `${prefix} ${n.toLocaleString('en-KE')}` : `${n.toLocaleString('en-KE')}${suffix ? ` ${suffix}` : ''}`)
+  const commit = ([a, b]: [number, number]) => {
+    setDrag(null)
+    set({ min: a > low ? String(a) : '', max: b < high ? String(b) : '' })
+  }
   return (
     <div className="flex flex-col gap-1.5">
+      {sliding ? (
+        <RangeSlider min={low} max={high} step={Math.max(1, Math.round((high - low) / 100))} value={drag ?? committed} onValueChange={setDrag} onValueCommit={commit}
+          label={field.label ?? 'Range'} formatValue={format} />
+      ) : null}
       <div className="grid grid-cols-2 gap-2">
         <Input aria-label={`Minimum ${field.label ?? ''}`} inputMode="decimal" placeholder="Min" prefix={prefix} suffix={suffix} value={r.min ?? ''} onChange={e => set({ min: e.target.value.replace(/[^\d.]/g, '') })} aria-invalid={rangeInvalid(r) || undefined} />
         <Input aria-label={`Maximum ${field.label ?? ''}`} inputMode="decimal" placeholder="Max" prefix={prefix} suffix={suffix} value={r.max ?? ''} onChange={e => set({ max: e.target.value.replace(/[^\d.]/g, '') })} aria-invalid={rangeInvalid(r) || undefined} />

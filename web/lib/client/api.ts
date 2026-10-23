@@ -25,12 +25,24 @@ function csrfToken(): string {
   return document.cookie.split('; ').find(c => c.startsWith('csrftoken='))?.slice('csrftoken='.length) ?? ''
 }
 
+/**
+ * `GET session` sets the CSRF cookie. A page that writes before anything has read the session (sign-in
+ * opened directly, for one) reads it first, so the first write of a visit is not refused.
+ */
+async function ensureCsrf(signal?: AbortSignal) {
+  if (csrfToken()) return
+  await fetch(`${API_BASE}session`, { credentials: 'same-origin', headers: { Accept: 'application/json' }, signal }).catch(() => undefined)
+}
+
 type Options = { method?: 'GET' | 'POST' | 'PATCH' | 'DELETE'; body?: unknown; signal?: AbortSignal }
 
 export async function api<T>(path: string, { method = 'GET', body, signal }: Options = {}): Promise<T> {
   const form = typeof FormData !== 'undefined' && body instanceof FormData
   const headers: Record<string, string> = { Accept: 'application/json' }
-  if (method !== 'GET') headers['X-CSRFToken'] = decodeURIComponent(csrfToken())
+  if (method !== 'GET') {
+    await ensureCsrf(signal)
+    headers['X-CSRFToken'] = decodeURIComponent(csrfToken())
+  }
   if (body !== undefined && !form) headers['Content-Type'] = 'application/json'
   const res = await fetch(`${API_BASE}${path.replace(/^\//, '')}`, {
     method, signal, credentials: 'same-origin', headers,

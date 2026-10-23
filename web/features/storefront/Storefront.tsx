@@ -8,12 +8,12 @@ import type { Route } from 'next'
 import Link from 'next/link'
 import type { ReactNode } from 'react'
 import { AddToCart, BuyBox } from '@/components/commerce/buy'
-import { CategoryHero } from '@/components/commerce/catalog'
+import { CategoryHero, FacetFilterPanel } from '@/components/commerce/catalog'
 import { CompareToggle } from '@/components/commerce/compare'
 import { ProductGallery, type GalleryImage } from '@/components/commerce/gallery'
 import { stockFrom } from '@/components/commerce/types'
 import { Projection } from '@/components/kernel/Projection'
-import { UrlFilters, UrlPageSize, UrlPager, UrlSort } from '@/components/kernel/blocks/UrlListControls'
+import { UrlPageSize, UrlPager, UrlSort } from '@/components/kernel/blocks/UrlListControls'
 import { EmptyState } from '@/components/kernel/feedback/EmptyState'
 import { RichTextView } from '@/components/kernel/fields/views'
 import { Breadcrumbs } from '@/components/kernel/nav/Breadcrumbs'
@@ -97,12 +97,10 @@ export function ProductListing({ meta, fields, page, options, clearHref }: {
   options?: Record<string, readonly ComboOption[]>
   clearHref: Route
 }) {
-  const counts = page.facets?.counts
-  const allOptions = { seller: page.facets?.options.seller ?? [], ...options }
-  const filters = (layout: 'expanded' | 'sheet') => <UrlFilters meta={meta} fields={fields} counts={counts} options={allOptions} layout={layout} />
+  const filters = (layout: 'sidebar' | 'sheet') => <FacetFilterPanel meta={meta} fields={fields} facets={page.facets} options={options} layout={layout} />
   return (
     <div className="grid grid-cols-1 gap-8 @5xl:grid-cols-[16.5rem_minmax(0,1fr)] @5xl:gap-12">
-      <div className="hidden @5xl:block">{filters('expanded')}</div>
+      <div className="hidden @5xl:block">{filters('sidebar')}</div>
       <section aria-label="Products" className="flex min-w-0 flex-col gap-5">
         <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3 border-b border-foreground pb-3">
           <p className="text-md" aria-live="polite"><b className="font-semibold tabular">{page.total.toLocaleString('en-KE')}{page.totalCapped ? '+' : ''}</b> {page.total === 1 ? 'product' : 'products'}</p>

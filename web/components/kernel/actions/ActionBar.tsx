@@ -12,6 +12,7 @@ import type { Density } from '@/lib/design/tokens.generated'
 import { ConfirmAction } from './ConfirmAction'
 import { iconFor } from './icons'
 import { resolveActions, variantForTone } from './model'
+import { displayOf } from '@/lib/contract/display'
 
 /**
  * Run a command that has no dialog of its own; a failure is reported as a toast with the API's message
@@ -27,7 +28,7 @@ function useDirectRun(onRun: RunAction, record: Rec) {
   }
 }
 
-export type RunAction = (action: ActionMeta, record: Rec, input?: Record<string, unknown>) => Promise<void> | void
+export type RunAction = (action: ActionMeta, record: Rec, input?: Record<string, unknown>) => Promise<unknown> | void
 
 type Props = {
   meta: ModelMeta
@@ -51,7 +52,7 @@ export function ActionBar({ meta, record, onRun, density = 'comfortable', pendin
   const overflow = states.slice(inline)
   const buttonSize = size ?? (density === 'compact' ? 'sm' : 'md')
   return (
-    <Cluster gap="sm" role="group" aria-label={`Actions for ${String(record[meta.displayField ?? 'id'] || meta.label)}`}>
+    <Cluster gap="sm" role="group" aria-label={`Actions for ${displayOf(meta, record)}`}>
       {shown.map(({ action, available, reason }) => {
         const button = (
           <Button
@@ -97,7 +98,7 @@ export function ActionMenu({ meta, record, onRun, actions, density = 'comfortabl
   const triggerRef = useRef<HTMLButtonElement>(null)
   const states = actions ? resolveActions({ ...meta, actions }, record) : resolveActions(meta, record)
   if (!states.length) return null // no permitted commands: no trigger (the API refuses them anyway)
-  const subject = String(record[meta.displayField ?? 'id'] || meta.label)
+  const subject = displayOf(meta, record)
   const safe = states.filter(s => s.action.tone !== 'danger')
   const danger = states.filter(s => s.action.tone === 'danger')
   const item = ({ action, available, reason }: (typeof states)[number]) => (

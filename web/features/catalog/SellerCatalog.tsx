@@ -16,10 +16,11 @@ import { useEffect, useState } from 'react'
 import { CategoryDetailsForm, MediaManager, ProductEditorBlock, VariantMatrixEditor, type DetailsOutcome, type MediaItem, type ProductStatus, type VariantErrors, type VariantRow } from '@/components/commerce/catalog'
 import { PriceBookEditor, type PriceRule } from '@/components/commerce/pricing'
 import { ActionBar } from '@/components/kernel/actions/ActionBar'
+import { BulkActions } from '@/components/kernel/actions/BulkActions'
 import { ConfirmAction } from '@/components/kernel/actions/ConfirmAction'
 import { HeaderBlock } from '@/components/kernel/blocks/HeaderBlock'
 import { ListBlock } from '@/components/kernel/blocks/ListBlock'
-import { ErrorState } from '@/components/kernel/feedback/ErrorState'
+import { ErrorState, errorFrom } from '@/components/kernel/feedback/ErrorState'
 import { LoadingState } from '@/components/kernel/feedback/LoadingState'
 import { unitLabel } from '@/components/kernel/fields/types'
 import { ProjectedForm } from '@/components/kernel/forms/ProjectedForm'
@@ -28,10 +29,10 @@ import { Button, buttonStyles } from '@/components/ui/button'
 import { useToast } from '@/components/ui/toast'
 import { ApiError, api, attempt } from '@/lib/client/api'
 import type { CatalogProductRecord, CategoryContractRecord, MediaAssetRecord } from '@/lib/client/records'
-import { useCommand, useList, useRecord, useRefresh, useSave, useSource } from '@/lib/client/resources'
+import { useBulkCommand, useCommand, useList, useRecord, useRefresh, useSave, useSource } from '@/lib/client/resources'
 import { may, useSession } from '@/lib/client/session'
-import { CatalogProductMeta, CategoryContractMeta, MediaAssetMeta, PriceRuleMeta, VariantMeta, uploads } from '@/lib/contract/generated'
-import type { ActionMeta, AppError } from '@/lib/contract/types'
+import { CatalogProductMeta, CategoryContractMeta, MediaAssetMeta, PriceRuleMeta, VariantMeta, limits, uploads } from '@/lib/contract/generated'
+import type { ActionMeta, AppError, Rec } from '@/lib/contract/types'
 import { formatMoney } from '@/lib/money'
 
 const CREATE_FIELDS = ['name', 'category_contract', 'brand', 'short_description'] as const
@@ -39,16 +40,30 @@ const EDIT_FIELDS = ['name', 'brand', 'short_description', 'description', 'slug'
 const failed: AppError = { code: 'UNAVAILABLE', detail: 'It was not saved. Try again in a moment.', fields: {}, retryable: true }
 const errorOf = (err: unknown): AppError => (err instanceof ApiError ? err.error : failed)
 
+// Commands that need no input can run over a selection (publish, take off sale, archive, restore).
+const BULK = (CatalogProductMeta.actions as readonly ActionMeta[]).filter(a => !a.input?.length)
+
 export function SellerProducts() {
   const source = useSource(CatalogProductMeta)
   const command = useCommand(CatalogProductMeta)
+  const bulk = useBulkCommand(CatalogProductMeta)
   const { data: session } = useSession()
+  const [chosen, setChosen] = useState<Map<string, Rec>>(new Map())
+  const select = (ids: string[], rows: Rec[]) => setChosen(prev => new Map(ids.map(id => [id, rows.find(r => r.id === id) ?? prev.get(id)!] as const).filter(([, r]) => r)))
+  const rows = [...chosen.values()]
+  // Offer what at least one selected product allows; the others are reported as not changed.
+  const offered = BULK.filter(a => rows.some(r => (r._can ?? []).includes(a.name)))
+  const clear = () => { setChosen(new Map()); bulk.reset() }
   return (
     <>
       <HeaderBlock level={1} source="meta" meta={CatalogProductMeta} title="Products"
         description="Everything you sell, drafts included. Filter by status or category; open a product to edit its details, packs and prices."
         actions={may(session, 'catalog_product.create') ? <Link href={'/sell/products/new' as Route} className={buttonStyles({ variant: 'primary' })}>New product</Link> : null} />
+      <BulkActions selected={chosen.size} max={limits.maxBulk} noun={{ one: 'product', other: 'products' }} actions={offered} state={bulk.progress}
+        onRun={a => void bulk.run(a, rows)} onClear={clear}
+        impact={a => `${rows.filter(r => (r._can ?? []).includes(a.name)).length} of ${rows.length} selected can be changed now; the rest stay as they are.`} />
       <ListBlock meta={CatalogProductMeta} records={[]} query="server" source={source} onRun={command.run} href={r => `/sell/products/${r.id}`}
+        selectable selected={[...chosen.keys()]} onSelectedChange={select}
         empty={{ kind: 'no-data', title: 'No products yet', description: 'Create your first product: a name and a category are enough to start a draft.' }} />
     </>
   )
@@ -90,7 +105,7 @@ const rowOf = (v: CatalogProductRecord['variants'][number]): VariantRow => ({
 const bodyOf = (r: VariantRow, product: string) => ({
   ...(r.isNew ? { product, sku: r.sku.trim() } : {}),
   attributes: r.attributes, packaging_unit: r.packagingUnit, units_per_pack: r.unitsPerPack, minimum_order_quantity: Number(r.moq),
-  unit_price: r.price, stock_on_hand: r.stock ? Number(r.stock) : null, is_active: r.active,
+  unit_price: r.price, is_active: r.active,
 })
 
 export function ProductEditor({ id }: { id: string }) {
@@ -101,7 +116,7 @@ export function ProductEditor({ id }: { id: string }) {
   const [savingDetails, setSavingDetails] = useState(false)
   const [savingVariants, setSavingVariants] = useState(false)
   if (record.isPending) return <LoadingState variant="skeleton" shape="detail" label="Loading the product" />
-  if (record.isError || !record.data) return <ErrorState kind="retryable" title="The product did not load" onRetry={() => void record.refetch()} />
+  if (record.isError || !record.data) return <ErrorState {...errorFrom(record.error)} title="The product did not load" onRetry={() => void record.refetch()} />
   const p = record.data
   // A newer published version is what the next save checks against, so its fields are the ones to fill.
   const contract = p.newer_contract ?? p.contract
@@ -147,7 +162,7 @@ export function ProductEditor({ id }: { id: string }) {
         <CategoryDetailsForm key={`${contract.id}-${p.updated_at as string}`} fields={contract.attributes} values={p.attributes} guidance={contract.seller_guidance}
           onSave={editable ? saveDetails : undefined} saving={savingDetails} />
       </ProductEditorBlock>
-      <PageSection title="Packs and prices" description={`What buyers order. ${p.category.label} is sold by the ${contract.sale_units.map(u => u.label.toLowerCase()).join(', ')}; prices are per pack in KES.`}>
+      <PageSection title="Packs and prices" description={`What buyers order. ${p.category.label} is sold by the ${contract.sale_units.map(u => u.label.toLowerCase()).join(', ')}; prices are per pack in KES. Stock is received and counted on the Stock page.`}>
         <VariantMatrixEditor key={p.variants.map(v => `${v.id}:${v.unit_price}:${v.moq}:${v.is_active}:${v.stock.available}`).join('|')}
           attributes={contract.variant_attributes.map(f => ({ key: f.name, label: f.label ?? f.name, options: f.choices ?? [] }))}
           units={contract.sale_units} rows={p.variants.map(rowOf)} onSave={editable ? saveVariants : undefined} saving={savingVariants} />

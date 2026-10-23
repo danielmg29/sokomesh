@@ -139,7 +139,8 @@ function Related() {
     <Plates cols={2}>
       <Plate label="row · compact"><RelatedBlock title="Other products from Mwangaza" meta={productMeta} records={[products[4]!, products[0]!]} viewAllHref="#" now={DEMO_NOW} /></Plate>
       <Plate label="card"><RelatedBlock title="Frequently ordered together" meta={productMeta} records={[products[5]!, products[6]!]} intent="card" density="compact" now={DEMO_NOW} /></Plate>
-      <Plate label="empty" span><RelatedBlock title="Variants" meta={productMeta} records={[]} empty="This product has a single variant" /></Plate>
+      <Plate label="empty"><RelatedBlock title="Variants" meta={productMeta} records={[]} empty="This product has a single variant" /></Plate>
+      <Plate label="loading: rows reserved, no count"><RelatedBlock title="Pick lists" meta={productMeta} records={[]} loading viewAllHref="#" /></Plate>
     </Plates>
   )
 }

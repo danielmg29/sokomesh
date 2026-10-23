@@ -72,10 +72,11 @@ function useListUrl(meta: ModelMeta) {
  * written to the URL. `fields` orders and limits them; counts and relation options come from the page the
  * server just returned.
  */
-export function UrlFilters({ meta, fields, counts, options, layout = 'expanded', className }: {
+export function UrlFilters({ meta, fields, counts, bounds, options, layout = 'expanded', className }: {
   meta: ModelMeta
   fields?: readonly string[]
   counts?: Record<string, Record<string, number>>
+  bounds?: Record<string, { min: string | null; max: string | null } | undefined>
   options?: Record<string, readonly ComboOption[]>
   layout?: 'expanded' | 'collapsed' | 'sheet'
   className?: string
@@ -96,7 +97,7 @@ export function UrlFilters({ meta, fields, counts, options, layout = 'expanded',
   }
   return (
     <FiltersBlock meta={meta} fields={fields} values={state.filters} onChange={filters => write({ filters })} search={q} onSearchChange={search}
-      layout={layout} counts={counts} options={options} className={cn('motion-reveal transition-opacity', pending && 'opacity-70', className)} />
+      layout={layout} counts={counts} bounds={bounds} options={options} className={cn('motion-reveal transition-opacity', pending && 'opacity-70', className)} />
   )
 }
 

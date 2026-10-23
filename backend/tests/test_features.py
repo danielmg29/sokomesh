@@ -342,12 +342,12 @@ def test_documents_are_private_to_their_organization(world):
     assert Client().get(url).status_code == 404
     fake = SimpleUploadedFile("tax.pdf", b"MZ\x90\x00 not a pdf", "application/pdf")
     assert signed_in(world["manager"]).post(f"{API}files", {"file": fake, "kind": "document"}).status_code == 422
-    assert (
-        signed_in(world["owner"])
-        .post(f"{API}files", {"file": SimpleUploadedFile("a.pdf", demo_pdf("x"), "application/pdf")})
-        .status_code
-        == 403
+    # Buyers upload return evidence (SM-F-18); their files are private to their organization too.
+    mine = signed_in(world["owner"]).post(
+        f"{API}files", {"file": SimpleUploadedFile("a.pdf", demo_pdf("x"), "application/pdf")}
     )
+    assert mine.status_code == 201
+    assert signed_in(world["manager"]).get(mine.json()["url"]).status_code == 404
 
 
 def test_document_review_by_administrators(world):
@@ -601,3 +601,5 @@ def test_navigation_is_decided_by_the_server(world):
     assert "admin-sellers" in keys(world["admin"]) and "sell" not in keys(world["admin"])
     assert "sell" in keys(world["manager"]) and "admin-sellers" not in keys(world["manager"])
     assert "catalogue" in keys(world["purchaser"]) and "sell" not in keys(world["purchaser"])
+    # Everyone with an organization (and every administrator) starts from their home page.
+    assert all(keys(world[who])[0] == "home" for who in ("admin", "manager", "purchaser"))

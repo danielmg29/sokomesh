@@ -9,6 +9,7 @@ never write a bespoke list or detail view.
 
 from __future__ import annotations
 
+import contextlib
 import datetime as dt
 import re
 import uuid
@@ -59,6 +60,8 @@ class Field:
     max_items: int | None = None  # list values (multiselect, image galleries): the most entries allowed
     # A command's input only (a reason, a carrier reference): described for forms, never part of a record.
     input_only: bool = False
+    # What a new record starts with, so forms open on the model's own default (constants only).
+    default: bool | int | str | None = None
 
     def meta(self) -> dict[str, Any]:
         out: dict[str, Any] = {"name": self.name, "type": self.type, "widget": self.widget}
@@ -87,6 +90,8 @@ class Field:
             out["readOnly"] = True
         if self.input_only:
             out["inputOnly"] = True
+        if self.default is not None:
+            out["default"] = self.default
         return out
 
 
@@ -139,7 +144,13 @@ def derive(model: type[models.Model], name: str, **overrides: Any) -> Field:
         max_length=max_length,
         **extra,
     )
-    return replace(base, **overrides)
+    field = replace(base, **overrides)
+    if field.read_only or "default" in overrides or not has_default:
+        return field
+    # Publish plain constant defaults only: never a callable (now, a new id) or an empty value.
+    value = f.get_default()
+    plain = isinstance(value, bool | int | str) and not callable(f.default) and value != ""
+    return replace(field, default=value) if plain else field
 
 
 # --- actions and resources --------------------------------------------------------------------
@@ -359,7 +370,12 @@ class Resource:
             fail(ErrorCode.CONFLICT, "This record is not in a state that allows that.")
         with transaction.atomic():
             result = action.handler(request, obj, body(request))
-        return result if result is not None else self.serialize(obj, request)
+        if result is not None:
+            return result
+        # Handlers often change a locked copy of the record: answer with what is stored now.
+        with contextlib.suppress(ObjectDoesNotExist):
+            obj.refresh_from_db()
+        return self.serialize(obj, request)
 
     def find(self, request: HttpRequest, ref: str) -> Any:
         try:

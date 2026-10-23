@@ -53,8 +53,4 @@ export function CommandItem({ className, ...props }: ComponentProps<typeof Comma
   )
 }
 
-export function CommandSeparator() {
-  return <CommandPrimitive.Separator className="my-1 h-px bg-border" />
-}
-
 export const CommandLoading = CommandPrimitive.Loading

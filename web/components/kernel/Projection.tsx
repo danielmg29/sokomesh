@@ -1,3 +1,5 @@
+import type { Route } from 'next'
+import Link from 'next/link'
 import type { ReactNode } from 'react'
 import { cn } from '@/lib/cn'
 import type { ModelMeta, Rec } from '@/lib/contract/types'
@@ -28,11 +30,18 @@ type Props = {
 const fieldCtx = (density: CardVariants['density'], intent: CardVariants['intent']): FieldContext =>
   intent === 'row' || intent === 'audit' || density === 'compact' ? 'compact' : density
 
+/** The title's words: a relation reads as its label (the record's own name), never as an object. */
+const titleText = (slot?: Filled): string | null => {
+  const v = slot?.value
+  const s = v && typeof v === 'object' && 'label' in v ? (v as { label: unknown }).label : v
+  return s == null || s === '' ? null : String(s)
+}
+
 function Title({ slot, href, as: As = 'h3', className }: { slot?: Filled; href?: string; as?: 'h3' | 'p' | 'span'; className?: string }) {
-  const text = slot?.value != null && slot.value !== '' ? String(slot.value) : <Empty />
+  const text = titleText(slot) ?? <Empty />
   return (
     <As className={cn('min-w-0 font-semibold text-foreground', className)}>
-      {href ? <a href={href} className="after:absolute after:inset-0 hover:underline focus-visible:outline-none">{text}</a> : text}
+      {href ? <Link href={href as Route} className="after:absolute after:inset-0 hover:underline focus-visible:outline-none">{text}</Link> : text}
     </As>
   )
 }
@@ -98,7 +107,7 @@ export function Projection({ meta, record, context, override, pref, onRun, pendi
   if (intent === 'row') {
     return (
       <article className={root}>
-        <div className="flex min-w-0 items-center gap-3">
+        <div className="flex min-w-0 flex-1 basis-56 items-center gap-3">
           {slots.media ? <FieldView field={slots.media.field} value={slots.media.value} context="compact" /> : null}
           <div className="flex min-w-0 flex-col gap-0.5">
             <div className="flex min-w-0 flex-wrap items-center gap-2"><Title slot={slots.title} href={href} as="p" className="truncate" />{badge}</div>
@@ -106,12 +115,12 @@ export function Projection({ meta, record, context, override, pref, onRun, pendi
             <MetaList items={slots.meta} ctx="compact" now={now} layout="inline" />
           </div>
         </div>
-        <div className="relative z-10 flex items-center gap-4">
+        <div className="relative z-10 ml-auto flex items-center gap-4">
           <Figure slot={slots.figure} size="md" align="end" />
           {timestamp}
           {actions ? <ActionMenu meta={meta} record={record} onRun={onRun} density={density} /> : null}
         </div>
-        {extra ? <div className="col-span-2">{extra}</div> : null}
+        {extra ? <div className="basis-full">{extra}</div> : null}
       </article>
     )
   }
@@ -147,7 +156,7 @@ export function Projection({ meta, record, context, override, pref, onRun, pendi
 
   if (intent === 'detail') {
     return (
-      <section className={cn(root, '@container')} aria-label={String(slots.title?.value ?? meta.label)}>
+      <section className={cn(root, '@container')} aria-label={titleText(slots.title) ?? meta.label}>
         <header className="flex flex-wrap items-start justify-between gap-3">
           <div className="flex min-w-0 flex-col gap-1.5">
             <div className="flex flex-wrap items-center gap-2.5"><Title slot={slots.title} as="h3" className="font-display text-2xl font-bold" />{badge}</div>

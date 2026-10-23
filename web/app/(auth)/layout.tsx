@@ -14,7 +14,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
     <div className="grid min-h-dvh grid-cols-1 bg-background lg:grid-cols-[minmax(0,1fr)_minmax(0,0.9fr)]">
       <div className="flex flex-col gap-10 px-4 py-6 sm:px-10 lg:px-16 lg:py-10">
         <Link href="/" aria-label="SokoMesh home" className="-m-3 self-start"><BrandLogo variant="lockup" width={264} preload /></Link>
-        <main className="flex w-full max-w-[34rem] flex-1 flex-col justify-center gap-8 self-center lg:self-start">{children}</main>
+        <main id="main" className="flex w-full max-w-[34rem] flex-1 flex-col justify-center gap-8 self-center lg:self-start">{children}</main>
         <p className="text-sm text-muted">Prices in KES, times in East Africa Time. A portfolio concept with demo data.</p>
       </div>
       <aside aria-hidden="true" className="on-chrome relative isolate hidden overflow-hidden bg-chrome lg:block">

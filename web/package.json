@@ -13,6 +13,7 @@
     "typecheck": "next typegen && tsc --noEmit",
     "test": "vitest run",
     "e2e": "playwright test",
+    "screenshots": "tsx tools/screenshots.mts",
     "verify": "pnpm gen && git diff --exit-code -- lib/contract/generated.ts lib/design/tokens.generated.ts app/tokens.generated.css && pnpm typecheck && pnpm lint && pnpm test"
   },
   "dependencies": {

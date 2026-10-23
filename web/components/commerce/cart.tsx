@@ -283,11 +283,12 @@ export type ApprovalStep = { level: number; role: string; approver?: string; dec
 
 /**
  * Buyer purchase approval (SM-F-12): the API also refuses orders that skip it. `waiting` tells someone who
- * cannot decide who can; `commentField` is the decision comment from the contract when the page has it.
+ * cannot decide who can; `note` says why an order needed none; `commentField` is the decision comment from
+ * the contract when the page has it.
  */
-export function ApprovalFlowBlock({ state, policyName, threshold, orderTotal, steps, canDecide, onDecide, waiting, commentField: given, pending = null }: {
+export function ApprovalFlowBlock({ state, policyName, threshold, orderTotal, steps, canDecide, onDecide, waiting, note, commentField: given, pending = null }: {
   state: 'not-required' | 'pending' | 'approved' | 'rejected'; policyName: string; threshold: Money; orderTotal: Money; steps: readonly ApprovalStep[]; canDecide?: boolean
-  onDecide?: (decision: 'approved' | 'rejected', comment: string) => void; waiting?: string; commentField?: FieldMeta; pending?: 'approved' | 'rejected' | null
+  onDecide?: (decision: 'approved' | 'rejected', comment: string) => void; waiting?: string; note?: string; commentField?: FieldMeta; pending?: 'approved' | 'rejected' | null
 }) {
   const [comment, setComment] = useState('')
   const look: Record<typeof state, { tone: Tone; label: string }> = {
@@ -307,6 +308,7 @@ export function ApprovalFlowBlock({ state, policyName, threshold, orderTotal, st
         <Stamp tone={look[state].tone} condition={state === 'pending' ? 'pending' : undefined}>{look[state].label}</Stamp>
       </div>
       <p className="text-md text-muted">{policyName}: orders of {formatMoney(threshold)} or more need approval. This order is {formatMoney(orderTotal)}.</p>
+      {note ? <p className="text-md">{note}</p> : null}
       {state !== 'not-required' ? <Thread orientation="vertical" label="Approval steps" steps={thread} /> : null}
       {state === 'pending' && canDecide ? (
         <div className="flex flex-col gap-3 border-t border-border pt-4">

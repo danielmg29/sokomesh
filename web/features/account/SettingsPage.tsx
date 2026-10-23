@@ -6,7 +6,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState, type FormEvent } from 'react'
 import { NotificationPreferencesBlock, type NotificationChannel, type NotificationEvent, type NotificationPreference } from '@/components/commerce/notifications'
-import { ErrorState } from '@/components/kernel/feedback/ErrorState'
+import { ErrorState, errorFrom } from '@/components/kernel/feedback/ErrorState'
 import { LoadingState } from '@/components/kernel/feedback/LoadingState'
 import { HeaderBlock } from '@/components/kernel/blocks/HeaderBlock'
 import { PageSection } from '@/components/layout/section'
@@ -38,7 +38,7 @@ function Notifications() {
   })
 
   if (list.isPending) return <LoadingState variant="skeleton" shape="list" rows={5} label="Loading notification settings" />
-  if (list.isError) return <ErrorState kind="retryable" title="Notification settings did not load" detail="Your current settings still apply." onRetry={() => void list.refetch()} size="inline" />
+  if (list.isError) return <ErrorState {...errorFrom(list.error)} title="Notification settings did not load" detail="Your current settings still apply." onRetry={() => void list.refetch()} size="inline" />
 
   const preferences: NotificationPreference[] = rows.map(r => ({ event: r.event_key, channel: r.channel, enabled: r.enabled }))
   const onChange = (p: NotificationPreference) => {

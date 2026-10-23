@@ -4,6 +4,7 @@ import { ArrowDown, ArrowUp, Copy, ImagePlus, LayoutGrid, Plus, Rows3, Trash2 } 
 import Image from 'next/image'
 import { useRef, useState, type ReactNode } from 'react'
 import { FiltersBlock, type FilterValues } from '@/components/kernel/blocks/FiltersBlock'
+import { UrlFilters } from '@/components/kernel/blocks/UrlListControls'
 import { EmptyState } from '@/components/kernel/feedback/EmptyState'
 import { FieldInput } from '@/components/kernel/fields/FieldInput'
 import { FileView, RichTextView } from '@/components/kernel/fields/views'
@@ -22,7 +23,7 @@ import { Thread, type ThreadStep } from '@/components/ui/thread'
 import { useTableQuery } from '@/lib/client/use-table-query'
 import { cn } from '@/lib/cn'
 import type { Accessors, FilterValue } from '@/lib/query'
-import type { FieldMeta, ModelMeta, Tone } from '@/lib/contract/types'
+import type { FieldMeta, ListFacets, ModelMeta, Tone } from '@/lib/contract/types'
 import { formatDate } from '@/lib/format'
 
 export type SellerStatus = 'draft' | 'under_review' | 'active' | 'rejected' | 'suspended'
@@ -237,7 +238,7 @@ export function CategoryDetailsForm({ fields, values: initial, guidance, onSave,
 
 export type VariantRow = {
   id: string; sku: string; attributes: Record<string, string>; packagingUnit: string; unitsPerPack: string; moq: string; active: boolean
-  /** Price per pack and packs in stock (empty: not tracked), as typed. */
+  /** Price per pack as typed; packs available (empty: not tracked), read from the stock ledger and never edited here. */
   price?: string; stock?: string
   /** Made here and not saved yet. */
   isNew?: boolean
@@ -286,7 +287,6 @@ export function VariantMatrixEditor({ attributes, units, rows: initialRows, layo
     : !isNumber(r.moq, true) || Number(r.moq) < 1 ? 'Minimum order must be at least 1'
     : !isNumber(r.unitsPerPack) || Number(r.unitsPerPack) <= 0 ? 'A pack holds at least one unit'
     : r.price !== undefined && (!isNumber(r.price) || Number(r.price) <= 0) ? 'Set a price above zero'
-    : r.stock && !isNumber(r.stock, true) ? 'Stock is a whole number of packs, or empty'
     : null
   // The API's answer for a row (after a save) shows until the row is edited again.
   const problem = (r: VariantRow) => clientProblem(r) ?? Object.values(server[r.id] ?? {})[0] ?? null
@@ -387,7 +387,7 @@ export function VariantMatrixEditor({ attributes, units, rows: initialRows, layo
                       <Td numeric><Input aria-label={`Minimum order for ${r.sku || 'new variant'}`} value={r.moq} onChange={e => update(r.id, { moq: e.target.value.replace(/\D/g, '') })} inputMode="numeric" aria-invalid={Boolean(p?.startsWith('Minimum')) || undefined} className="ml-auto h-8 w-20 text-right" /></Td>
                       {r.price !== undefined ? <>
                         <Td numeric><Input aria-label={`Price per pack for ${r.sku || 'new variant'}`} value={r.price} onChange={e => update(r.id, { price: e.target.value.replace(/[^\d.]/g, '') })} inputMode="decimal" className="ml-auto h-8 w-28 text-right tabular" /></Td>
-                        <Td numeric><Input aria-label={`Packs in stock for ${r.sku || 'new variant'}`} placeholder="Not tracked" value={r.stock ?? ''} onChange={e => update(r.id, { stock: e.target.value.replace(/\D/g, '') })} inputMode="numeric" className="ml-auto h-8 w-20 text-right tabular" /></Td>
+                        <Td numeric className="tabular">{r.stock ? r.stock : <span className="text-sm text-muted">Not tracked</span>}</Td>
                       </> : rows.some(x => x.price !== undefined) ? <><Td /><Td /></> : null}
                       <Td>{p ? <span className="text-sm font-medium text-tone-danger">{p}</span> : touched ? <Stamp tone="signal" size="sm">Changed</Stamp> : <Stamp tone="success" size="sm">OK</Stamp>}</Td>
                     </Tr>
@@ -498,22 +498,29 @@ export function MediaManager({ items: initial, layout: initialLayout = 'grid', m
 }
 
 /**
- * Configured FiltersBlock whose controls are derived from the active category contract's facets. Pass
- * `values` and `onChange` (and `onSearchChange`) so the page applies them to its listing as they change;
- * without them the panel keeps its own state, as a standalone preview.
+ * The storefront's filters (SM-F-08): the listing's filters and the active category contract's facets, with
+ * live counts per choice and a price slider over the current results (`facets` from the list answer). By
+ * default they read and write the URL, so every filtered page is server-rendered and shareable; pass
+ * `values` and `onChange` to drive a listing held in memory instead.
  */
-export function FacetFilterPanel({ meta, layout, counts, search, values, onChange, onSearchChange, options }: {
-  meta: ModelMeta; layout: 'sidebar' | 'sheet'; counts?: Record<string, Record<string, number>>; search?: string
-  values?: FilterValues; onChange?: (values: FilterValues) => void; onSearchChange?: (q: string) => void
+export function FacetFilterPanel({ meta, fields, layout, facets, counts, options, values, onChange, search, onSearchChange }: {
+  meta: ModelMeta; fields?: readonly string[]; layout: 'sidebar' | 'sheet'
+  /** The list answer's facets: counts, seller choices and the price range. */
+  facets?: ListFacets
+  counts?: Record<string, Record<string, number>>
   /** Choices for relation facets (sellers), keyed by field. */
   options?: Record<string, readonly ComboOption[]>
+  values?: FilterValues; onChange?: (values: FilterValues) => void; search?: string; onSearchChange?: (q: string) => void
 }) {
-  const [own, setOwn] = useState<FilterValues>({})
-  const [ownQ, setOwnQ] = useState(search ?? '')
-  return (
-    <FiltersBlock meta={meta} values={values ?? own} onChange={onChange ?? setOwn} search={onSearchChange ? search : ownQ} onSearchChange={onSearchChange ?? setOwnQ}
-      layout={layout === 'sidebar' ? 'expanded' : 'sheet'} counts={counts} options={options} />
-  )
+  const shared = {
+    meta, fields, layout: layout === 'sidebar' ? 'expanded' as const : 'sheet' as const,
+    counts: counts ?? facets?.counts,
+    // The API's price range is over `unit_price`, the listing's price filter.
+    bounds: facets?.price ? { unit_price: facets.price } : undefined,
+    options: { ...(facets?.options.seller ? { seller: facets.options.seller } : {}), ...options },
+  }
+  if (values && onChange) return <FiltersBlock {...shared} values={values} onChange={onChange} search={search} onSearchChange={onSearchChange} />
+  return <UrlFilters {...shared} />
 }
 
 type HeroScene = { src: string; alt: string; width: number; height: number; blurDataURL?: string }

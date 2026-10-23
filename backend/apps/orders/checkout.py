@@ -4,7 +4,8 @@ Checkout revalidates everything on the server: every line still on sale, minimum
 stock met, and every quoted price equal to the price resolved now (otherwise the buyer must accept the new
 prices first: repricing is never silent). It writes one order per seller with its terms copied, evaluates
 the approval policy against each order's own total, and converts the cart. An order needing approval
-waits in `pending_approval`; it cannot reach the seller any other way.
+waits in `pending_approval`; the others wait in `awaiting_payment` with their stock on hold (SM-F-13) until
+the buyer pays (SM-F-14). Only a confirmed payment submits an order to its seller.
 """
 
 from dataclasses import dataclass
@@ -22,6 +23,7 @@ from apps.catalog.pricing import resolve
 from apps.orders.lifecycle import buyer_link, members, person_name, record, seller_link, seller_name, tell
 from apps.orders.models import ApprovalPolicy, Order, OrderLine
 from apps.organizations.models import Address, Organization
+from apps.organizations.tenancy import held
 from core.api import fail, invalid
 from core.result import ErrorCode
 
@@ -57,6 +59,15 @@ def applicable_policy(buyer: Organization, total: Decimal) -> ApprovalPolicy | N
     )
 
 
+def exempt_role(policy: ApprovalPolicy, buyer: Organization, user: Any) -> str | None:
+    """The approver role that lets this person's own order skip `policy`, when the policy allows that."""
+    if not policy.exempt_approvers:
+        return None
+    roles = set(policy.approver_role_keys)
+    mine = (m for m in held(user) if m.organization_id == buyer.pk)  # pyright: ignore[reportAttributeAccessIssue]
+    return next((m.role_key for m in mine if m.role_key in roles), None)
+
+
 def address_snapshot(a: Address) -> dict[str, Any]:
     return {k: getattr(a, k, "") for k in ("label", "line1", "city", "region", "postal_code")}
 
@@ -90,11 +101,14 @@ def place(
     instructions: str,
     lines: list[LineTerms],
     quote: Any = None,
+    cart: Any = None,
 ) -> Order:
     user = request.user
     subtotal = sum((t.unit_price * t.quantity for t in lines), Decimal("0"))
     policy = applicable_policy(buyer, subtotal)
-    if policy is not None:
+    exempt = exempt_role(policy, buyer, user) if policy else None
+    waits = policy is not None and exempt is None
+    if policy is not None and waits:
         approvers = [u for u in members(buyer, tuple(policy.approver_role_keys)) if u.pk != user.pk]
         if len(approvers) < policy.minimum_approvals:
             fail(
@@ -111,7 +125,7 @@ def place(
         quote=quote,
         subtotal=subtotal,
         total=subtotal,
-        status=Order.Status.PENDING_APPROVAL if policy else Order.Status.SUBMITTED,
+        status=Order.Status.PENDING_APPROVAL if waits else Order.Status.AWAITING_PAYMENT,
         special_instructions=instructions[:1000],
         submitted_at=timezone.now(),
         approval_policy=policy,
@@ -121,6 +135,8 @@ def place(
             "currency": policy.currency,
             "roles": list(policy.approver_role_keys),
             "minimum": policy.minimum_approvals,
+            # Placed by an approver whose own orders skip this policy: kept, so the order says why.
+            **({"exempt": True, "placed_as": exempt} if exempt else {}),
         }
         if policy
         else {},
@@ -139,9 +155,11 @@ def place(
             line_total=t.unit_price * t.quantity,
             price_explanation=t.explanation[:160],
         )
-    # The order's first transition: placed, either awaiting approval or straight to the seller.
+    # The order's first transition: placed, either awaiting approval or awaiting payment with stock on hold.
     order.status, first = "", order.status
     record(order, first, user, "Placed from a quote" if quote else "Placed from the cart")
+    if first == Order.Status.AWAITING_PAYMENT:
+        hold(order, cart=cart)
     params = {
         "order": order.order_number,
         "buyer": buyer.name,
@@ -159,9 +177,15 @@ def place(
             link=buyer_link(order),
             skip=user,
         )
-    else:
-        notify_seller(order)
     return order
+
+
+def hold(order: Order, *, cart: Any = None) -> None:
+    """Hold the order's tracked packs until it is paid (all lines or none; see apps.inventory)."""
+    from apps.inventory.services import reserve
+
+    lines = [(line.variant, line.quantity_ordered) for line in order.lines.select_related("variant") if line.variant]  # pyright: ignore[reportAttributeAccessIssue]
+    reserve(order, lines, cart=cart, key=f"order:{order.pk}")
 
 
 def notify_seller(order: Order) -> None:
@@ -216,6 +240,7 @@ def checkout(request: HttpRequest, cart: Cart, address_value: Any, instructions:
             address=address,
             instructions=instructions,
             lines=terms,
+            cart=cart,
         )
         for seller_id, terms in groups.items()
     ]

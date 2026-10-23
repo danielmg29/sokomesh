@@ -16,23 +16,23 @@ import type { CartLine, SellerGroup } from '@/components/commerce/types'
 import { ActionBar } from '@/components/kernel/actions/ActionBar'
 import { HeaderBlock } from '@/components/kernel/blocks/HeaderBlock'
 import { EmptyState } from '@/components/kernel/feedback/EmptyState'
-import { ErrorState } from '@/components/kernel/feedback/ErrorState'
+import { ErrorState, errorFrom } from '@/components/kernel/feedback/ErrorState'
 import { LoadingState } from '@/components/kernel/feedback/LoadingState'
 import { Button, buttonStyles } from '@/components/ui/button'
 import { useToast } from '@/components/ui/toast'
 import { ApiError } from '@/lib/client/api'
 import type { CartLineRecord, CartRecord, QuoteRecord } from '@/lib/client/records'
 import { useCommand, useList, useSave } from '@/lib/client/resources'
-import { may, useSession } from '@/lib/client/session'
+import { policyFor, type PolicyLike } from '@/lib/client/approval'
+import { activeMembership, may, useSession } from '@/lib/client/session'
 import { AddressMeta, ApprovalPolicyMeta, CartLineMeta, CartMeta, QuoteMeta } from '@/lib/contract/generated'
 import type { ActionMeta, Rec } from '@/lib/contract/types'
-import { compareMoney } from '@/lib/money'
 
 const ACTIVE = 'status__in=active&page_size=1'
 const QUOTE_FIELDS = ['delivery_address', 'expires_at', 'buyer_notes']
 const quoteFields = QuoteMeta.fields.filter(f => QUOTE_FIELDS.includes(f.name))
 type AddressRecord = Rec & { label: string; line1: string; city: string }
-type PolicyRecord = Rec & { threshold_amount: string; is_active: boolean }
+type PolicyRecord = Rec & PolicyLike
 
 function lineOf(l: CartLineRecord): CartLine {
   return {
@@ -90,7 +90,7 @@ export function CartPage() {
   const toast = useToast()
   const [accepting, setAccepting] = useState(false)
   if (list.isPending) return <LoadingState variant="skeleton" shape="list" rows={4} label="Loading your cart" />
-  if (list.isError) return <ErrorState kind="retryable" title="Your cart did not load" onRetry={() => void list.refetch()} />
+  if (list.isError) return <ErrorState {...errorFrom(list.error)} title="Your cart did not load" onRetry={() => void list.refetch()} />
   const cart = list.data.results[0]
   const fail = (title: string) => (err: unknown) => {
     const e = err instanceof ApiError ? err.error : (err as { detail?: string; fields?: Record<string, string[]> } | null)
@@ -112,9 +112,10 @@ export function CartPage() {
   const groups: SellerGroup[] = cart.groups.map(g => ({ sellerId: g.seller.id, seller: g.seller.label, location: g.seller.city ?? 'Kenya', lines: g.lines.map(lineOf) }))
   const remove = CartLineMeta.actions.find(a => a.name === 'remove') as ActionMeta
   const accept = CartMeta.actions.find(a => a.name === 'accept_prices') as ActionMeta
-  // A mirror of the server's approval rule, for the banner only: the lowest active threshold a seller's part reaches.
-  const thresholds = (policies.data?.results ?? []).filter(p => p.is_active).map(p => p.threshold_amount).sort(compareMoney)
-  const reached = thresholds.find(t => groups.some(g => compareMoney(groupSubtotal(g), t) >= 0))
+  // A mirror of the server's approval rule, for the banner only (lib/client/approval.ts): a seller's part that
+  // would wait for approval, unless this person's role lets their own orders through.
+  const role = activeMembership(session)?.role_key
+  const reached = groups.map(g => policyFor(policies.data?.results ?? [], role, groupSubtotal(g))).find(Boolean)?.threshold_amount
   const state: CartState = cart.state === 'valid' && reached ? 'approval-needed' : cart.state
   const checkout = () => router.push('/checkout' as Route)
   const usable = addresses.data?.results ?? []

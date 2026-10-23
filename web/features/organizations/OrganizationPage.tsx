@@ -1,17 +1,18 @@
 'use client'
 
 // SM-F-01 organization management: the organization's details, its team (invitations, roles, suspension,
-// removal) and its addresses; for buyers, the purchase-approval policies (SM-F-12). Everything projects
+// removal) and its addresses; for buyers, the purchase-approval policies (SM-F-12); for owners and managers,
+// integrations (SM-F-23, ./IntegrationsTab). Everything projects
 // from the contract's models; which controls appear follows the role table, and the API decides every write.
 
 import type { Route } from 'next'
-import { Building2, MapPinPlus, ShieldCheck, UserPlus, Users } from 'lucide-react'
+import { Building2, MapPinPlus, PlugZap, ShieldCheck, UserPlus, Users } from 'lucide-react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { useMemo } from 'react'
 import { DetailBlock } from '@/components/kernel/blocks/DataBlocks'
 import { HeaderBlock } from '@/components/kernel/blocks/HeaderBlock'
 import { ListBlock } from '@/components/kernel/blocks/ListBlock'
-import { ErrorState } from '@/components/kernel/feedback/ErrorState'
+import { ErrorState, errorFrom } from '@/components/kernel/feedback/ErrorState'
 import { LoadingState } from '@/components/kernel/feedback/LoadingState'
 import { StatusBadge } from '@/components/kernel/feedback/StatusBadge'
 import { ProjectedForm } from '@/components/kernel/forms/ProjectedForm'
@@ -25,8 +26,9 @@ import { activeMembership, may, useSession, type SessionOrganization } from '@/l
 import { AddressMeta, ApprovalPolicyMeta, MembershipMeta, OrganizationMeta } from '@/lib/contract/generated'
 import type { FieldMeta, ModelMeta, Rec } from '@/lib/contract/types'
 import { KENYA_TOWNS } from '@/lib/kenya'
+import { IntegrationsTab } from './IntegrationsTab'
 
-const TABS = ['details', 'team', 'addresses', 'approvals'] as const
+const TABS = ['details', 'team', 'addresses', 'approvals', 'integrations'] as const
 type Tab = (typeof TABS)[number]
 
 const DETAIL_FIELDS = ['name', 'legal_name', 'tax_identifier', 'default_currency', 'timezone'] as const
@@ -42,7 +44,7 @@ function Details({ id, canEdit }: { id: string; canEdit: boolean }) {
   const record = useRecord<Rec>(OrganizationMeta, id)
   const save = useSave(OrganizationMeta)
   if (record.isPending) return <LoadingState variant="skeleton" shape="detail" label="Loading organization details" />
-  if (record.isError || !record.data) return <ErrorState kind="retryable" title="Organization details did not load" onRetry={() => void record.refetch()} size="inline" />
+  if (record.isError || !record.data) return <ErrorState {...errorFrom(record.error)} title="Organization details did not load" onRetry={() => void record.refetch()} size="inline" />
   const r = record.data
   const editable = canEdit && (r._can ?? []).includes('update')
   return (
@@ -104,8 +106,8 @@ function Approvals({ canManage }: { canManage: boolean }) {
   const command = useCommand(ApprovalPolicyMeta)
   const save = useSave(ApprovalPolicyMeta)
   const add = canManage ? (
-    <ProjectedForm meta={ApprovalPolicyMeta} mode="create" recipe="sheet" submitLabel="Save policy" initial={{ minimum_approvals: 1, approver_role_keys: ['buyer_owner'] }}
-      title="New approval policy" description="Orders of this total or more wait for approval before they reach the seller. The person who placed an order never approves it."
+    <ProjectedForm meta={ApprovalPolicyMeta} mode="create" recipe="sheet" submitLabel="Save policy" initial={{ approver_role_keys: ['buyer_owner'] }}
+      title="New approval policy" description="Orders of this total or more wait for approval before they reach the seller. The person who placed an order never approves it; by default an approver's own orders skip the policy."
       trigger={<Button variant="primary" leadingIcon={ShieldCheck}>Add a policy</Button>}
       onSubmit={values => attempt(() => save.mutateAsync({ body: values }), 'Policy saved')} />
   ) : null
@@ -130,6 +132,7 @@ export function OrganizationPage() {
   const org = active.organization
   const approvalField = OrganizationMeta.fields.find(f => f.name === 'approval_state')!
   const approvals = org.organization_type === 'buyer' && may(session, 'approval_policy.list')
+  const integrations = may(session, 'integration.list')
   return (
     <>
       <HeaderBlock level={1} source="explicit" title={org.name} status={<StatusBadge field={approvalField} value={org.approval_state} />}
@@ -140,11 +143,13 @@ export function OrganizationPage() {
           <TabsTrigger value="team"><Icon icon={Users} />Team</TabsTrigger>
           <TabsTrigger value="addresses"><Icon icon={MapPinPlus} />Addresses</TabsTrigger>
           {approvals ? <TabsTrigger value="approvals"><Icon icon={ShieldCheck} />Approvals</TabsTrigger> : null}
+          {integrations ? <TabsTrigger value="integrations"><Icon icon={PlugZap} />Integrations</TabsTrigger> : null}
         </TabsList>
         <TabsContent value="details" className="flex flex-col gap-8"><Details id={org.id} canEdit={may(session, 'organization.update')} /></TabsContent>
         <TabsContent value="team"><Team org={org} canInvite={may(session, 'membership.invite')} /></TabsContent>
         <TabsContent value="addresses"><Addresses canManage={may(session, 'address.create')} /></TabsContent>
         {approvals ? <TabsContent value="approvals"><Approvals canManage={may(session, 'approval_policy.create')} /></TabsContent> : null}
+        {integrations ? <TabsContent value="integrations"><IntegrationsTab canManage={may(session, 'integration.manage')} /></TabsContent> : null}
       </Tabs>
     </>
   )
