@@ -9,7 +9,9 @@ from .base import env
 SECRET_KEY = env("DJANGO_SECRET_KEY")
 ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS")
 CSRF_TRUSTED_ORIGINS = env.list("DJANGO_CSRF_TRUSTED_ORIGINS")
-DATABASES = {"default": env.db("DATABASE_URL") | {"OPTIONS": {"pool": True}, "CONN_MAX_AGE": 0}}
+# Options in the URL (a managed database's `?sslmode=require`, say) are kept; the connection pool is added.
+_database = env.db("DATABASE_URL")
+DATABASES = {"default": _database | {"OPTIONS": {**_database.get("OPTIONS", {}), "pool": True}, "CONN_MAX_AGE": 0}}
 
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 SECURE_HSTS_SECONDS = 31_536_000

@@ -142,7 +142,7 @@ Requirement IDs (`SM-F-xx`) come from the SokoMesh Feature Build Order and Field
 - [x] Upload policy: file types checked from their contents, per-kind size limits published in the contract (`uploads`), seller documents served only to their organization and the marketplace reviewers (with `SM-F-02`)
 - [x] Email: Brevo's transactional API when `BREVO_API_KEY` is set, Mailpit in development, in-memory in tests
 - [ ] S3-compatible object storage and virus scanning (uploads and product photographs go through `default_storage`, on local disk until a deployment target is chosen)
-- [x] Deployment guide for one CloudPanel server: Node.js site, Django under PM2, PostgreSQL and Redis beside it, releases from GitHub over a read-only deploy key, Let's Encrypt ([guide](docs/deploy-cloudpanel.md), [`infra/cloudpanel/`](infra/cloudpanel/))
+- [x] Deployment guide for a CloudPanel server that may already host other sites, as two new sites, written for a first deployment: the web site (Node.js site, Next.js under PM2) on the main domain and the API site (Python site, Django and its workers under PM2) on a subdomain, PostgreSQL and Redis beside them, releases from the GitHub repository, Let's Encrypt for both ([guide](docs/deploy-cloudpanel.md), [`infra/cloudpanel/`](infra/cloudpanel/))
 
 ### Design system
 
@@ -329,7 +329,7 @@ web/            Next.js 16 App Router (pnpm)
 design/
   tokens/         brand primitives and the semantic token layer (light, dark, density, type, shape, motion)
   photography/    photo sources and the cut-out script
-infra/          compose.yaml, docker/{api,web}.Dockerfile, cloudpanel/ (PM2 processes, deploy script, NGINX block)
+infra/          compose.yaml, docker/{api,web}.Dockerfile, cloudpanel/ (deploy script, PM2 processes per site, the web vhost's /api block)
 docs/           project context, design constitution, brand assets, architecture decisions
 ```
 
@@ -342,7 +342,7 @@ docs/           project context, design constitution, brand assets, architecture
 - [Brand assets](docs/design/brand-assets.md): logo usage rules and where every kit file lives
 - [Architecture decisions](docs/architecture/decisions.md): deliberate deviations and deferred work
 - [Code tour](docs/code-tour.md): every file of the foundation and all twenty-four features, in reading order
-- [Deploying on CloudPanel](docs/deploy-cloudpanel.md): one server, releases from GitHub over a deploy key, Let's Encrypt
+- [Deploying on CloudPanel](docs/deploy-cloudpanel.md): one server, two sites (web on the main domain, API on a subdomain), step by step
 - [Contract changelog](contract/CHANGELOG.md)
 
 ## Credits

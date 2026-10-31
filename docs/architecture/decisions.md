@@ -148,6 +148,12 @@ Deliberate deviations from the Adaptive Convergence v3 Web Manual and the projec
 | 90 | Alternative modes kept on purpose: `ListBlock`'s cursor "load more" (`hasMore`), its live-updates banner (`live`, `stale`) and `ProjectedForm`'s `initialPhase` (documentation and tests). | Load-more suits feeds that grow while read; live updates wait for the WebSocket gateway (#86). | Use `live` with the gateway. |
 | 91 | API routes the browser never calls, on purpose: `payments/callbacks/<provider>` (providers call it), `integration/*` (systems with a token call it), and the registry's per-record route of resources read through lists or through their parent (cart lines, media). Loose ends closed: `facets.price` now drives the price slider, `metric-definitions` is listed under "How each figure is counted" on analytics, and whether a case's claim window is open is the API's (`window_open`), not the browser's clock. | Each route has an owner; nothing is served that nobody reads. | None |
 
+## Deployment (2026-10-27)
+
+| # | Decision | Why | Follow-up |
+|---|---|---|---|
+| 92 | CloudPanel hosts SokoMesh as two sites on one server, each with its own site user: the web site (a Node.js site on the main domain) and the API site (a Python site on `api.` the domain, Django and its workers under that user's PM2). The browser still calls `/api/` on the main domain, which the web site's vhost passes to Django on 127.0.0.1 and the API site's App Port; the API's subdomain serves health checks, the Django admin and the token API. One `deploy.sh api|web` serves both users. `AC_STATIC_ROOT` puts the admin's files in the API site's document root, where CloudPanel's Python vhost already serves them. The server may already host other sites: each site's App Port is `APP_PORT` in its `.env` (3000 and 8000 by default), and SokoMesh takes its own PostgreSQL database and Redis database number. | The frontend is built for a same-origin API (first-party cookies, no CORS, product photographs at `/api/v1/media/…` on the site's own address), so splitting the sites must not split the origin. Separate users keep each half's files and processes apart. | If the API moves to another server, point the web site's `/api/` block and `API_ORIGIN` at its HTTPS address (guide, step 11.5). |
+
 ## Deferred to the slice that needs them
 
 | Piece | Lands with |

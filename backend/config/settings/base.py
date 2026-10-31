@@ -4,6 +4,7 @@
 # pyright: reportArgumentType=false
 
 import os
+from email.utils import parseaddr
 from pathlib import Path
 from urllib.parse import parse_qsl, urlparse
 
@@ -190,7 +191,9 @@ USE_I18N = True
 USE_TZ = True
 
 STATIC_URL = "static/"
-STATIC_ROOT = BASE_DIR / "staticfiles"
+# Only the Django admin has static files. A server may collect them where its web server already serves files
+# (the API site's document root on CloudPanel, docs/deploy-cloudpanel.md).
+STATIC_ROOT = Path(env("AC_STATIC_ROOT", default=str(BASE_DIR / "staticfiles")))
 
 # --- Adaptive Convergence: backend-owned facts exported into the contract ---------
 
@@ -285,10 +288,16 @@ AC_THROTTLE = True
 BREVO_API_KEY = env("BREVO_API_KEY", default="")
 DEFAULT_FROM_EMAIL = env("BREVO_SENDER_EMAIL", default="SokoMesh <no-reply@sokomesh.local>")
 if BREVO_API_KEY:
+    # Brevo takes the sender's name and address separately; "SokoMesh <no-reply@…>" and a bare address both work.
+    _sender_name, _sender_email = parseaddr(DEFAULT_FROM_EMAIL)
     MAILERS = {
         "default": {
             "BACKEND": "core.mail.BrevoBackend",
-            "OPTIONS": {"api_key": BREVO_API_KEY, "sender_email": DEFAULT_FROM_EMAIL, "sender_name": "SokoMesh"},
+            "OPTIONS": {
+                "api_key": BREVO_API_KEY,
+                "sender_email": _sender_email,
+                "sender_name": _sender_name or "SokoMesh",
+            },
         }
     }
 
